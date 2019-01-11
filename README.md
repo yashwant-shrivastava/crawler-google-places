@@ -1,14 +1,14 @@
 # Crawler Google Places
-Get data from Google Places, which official [Google Maps Places API](https://developers.google.com/places/web-service/search) does not provide.
+Get data from Google Places that the official [Google Maps Places API](https://developers.google.com/places/web-service/search) does not provide.
 
 ## Why?
-You can use official [Google Maps Places API](https://developers.google.com/places/web-service/search), it is better way for the most use cases.
+The official Google Maps Places API is the best option for most use cases.
 
-Unlike Google Maps Places API, you can get from crawler:
+But unlike the Google Maps Places API, the crawler can provide:
 
-- Popular place times histogram (There is no data for that in official API)
-- Place reviews (you can get up to 5 reviews from official API)
-- Place photos (you can can up to 10 photos from official API)
+- Popular place times histogram (no data for that in official API)
+- Place reviews (up to 5 reviews from official API)
+- Place photos (up to 10 photos from official API)
 
 ## INPUT
 Follow guide on [actor detail page](https://www.apify.com/drobnikj/crawler-google-places) to see how it works.
