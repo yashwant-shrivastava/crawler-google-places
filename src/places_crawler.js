@@ -89,7 +89,7 @@ const extractPlaceDetail = async (page) => {
             // It can happen, it is not big issue :)
             log.debug('Cannot select reviews by newest!');
         }
-        await infiniteScroll(page, 99999999999, '.section-scrollbox.section-listbox');
+        await infiniteScroll(page, 99999999999, '.section-scrollbox.section-listbox', 'reviews list');
         const reviewEls = await page.$$('div.section-review');
         for (const reviewEl of reviewEls) {
             const moreButton = await reviewEl.$('.section-expand-review');
@@ -124,7 +124,7 @@ const extractPlaceDetail = async (page) => {
     if (imagesButton) {
         await sleep(2000);
         await imagesButton.click();
-        await infiniteScroll(page, 99999999999, '.section-scrollbox.section-listbox');
+        await infiniteScroll(page, 99999999999, '.section-scrollbox.section-listbox', 'images list');
         detail.imageUrls = await page.evaluate(() => {
             const urls = [];
             $('.gallery-image-high-res').each(function () {
@@ -177,7 +177,7 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces) =>
             if (label === 'startUrl') {
                 log.info(`Start enqueuing places details for search: ${searchString}`);
                 await enqueueAllPlaceDetails(page, searchString, requestQueue, maxCrawledPlaces);
-                log.info('Enqueuing places finished!');
+                log.info('Enqueuing places finished.');
             } else {
                 // Get data for place and save it to dataset
                 log.info(`Extracting details from place url ${request.url}`);

@@ -31,7 +31,7 @@ const getPageScrollInfo = (page, elementToScroll) => page.evaluate((elementToScr
  * @param elementToScroll - CSS selector of element where we want to scroll, default is 'body'
  * @return {Promise.<void>}
  */
-module.exports = async (page, maxHeight, elementToScroll = 'body') => {
+module.exports = async (page, maxHeight, elementToScroll = 'body', scrollName) => {
     const maybeResourceTypesInfiniteScroll = ['xhr', 'fetch', 'websocket', 'other'];
     const stringifyScrollInfo = (scrollInfo) => {
         return `scrollTop=${scrollInfo.scrollTop}, `
@@ -73,7 +73,7 @@ module.exports = async (page, maxHeight, elementToScroll = 'body') => {
 
     await page.waitForSelector(elementToScroll, { timeout: defaultElementTimeout });
     let scrollInfo = await getPageScrollInfo(page, elementToScroll);
-    logInfo(`Infinite scroll started (${stringifyScrollInfo(scrollInfo)}).`);
+    logInfo(`Infinite scroll for ${scrollName} started, url: ${page.url()}`);
 
     let previousReviewsCount = 0;
     while (true) {
@@ -118,5 +118,5 @@ module.exports = async (page, maxHeight, elementToScroll = 'body') => {
         await sleep(defaultScrollDelay);
     }
     page.removeAllListeners('request');
-    logInfo(`Infinite scroll finished (${stringifyScrollInfo(scrollInfo)} resourcesStats=${JSON.stringify(resourcesStats)})`);
+    logInfo(`Infinite scroll for ${scrollName} finished, url: ${page.url()}`);
 };
