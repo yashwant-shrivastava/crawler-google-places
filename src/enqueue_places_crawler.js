@@ -21,7 +21,6 @@ const enqueueAllUrlsFromPagination = async (page, requestQueue, paginationFrom, 
         const link = await results[resultIndex].$('h3');
         await link.click();
         await waitForGoogleMapLoader(page);
-        await page.waitForSelector('.section-back-to-list-button', { timeout: DEFAULT_TIMEOUT });
         // After redirection to detail page, save the URL to Request queue to process it later
         const url = page.url();
         await requestQueue.addRequest({ url, userData: { label: 'detail' } });
@@ -30,8 +29,13 @@ const enqueueAllUrlsFromPagination = async (page, requestQueue, paginationFrom, 
             log.info(`Reach max places per crawl ${maxPlacesPerCrawl}, stopped enqueuing new places.`);
             return true;
         }
-
-        await page.click('.section-back-to-list-button');
+        try {
+            await page.waitForSelector('.section-back-to-list-button', { timeout: 10000 });
+            await page.click('.section-back-to-list-button');
+        } catch (e) {
+            // link didn't work in some case back, it tries page goBack instead
+            await page.goBack();
+        }
     }
 };
 

@@ -19,7 +19,7 @@ const proxyCheck = async (proxyConfig) => {
     // Check if user has access to selected proxy group
     try {
         await rp('https://api.apify.com/v2/browser-info/', { proxy, resolveWithFullResponse: true });
-    } catch(error) {
+    } catch (error) {
         if (error.message.includes('tunneling socket could not be established')) {
             return {
                 isPass: false,
@@ -30,7 +30,7 @@ const proxyCheck = async (proxyConfig) => {
     }
 
     // Check if user has access to Google Maps
-    const googleCheck = await rp('http://maps.google.com', { proxy, resolveWithFullResponse: true });
+    const googleCheck = await rp('http://maps.google.com', { proxy, resolveWithFullResponse: true, simple: false });
     if (googleCheck.statusCode !== 200) {
         return {
             isPass: false,
