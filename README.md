@@ -24,7 +24,7 @@ Example input:
 ```
 On this input actor searches places on this start url: https://www.google.com/maps/search/pubs+near+prague/@50.0860729,14.4135326,10z
 
-- `searchString` - String will be search on Google maps
+- `searchString` - String will be search on Google maps. It is possible fill [Google Place ID](https://developers.google.com/places/place-id) in format `place_id:ChIJp4JiUCNP0xQR1JaSjpW_Hms`.
 - `proxyConfig` - Apify proxy configuration
 - `lat` - Use it with combination with longitude and zoom to set up viewport to search on.
 - `lng` - Use it with combination with latitude and zoom to set up viewport to search on.

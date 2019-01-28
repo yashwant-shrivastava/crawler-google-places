@@ -28,7 +28,17 @@ Apify.main(async () => {
 
     log.info('Start url is', startUrl);
     const requestQueue = await Apify.openRequestQueue();
-    await requestQueue.addRequest({ url: startUrl, userData: { label: 'startUrl', searchString } });
+    /**
+     * User can use place_id:<Google place ID> as search query
+     * TODO: Move place id to separate fields, once we have dependent fields. Than user can fill placeId or search query.
+     */
+    if (searchString.includes('place_id:')) {
+        log.info(`Place ID found in search query. We will extract data from ${searchString}.`);
+        const placeUrl = `https://www.google.com/maps/place/?q=${searchString.replace(/\s+/g, '')}`;
+        await requestQueue.addRequest({ url: placeUrl, userData: { label: 'placeDetail' } });
+    } else {
+        await requestQueue.addRequest({ url: startUrl, userData: { label: 'startUrl', searchString } });
+    }
 
     const launchPuppeteerOptions = {};
     if (proxyConfig) Object.assign(launchPuppeteerOptions, proxyConfig);

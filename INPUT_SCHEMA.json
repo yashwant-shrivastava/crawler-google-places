@@ -7,7 +7,7 @@
     "searchString": {
       "title": "Search",
       "type": "string",
-      "description": "String will be search on Google maps.",
+      "description": "String will be search on Google maps. It is possible to fill Google Place ID in format 'place_id:ChIJp4JiUCNP0xQR1JaSjpW_Hms'.",
       "prefill": "pubs near prague 2",
       "editor": "textfield"
     },
