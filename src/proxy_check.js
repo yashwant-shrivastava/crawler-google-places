@@ -29,14 +29,18 @@ const proxyCheck = async (proxyConfig) => {
         throw error;
     }
 
+    // NOTE: We need to check it using Proxy component, but we need to implement it in Apify proxy comp.
     // Check if user has access to Google Maps
-    const googleCheck = await rp('http://maps.google.com', { proxy, resolveWithFullResponse: true, simple: false });
-    if (googleCheck.statusCode !== 200) {
-        return {
-            isPass: false,
-            message: `One of proxy groups ${proxyConfig.apifyProxyGroups.join(',')} failed to connect to Google Maps.`,
-        };
-    }
+    // const googleCheck = await rp('http://maps.google.com', { proxy, resolveWithFullResponse: true, simple: false });
+    // if (googleCheck.statusCode !== 200) {
+    //     const message = proxyConfig.apifyProxyGroups
+    //         ? `One of proxy groups ${proxyConfig.apifyProxyGroups.join(',')} failed to connect to Google Maps.`
+    //         : 'Cannot connect to Google Maps with auto proxy group try it again.';
+    //     return {
+    //         isPass: false,
+    //         message,
+    //     };
+    // }
 
     return { isPass: true };
 };
