@@ -59,10 +59,8 @@ const extractPlaceDetail = async (page, includeReviews, includeImages) => {
         });
     }
 
-    // Extract reviews
-    detail.reviews = [];
     const reviewsButtonSel = 'button[jsaction="pane.reviewChart.moreReviews"]';
-    if (detail.totalScore && includeReviews) {
+    if (detail.totalScore) {
         detail.totalScore = parseFloat(detail.totalScore.replace(',', '.'));
         detail.reviewsCount = await page.evaluate((selector) => {
             const numberReviewsText = $(selector).text().trim();
@@ -73,50 +71,53 @@ const extractPlaceDetail = async (page, includeReviews, includeImages) => {
             await page.click('.widget-consent-dialog .widget-consent-button-later');
         }
         // Get all reviews
-        await page.waitForSelector(reviewsButtonSel);
-        await page.click(reviewsButtonSel);
-        await page.waitForSelector('.section-star-display', { timeout: DEFAULT_TIMEOUT });
-        await sleep(5000);
-        // Sort reviews by newest, one click sometimes didn't work :)
-        try {
-            const sortButtonEl = '.section-tab-info-stats-button-flex';
-            for (let i = 0; i < 3; i++) {
-                await page.click(sortButtonEl);
-                await sleep(1000);
-            }
-            await page.click('.context-menu-entry[data-index="1"]');
-        } catch (err) {
-            // It can happen, it is not big issue :)
-            log.debug('Cannot select reviews by newest!');
-        }
-        await infiniteScroll(page, 99999999999, '.section-scrollbox.section-listbox', 'reviews list');
-        const reviewEls = await page.$$('div.section-review');
-        for (const reviewEl of reviewEls) {
-            const moreButton = await reviewEl.$('.section-expand-review');
-            if (moreButton) {
-                await moreButton.click();
-                await sleep(2000);
-            }
-            const review = await page.evaluate((reviewEl) => {
-                const $review = $(reviewEl);
-                const reviewData = {
-                    name: $review.find('.section-review-title').text().trim(),
-                    text: $review.find('.section-review-review-content .section-review-text').text(),
-                    stars: $review.find('.section-review-stars').attr('aria-label').trim(),
-                    publishAt: $review.find('.section-review-publish-date').text().trim(),
-                    likesCount: $review.find('.section-review-thumbs-up-count').text().trim(),
-                };
-                const $response = $review.find('.section-review-owner-response');
-                if ($response) {
-                    reviewData.responseFromOwnerText = $response.find('.section-review-text').text().trim();
+        if (includeReviews) {
+            detail.reviews = [];
+            await page.waitForSelector(reviewsButtonSel);
+            await page.click(reviewsButtonSel);
+            await page.waitForSelector('.section-star-display', { timeout: DEFAULT_TIMEOUT });
+            await sleep(5000);
+            // Sort reviews by newest, one click sometimes didn't work :)
+            try {
+                const sortButtonEl = '.section-tab-info-stats-button-flex';
+                for (let i = 0; i < 3; i++) {
+                    await page.click(sortButtonEl);
+                    await sleep(1000);
                 }
-                return reviewData;
-            }, reviewEl);
-            detail.reviews.push(review);
+                await page.click('.context-menu-entry[data-index="1"]');
+            } catch (err) {
+                // It can happen, it is not big issue :)
+                log.debug('Cannot select reviews by newest!');
+            }
+            await infiniteScroll(page, 99999999999, '.section-scrollbox.section-listbox', 'reviews list');
+            const reviewEls = await page.$$('div.section-review');
+            for (const reviewEl of reviewEls) {
+                const moreButton = await reviewEl.$('.section-expand-review');
+                if (moreButton) {
+                    await moreButton.click();
+                    await sleep(2000);
+                }
+                const review = await page.evaluate((reviewEl) => {
+                    const $review = $(reviewEl);
+                    const reviewData = {
+                        name: $review.find('.section-review-title').text().trim(),
+                        text: $review.find('.section-review-review-content .section-review-text').text(),
+                        stars: $review.find('.section-review-stars').attr('aria-label').trim(),
+                        publishAt: $review.find('.section-review-publish-date').text().trim(),
+                        likesCount: $review.find('.section-review-thumbs-up-count').text().trim(),
+                    };
+                    const $response = $review.find('.section-review-owner-response');
+                    if ($response) {
+                        reviewData.responseFromOwnerText = $response.find('.section-review-text').text().trim();
+                    }
+                    return reviewData;
+                }, reviewEl);
+                detail.reviews.push(review);
+            }
+            await page.click('button.section-header-back-button');
+        }  else {
+            log.info(`Skipping reviews scraping for url: ${page.url()}`)
         }
-        await page.click('button.section-header-back-button');
-    } else {
-        log.info(`Skipping reviews scraping for url: ${page.url()}`)
     }
 
     // Extract place images
