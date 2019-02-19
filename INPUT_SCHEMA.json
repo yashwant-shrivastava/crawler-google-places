@@ -18,6 +18,18 @@
       "prefill": { "useApifyProxy": true },
       "editor": "proxy"
     },
+    "includeReviews": {
+      "title": "Include places reviews",
+      "type": "boolean",
+      "description": "If checked the crawler scrapes all reviews for all places. You can speed up crawling if you disable reviews.",
+      "default": true
+    },
+    "includeImages": {
+      "title": "Include places images",
+      "type": "boolean",
+      "description": "If checked the crawler scrapes all images for all places. You can speed up crawling if you disable images.",
+      "default": true
+    },
     "lat": {
       "title": "Viewport point latitude",
       "type": "string",

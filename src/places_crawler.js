@@ -10,7 +10,7 @@ const { enqueueAllPlaceDetails } = require('./enqueue_places_crawler');
  * This is the worst part - parsing data from place detail
  * @param page
  */
-const extractPlaceDetail = async (page) => {
+const extractPlaceDetail = async (page, includeReviews, includeImages) => {
     // Extract basic information
     const titleSel = 'h1.section-hero-header-title';
     await page.waitForSelector(titleSel, { timeout: DEFAULT_TIMEOUT });
@@ -62,7 +62,7 @@ const extractPlaceDetail = async (page) => {
     // Extract reviews
     detail.reviews = [];
     const reviewsButtonSel = 'button[jsaction="pane.reviewChart.moreReviews"]';
-    if (detail.totalScore) {
+    if (detail.totalScore && includeReviews) {
         detail.totalScore = parseFloat(detail.totalScore.replace(',', '.'));
         detail.reviewsCount = await page.evaluate((selector) => {
             const numberReviewsText = $(selector).text().trim();
@@ -115,27 +115,33 @@ const extractPlaceDetail = async (page) => {
             detail.reviews.push(review);
         }
         await page.click('button.section-header-back-button');
+    } else {
+        log.info(`Skipping reviews scraping for url: ${page.url()}`)
     }
 
     // Extract place images
-    await page.waitForSelector(titleSel, { timeout: DEFAULT_TIMEOUT });
-    const imagesButtonSel = '.section-image-pack-image-container';
-    const imagesButton = await page.$(imagesButtonSel);
-    if (imagesButton) {
-        await sleep(2000);
-        await imagesButton.click();
-        await infiniteScroll(page, 99999999999, '.section-scrollbox.section-listbox', 'images list');
-        detail.imageUrls = await page.evaluate(() => {
-            const urls = [];
-            $('.gallery-image-high-res').each(function () {
-                const urlMatch = $(this).attr('style').match(/url\("(.*)"\)/);
-                if (!urlMatch) return;
-                let imageUrl = urlMatch[1];
-                if (imageUrl[0] === '/') imageUrl = `https:${imageUrl}`;
-                urls.push(imageUrl);
+    if (includeImages) {
+        await page.waitForSelector(titleSel, { timeout: DEFAULT_TIMEOUT });
+        const imagesButtonSel = '.section-image-pack-image-container';
+        const imagesButton = await page.$(imagesButtonSel);
+        if (imagesButton) {
+            await sleep(2000);
+            await imagesButton.click();
+            await infiniteScroll(page, 99999999999, '.section-scrollbox.section-listbox', 'images list');
+            detail.imageUrls = await page.evaluate(() => {
+                const urls = [];
+                $('.gallery-image-high-res').each(function () {
+                    const urlMatch = $(this).attr('style').match(/url\("(.*)"\)/);
+                    if (!urlMatch) return;
+                    let imageUrl = urlMatch[1];
+                    if (imageUrl[0] === '/') imageUrl = `https:${imageUrl}`;
+                    urls.push(imageUrl);
+                });
+                return urls;
             });
-            return urls;
-        });
+        }
+    } else {
+        log.info(`Skipping images scraping for url: ${page.url()}`)
     }
     return detail;
 };
@@ -147,7 +153,7 @@ const extractPlaceDetail = async (page) => {
  * @param maxCrawledPlaces
  * @return {Apify.PuppeteerCrawler}
  */
-const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces) => {
+const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, includeReviews, includeImages) => {
     const crawlerOpts = {
         launchPuppeteerOptions,
         requestQueue,
@@ -181,7 +187,7 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces) =>
             } else {
                 // Get data for place and save it to dataset
                 log.info(`Extracting details from place url ${request.url}`);
-                const placeDetail = await extractPlaceDetail(page);
+                const placeDetail = await extractPlaceDetail(page, includeReviews, includeImages);
                 placeDetail.url = request.url;
                 await Apify.pushData(placeDetail);
                 log.info(`Finished place url ${request.url}`);
