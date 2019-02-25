@@ -21,6 +21,10 @@ const extractPlaceDetail = async (page, includeReviews, includeImages) => {
             categoryName: $('[jsaction="pane.rating.category"]').text().trim(),
             address: $('[data-section-id="ad"] .widget-pane-link').text().trim(),
             plusCode: $('[data-section-id="ol"] .widget-pane-link').text().trim(),
+            website: $('[data-section-id="ap"]').length ? $('[data-section-id="ap"]').eq('0').text().trim() : null,
+            phone: $('[data-section-id="pn0"].section-info-speak-numeral').length
+                ? $('[data-section-id="pn0"].section-info-speak-numeral').attr('data-href').replace('tel:', '')
+                : null,
         };
     });
 
