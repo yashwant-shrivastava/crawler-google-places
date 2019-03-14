@@ -11,10 +11,10 @@ Apify.main(async () => {
 
     if (!searchString) throw new Error('Attribute searchString missing in input.');
 
-    const proxyCheckResult = await proxyCheck(proxyConfig);
-    if (!proxyCheckResult.isPass) {
-        throw new Error(`Proxy error: ${proxyCheckResult.message}`);
-    }
+    // const proxyCheckResult = await proxyCheck(proxyConfig);
+    // if (!proxyCheckResult.isPass) {
+    //     throw new Error(`Proxy error: ${proxyCheckResult.message}`);
+    // }
 
     log.info('Scraping Google Places for search string:', searchString);
 
