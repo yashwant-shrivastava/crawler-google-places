@@ -7,7 +7,7 @@ const { log } = Apify.utils;
 Apify.main(async () => {
     const input = await Apify.getValue('INPUT');
     const { searchString, proxyConfig, lat, lng, maxCrawledPlaces, regularTestRun,
-        includeReviews = true, includeImages = true } = input;
+        includeReviews = true, includeImages = true, walker } = input;
 
     if (!searchString) throw new Error('Attribute searchString missing in input.');
 
@@ -18,16 +18,29 @@ Apify.main(async () => {
 
     log.info('Scraping Google Places for search string:', searchString);
 
-    let startUrl;
+    const startUrls = [];
     if (lat || lng) {
         const { zoom = 10 } = input;
         if (!lat || !lng) throw new Error('You have to defined lat and lng!');
-        startUrl = `https://www.google.com/maps/@${lat},${lng},${zoom}z/search`;
+        startUrls.push(`https://www.google.com/maps/@${lat},${lng},${zoom}z/search`);
+    } else if (walker) {
+        const { zoom, step, bounds } = walker;
+        const { northeast, southwest } = bounds;
+        log.info(`Using walker mode, generating pieces of map to walk with step ${step}, zoom ${step} and bounds ${JSON.stringify(bounds)}.`);
+        /**
+         * The hidden feature, with walker you can search business in specific square on map.
+         */
+        // Generate URLs to walk
+        for (let walkerLng = northeast.lng; walkerLng >= southwest.lng; walkerLng = walkerLng - step) {
+            for (let walkerLat = northeast.lat; walkerLat >= southwest.lat; walkerLat = walkerLat - step) {
+                startUrls.push(`https://www.google.com/maps/@${walkerLat},${walkerLng},${zoom}z/search`)
+            }
+        }
     } else {
-        startUrl = 'https://www.google.com/maps/search/';
+        startUrls.push('https://www.google.com/maps/search/');
     }
 
-    log.info('Start url is', startUrl);
+    log.info('Start url is', startUrls);
     const requestQueue = await Apify.openRequestQueue();
     /**
      * User can use place_id:<Google place ID> as search query
@@ -38,7 +51,9 @@ Apify.main(async () => {
         const placeUrl = `https://www.google.com/maps/place/?q=${searchString.replace(/\s+/g, '')}`;
         await requestQueue.addRequest({ url: placeUrl, userData: { label: 'placeDetail' } });
     } else {
-        await requestQueue.addRequest({ url: startUrl, userData: { label: 'startUrl', searchString } });
+        for (const url of startUrls) {
+            await requestQueue.addRequest({ url, userData: { label: 'startUrl', searchString } });
+        }
     }
 
     const launchPuppeteerOptions = {};
