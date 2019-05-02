@@ -23,7 +23,7 @@ const enqueueAllUrlsFromPagination = async (page, requestQueue, paginationFrom, 
         await waitForGoogleMapLoader(page);
         // After redirection to detail page, save the URL to Request queue to process it later
         const url = page.url();
-        await requestQueue.addRequest({ url, userData: { label: 'detail' } });
+        await requestQueue.addRequest({ url, userData: { label: 'detail' } }, { forefront: true });
         log.info(`Added place detail to queue, url: ${url}`);
         if (maxPlacesPerCrawl && paginationFrom + resultIndex + 1 > maxPlacesPerCrawl) {
             log.info(`Reach max places per crawl ${maxPlacesPerCrawl}, stopped enqueuing new places.`);
