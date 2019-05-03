@@ -58,10 +58,12 @@ const enqueueAllUrlsFromPagination = async (page, requestQueue, paginationFrom, 
  * @param requestQueue
  * @param maxPlacesPerCrawl
  */
-const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxPlacesPerCrawl) => {
+const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxPlacesPerCrawl, request) => {
     // Save state of listing pagination
     // NOTE: If pageFunction failed crawler skipped already scraped pagination
-    const listingPagination = await Apify.getValue(LISTING_PAGINATION_KEY) || {};
+    const listingStateKey = `${LISTING_PAGINATION_KEY}-${request.id}`;
+    console.log(listingStateKey)
+    const listingPagination = await Apify.getValue(listingStateKey) || {};
 
     await page.type('#searchboxinput', searchString);
     await sleep(5000);
@@ -98,7 +100,7 @@ const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxPlace
             isFinished = await enqueueAllUrlsFromPagination(page, requestQueue, from, maxPlacesPerCrawl);
             listingPagination.from = from;
             listingPagination.to = to;
-            await Apify.setValue(LISTING_PAGINATION_KEY, listingPagination);
+            await Apify.setValue(listingStateKey, listingPagination);
         }
         if (!isFinished) await page.waitForSelector(nextButtonSelector, { timeout: DEFAULT_TIMEOUT });
         const isNextPaginationDisabled = await page.evaluate((nextButtonSelector) => {
@@ -115,7 +117,7 @@ const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxPlace
     }
 
     listingPagination.isFinish = true;
-    await Apify.setValue(LISTING_PAGINATION_KEY, listingPagination);
+    await Apify.setValue(listingStateKey, listingPagination);
 };
 
 module.exports = { enqueueAllPlaceDetails };
