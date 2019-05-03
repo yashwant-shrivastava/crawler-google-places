@@ -21,6 +21,7 @@ const enqueueAllUrlsFromPagination = async (page, requestQueue, paginationFrom, 
         const link = await results[resultIndex].$('h3');
         await link.click();
         await waitForGoogleMapLoader(page);
+        sleep(2000); // Wait to url was changed
         // After redirection to detail page, save the URL to Request queue to process it later
         const url = page.url();
         // Parse unique key from url if it is possible
@@ -62,7 +63,6 @@ const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxPlace
     // Save state of listing pagination
     // NOTE: If pageFunction failed crawler skipped already scraped pagination
     const listingStateKey = `${LISTING_PAGINATION_KEY}-${request.id}`;
-    console.log(listingStateKey)
     const listingPagination = await Apify.getValue(listingStateKey) || {};
 
     await page.type('#searchboxinput', searchString);
