@@ -110,7 +110,7 @@ const extractPlaceDetail = async (page, includeReviews, includeImages) => {
                         likesCount: $review.find('.section-review-thumbs-up-count').text().trim(),
                     };
                     // On some places google shows reviews from other services like booking
-                    // There isn't stars but raiting for this places reviews
+                    // There isn't stars but rating for this places reviews
                     if ($review.find('.section-review-stars').attr('aria-label')) {
                         reviewData.stars = $review.find('.section-review-stars').attr('aria-label').trim();
                     }
