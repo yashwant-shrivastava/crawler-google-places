@@ -201,9 +201,10 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
         handleFailedRequestFunction: async ({ request }) => {
             // This function is called when crawling of a request failed too many time
             await Apify.pushData({
-                url: request.url,
-                succeeded: false,
-                errors: request.errorMessages,
+                '#url': request.url,
+                '#succeeded': false,
+                '#errors': request.errorMessages,
+                '#debugInfo': Apify.utils.createRequestDebugInfo(request),
             });
         },
     });
