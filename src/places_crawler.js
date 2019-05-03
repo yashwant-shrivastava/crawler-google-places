@@ -106,10 +106,17 @@ const extractPlaceDetail = async (page, includeReviews, includeImages) => {
                     const reviewData = {
                         name: $review.find('.section-review-title').text().trim(),
                         text: $review.find('.section-review-review-content .section-review-text').text(),
-                        stars: $review.find('.section-review-stars').attr('aria-label').trim(),
                         publishAt: $review.find('.section-review-publish-date').text().trim(),
                         likesCount: $review.find('.section-review-thumbs-up-count').text().trim(),
                     };
+                    // On some places google shows reviews from other services like booking
+                    // There isn't stars but raiting for this places reviews
+                    if ($review.find('.section-review-stars').attr('aria-label')) {
+                        reviewData.stars = $review.find('.section-review-stars').attr('aria-label').trim();
+                    }
+                    if ($review.find('.section-review-numerical-rating')) {
+                        reviewData.rating = $review.find('.section-review-numerical-rating').text().trim();
+                    }
                     const $response = $review.find('.section-review-owner-response');
                     if ($response) {
                         reviewData.responseFromOwnerText = $response.find('.section-review-text').text().trim();
