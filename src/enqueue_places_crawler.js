@@ -25,8 +25,8 @@ const enqueueAllUrlsFromPagination = async (page, requestQueue, paginationFrom, 
         const url = page.url();
         // Parse unique key from url if it is possible
         // ../place/uniqueKey/...
-        const codeMatch = url.match(/\/place\/([\w|\+|,|\.]*)/);
-        const uniqueKey = codeMatch && codeMatch.length > 1 ? codeMatch[0] : Math.random().toString();
+        const codeMatch = url.match(/\/place\/([^\/]*)/);
+        const uniqueKey = codeMatch && codeMatch.length > 1 ? codeMatch[1] : Math.random().toString();
         log.debug(`${url} with uniqueKey ${uniqueKey} is adding to queue.`);
         await requestQueue.addRequest({ url, uniqueKey, userData: { label: 'detail' } }, { forefront: true });
         log.info(`Added place detail to queue, url: ${url}`);
