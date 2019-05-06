@@ -21,7 +21,7 @@ const enqueueAllUrlsFromPagination = async (page, requestQueue, paginationFrom, 
         const link = await results[resultIndex].$('h3');
         await link.click();
         await waitForGoogleMapLoader(page);
-        sleep(2000); // Wait to url was changed
+        await page.waitForSelector('.section-back-to-list-button', { timeout: 20000 });
         // After redirection to detail page, save the URL to Request queue to process it later
         const url = page.url();
         // Parse unique key from url if it is possible
@@ -38,7 +38,6 @@ const enqueueAllUrlsFromPagination = async (page, requestQueue, paginationFrom, 
         const goBack = async () => {
             try {
                 await waitForGoogleMapLoader(page);
-                await page.waitForSelector('.section-back-to-list-button', { timeout: 20000 });
                 await page.click('.section-back-to-list-button');
                 await page.waitForSelector(searchBoxSelector, { timeout: 2000 });
             } catch (e) {
