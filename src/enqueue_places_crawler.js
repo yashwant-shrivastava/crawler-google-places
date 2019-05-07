@@ -9,10 +9,10 @@ const waitForGoogleMapLoader = (page) => page.waitFor(() => !document.querySelec
 const enqueueAllUrlsFromPagination = async (page, requestQueue, paginationFrom, maxPlacesPerCrawl) => {
     let results = await page.$$('.section-result');
     const resultsCount = results.length;
-
+    const searchBoxSelector = '.searchbox';
     for (let resultIndex = 0; resultIndex < resultsCount; resultIndex++) {
         // Need to get results again, pupptr lost context..
-        await page.waitForSelector('.searchbox', { timeout: DEFAULT_TIMEOUT });
+        await page.waitForSelector(searchBoxSelector, { timeout: DEFAULT_TIMEOUT });
         await waitForGoogleMapLoader(page);
         await page.waitFor((resultIndex) => {
             return document.querySelectorAll('.section-result h3').length >= resultIndex + 1;
@@ -21,21 +21,35 @@ const enqueueAllUrlsFromPagination = async (page, requestQueue, paginationFrom, 
         const link = await results[resultIndex].$('h3');
         await link.click();
         await waitForGoogleMapLoader(page);
+        await page.waitForSelector('.section-back-to-list-button', { timeout: 20000 });
         // After redirection to detail page, save the URL to Request queue to process it later
         const url = page.url();
-        await requestQueue.addRequest({ url, userData: { label: 'detail' } });
+        // Parse unique key from url if it is possible
+        // ../place/uniqueKey/...
+        const codeMatch = url.match(/\/place\/([^\/]*)/);
+        const placeName = codeMatch && codeMatch.length > 1 ? codeMatch[1] : Math.random().toString();
+        const plusCode = await page.evaluate(() => $('[data-section-id="ol"] .widget-pane-link').text().trim());
+        const uniqueKey = placeName + plusCode;
+        log.debug(`${url} with uniqueKey ${uniqueKey} is adding to queue.`);
+        await requestQueue.addRequest({ url, uniqueKey, userData: { label: 'detail' } }, { forefront: true });
         log.info(`Added place detail to queue, url: ${url}`);
         if (maxPlacesPerCrawl && paginationFrom + resultIndex + 1 > maxPlacesPerCrawl) {
             log.info(`Reach max places per crawl ${maxPlacesPerCrawl}, stopped enqueuing new places.`);
             return true;
         }
-        try {
-            await page.waitForSelector('.section-back-to-list-button', { timeout: 10000 });
-            await page.click('.section-back-to-list-button');
-        } catch (e) {
-            // link didn't work in some case back, it tries page goBack instead
-            await page.goBack();
-        }
+        const goBack = async () => {
+            try {
+                await waitForGoogleMapLoader(page);
+                await page.click('.section-back-to-list-button');
+                await page.waitForSelector(searchBoxSelector, { timeout: 2000 });
+            } catch (e) {
+                // link didn't work in some case back, it tries page goBack instead
+                log.debug(`${url} Go back link didn't work, try to goback using pptr function`);
+                await page.goBack();
+            }
+        };
+        await sleep(1000); // 2019-05-03: This needs to be here, otherwise goBack() doesn't work
+        await goBack();
     }
 };
 
@@ -46,10 +60,11 @@ const enqueueAllUrlsFromPagination = async (page, requestQueue, paginationFrom, 
  * @param requestQueue
  * @param maxPlacesPerCrawl
  */
-const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxPlacesPerCrawl) => {
+const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxPlacesPerCrawl, request) => {
     // Save state of listing pagination
     // NOTE: If pageFunction failed crawler skipped already scraped pagination
-    const listingPagination = await Apify.getValue(LISTING_PAGINATION_KEY) || {};
+    const listingStateKey = `${LISTING_PAGINATION_KEY}-${request.id}`;
+    const listingPagination = await Apify.getValue(listingStateKey) || {};
 
     await page.type('#searchboxinput', searchString);
     await sleep(5000);
@@ -86,7 +101,7 @@ const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxPlace
             isFinished = await enqueueAllUrlsFromPagination(page, requestQueue, from, maxPlacesPerCrawl);
             listingPagination.from = from;
             listingPagination.to = to;
-            await Apify.setValue(LISTING_PAGINATION_KEY, listingPagination);
+            await Apify.setValue(listingStateKey, listingPagination);
         }
         if (!isFinished) await page.waitForSelector(nextButtonSelector, { timeout: DEFAULT_TIMEOUT });
         const isNextPaginationDisabled = await page.evaluate((nextButtonSelector) => {
@@ -103,7 +118,7 @@ const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxPlace
     }
 
     listingPagination.isFinish = true;
-    await Apify.setValue(LISTING_PAGINATION_KEY, listingPagination);
+    await Apify.setValue(listingStateKey, listingPagination);
 };
 
 module.exports = { enqueueAllPlaceDetails };
