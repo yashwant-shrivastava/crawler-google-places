@@ -77,7 +77,12 @@ const extractPlaceDetail = async (page, includeReviews, includeImages) => {
         const openingHoursText = await page.evaluate(() => {
             return $('.section-open-hours-container.section-open-hours-container-hoverable').attr('aria-label');
         });
-        detail.openingHours = openingHoursText.split(',');
+        const openingHours = openingHoursText.split(',');
+        detail.openingHours = openingHours.map((line) => {
+            let [ day, hours ] = line.split(' ');
+            hours = hours.split('.')[0];
+            return { day, hours };
+        })
     }
 
     const reviewsButtonSel = 'button[jsaction="pane.reviewChart.moreReviews"]';
