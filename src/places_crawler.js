@@ -28,6 +28,14 @@ const extractPlaceDetail = async (page, includeReviews, includeImages) => {
         };
     });
 
+    // Extract gps from URL
+    const url = page.url();
+    const [fullMatch, latMatch, lngMatch] = url.match(/!3d(.*)!4d(.*)/);
+    if (latMatch && lngMatch) {
+        detail.location = { lat: parseFloat(latMatch), lng: parseFloat(lngMatch) };
+    }
+
+
     // Extract histogram for popular times
     const histogramSel = '.section-popular-times';
     if (await page.$(histogramSel)) {
@@ -61,6 +69,15 @@ const extractPlaceDetail = async (page, includeReviews, includeImages) => {
             });
             return graphs;
         });
+    }
+
+    // Extract opening hours
+    const openingHoursSel = '.section-open-hours-container.section-open-hours-container-hoverable';
+    if (await page.$(openingHoursSel)) {
+        const openingHoursText = await page.evaluate(() => {
+            return $('.section-open-hours-container.section-open-hours-container-hoverable').attr('aria-label');
+        });
+        detail.openingHours = openingHoursText.split(',');
     }
 
     const reviewsButtonSel = 'button[jsaction="pane.reviewChart.moreReviews"]';
