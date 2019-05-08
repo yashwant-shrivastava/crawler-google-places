@@ -78,11 +78,13 @@ const extractPlaceDetail = async (page, includeReviews, includeImages) => {
             return $('.section-open-hours-container.section-open-hours-container-hoverable').attr('aria-label');
         });
         const openingHours = openingHoursText.split(',');
-        detail.openingHours = openingHours.map((line) => {
-            let [ day, hours ] = line.split(' ');
-            hours = hours.split('.')[0];
-            return { day, hours };
-        })
+        if (openingHours.length) {
+            detail.openingHours = openingHours.map((line) => {
+                let [ match, day, hours ] = line.match(/(\S+)\s(.*)/);
+                hours = hours.split('.')[0];
+                return { day, hours };
+            })
+        }
     }
 
     const reviewsButtonSel = 'button[jsaction="pane.reviewChart.moreReviews"]';
