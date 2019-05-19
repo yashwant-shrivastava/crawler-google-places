@@ -3,8 +3,12 @@ const Apify = require('apify');
 const { sleep, log } = Apify.utils;
 const { DEFAULT_TIMEOUT, LISTING_PAGINATION_KEY } = require('./consts');
 
-const waitForGoogleMapLoader = (page) => page.waitFor(() => !document.querySelector('#searchbox')
-    .classList.contains('loading'), { timeout: DEFAULT_TIMEOUT });
+const waitForGoogleMapLoader = async (page) => {
+    await page.waitFor(() => !document.querySelector('#searchbox')
+        .classList.contains('loading'), { timeout: DEFAULT_TIMEOUT });
+    // 2019-05-19: New progress bar
+    await page.waitFor(() => !document.querySelector('.loading-pane-section-loading'));
+};
 
 const enqueueAllUrlsFromPagination = async (page, requestQueue, paginationFrom, maxPlacesPerCrawl) => {
     let results = await page.$$('.section-result');
