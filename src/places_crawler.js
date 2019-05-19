@@ -210,23 +210,30 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
             await page._client.send('Emulation.clearDeviceMetricsOverride');
             await page.goto(request.url, { timeout: 60000 });
         },
-        handlePageFunction: async ({ request, page }) => {
+        handlePageFunction: async ({ request, page, puppeteerPool }) => {
             const { label, searchString } = request.userData;
 
             log.info(`Open ${request.url} with label: ${label}`);
             await injectJQuery(page);
 
-            if (label === 'startUrl') {
-                log.info(`Start enqueuing places details for search: ${searchString}`);
-                await enqueueAllPlaceDetails(page, searchString, requestQueue, maxCrawledPlaces, request);
-                log.info('Enqueuing places finished.');
-            } else {
-                // Get data for place and save it to dataset
-                log.info(`Extracting details from place url ${request.url}`);
-                const placeDetail = await extractPlaceDetail(page, includeReviews, includeImages);
-                placeDetail.url = request.url;
-                await Apify.pushData(placeDetail);
-                log.info(`Finished place url ${request.url}`);
+            try {
+                if (label === 'startUrl') {
+                    log.info(`Start enqueuing places details for search: ${searchString}`);
+                    await enqueueAllPlaceDetails(page, searchString, requestQueue, maxCrawledPlaces, request);
+                    log.info('Enqueuing places finished.');
+                } else {
+                    // Get data for place and save it to dataset
+                    log.info(`Extracting details from place url ${request.url}`);
+                    const placeDetail = await extractPlaceDetail(page, includeReviews, includeImages);
+                    placeDetail.url = request.url;
+                    await Apify.pushData(placeDetail);
+                    log.info(`Finished place url ${request.url}`);
+                }
+            } catch(err) {
+                // This issue can happen, mostly because proxy IP was blocked by google
+                // Let's refresh IP using browser refresh.
+                await puppeteerPool.retire(page.browser());
+                throw err;
             }
         },
         handleFailedRequestFunction: async ({ request }) => {
