@@ -1,4 +1,5 @@
 const Apify = require('apify');
+const { DEFAULT_TIMEOUT } = require('./consts');
 
 /**
  * Store screen from puppeteer page to Apify key-value store
@@ -22,7 +23,22 @@ const saveHTML = async (page, key = 'OUTPUT') => {
     await Apify.setValue(key, html, { contentType: 'text/html; charset=utf-8' });
 };
 
+/**
+ * Wait until google map loader disappear
+ * @param page
+ * @return {Promise<void>}
+ */
+const waitForGoogleMapLoader = async (page) => {
+    if (await page.$('#searchbox')) {
+        await page.waitFor(() => !document.querySelector('#searchbox')
+            .classList.contains('loading'), { timeout: DEFAULT_TIMEOUT });
+    }
+    // 2019-05-19: New progress bar
+    await page.waitFor(() => !document.querySelector('.loading-pane-section-loading'), { timeout: DEFAULT_TIMEOUT });
+};
+
 module.exports = {
     saveScreenshot,
     saveHTML,
+    waitForGoogleMapLoader,
 };

@@ -5,7 +5,8 @@ const { injectJQuery } = Apify.utils.puppeteer;
 const infiniteScroll = require('./infinite_scroll');
 const { MAX_PAGE_RETRIES, DEFAULT_TIMEOUT } = require('./consts');
 const { enqueueAllPlaceDetails } = require('./enqueue_places_crawler');
-const { saveHTML, saveScreenshot } = require('./utils');
+const { saveHTML, saveScreenshot, waitForGoogleMapLoader } = require('./utils');
+
 
 /**
  * This is the worst part - parsing data from place detail
@@ -13,6 +14,7 @@ const { saveHTML, saveScreenshot } = require('./utils');
  */
 const extractPlaceDetail = async (page, includeReviews, includeImages) => {
     // Extract basic information
+    await waitForGoogleMapLoader(page);
     const titleSel = 'h1.section-hero-header-title';
     await page.waitForSelector(titleSel, { timeout: DEFAULT_TIMEOUT });
     const detail = await page.evaluate(() => {
