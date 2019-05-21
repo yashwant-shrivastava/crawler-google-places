@@ -201,8 +201,8 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
     const crawlerOpts = {
         launchPuppeteerOptions,
         requestQueue,
-        maxRequestRetries: MAX_PAGE_RETRIES,
-        retireInstanceAfterRequestCount: 10,
+        maxRequestRetries: MAX_PAGE_RETRIES, // Sometimes page can failed because of blocking proxy IP by Google
+        retireInstanceAfterRequestCount: 250,
         handlePageTimeoutSecs: 15 * 60, // long timeout, because of startUrl enqueueing
         maxOpenPagesPerInstance: 1, // because of startUrl enqueueing crashes if we mix tabs with another scraping
     };
