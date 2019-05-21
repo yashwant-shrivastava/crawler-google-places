@@ -197,7 +197,7 @@ const saveScreenForDebug = async (reques, page) => {
  * @param maxCrawledPlaces
  * @return {Apify.PuppeteerCrawler}
  */
-const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, includeReviews, includeImages) => {
+const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, includeReviews, includeImages, startUrlsCount = 1) => {
     const crawlerOpts = {
         launchPuppeteerOptions,
         requestQueue,
@@ -207,7 +207,7 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
         maxOpenPagesPerInstance: 1, // because of startUrl enqueueing crashes if we mix tabs with another scraping
     };
     if (maxCrawledPlaces) {
-        crawlerOpts.maxRequestsPerCrawl = maxCrawledPlaces + 1; // The first one is startUrl
+        crawlerOpts.maxRequestsPerCrawl = maxCrawledPlaces + startUrlsCount; // The first one is startUrl
     }
     return new Apify.PuppeteerCrawler({
         ...crawlerOpts,
