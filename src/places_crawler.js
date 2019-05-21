@@ -5,6 +5,7 @@ const { injectJQuery } = Apify.utils.puppeteer;
 const infiniteScroll = require('./infinite_scroll');
 const { MAX_PAGE_RETRIES, DEFAULT_TIMEOUT } = require('./consts');
 const { enqueueAllPlaceDetails } = require('./enqueue_places_crawler');
+const { saveHTML, saveScreenshot } = require('./utils');
 
 /**
  * This is the worst part - parsing data from place detail
@@ -183,6 +184,13 @@ const extractPlaceDetail = async (page, includeReviews, includeImages) => {
 };
 
 /**
+ * Save screen and HTML content to debug page
+ */
+const saveScreenForDebug = async (reques, page) => {
+    await saveScreenshot
+};
+
+/**
  * Method to set up crawler to get all place details and save them to default dataset
  * @param launchPuppeteerOptions
  * @param requestQueue
@@ -200,9 +208,6 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
     };
     if (maxCrawledPlaces) {
         crawlerOpts.maxRequestsPerCrawl = maxCrawledPlaces + 1; // The first one is startUrl
-    }
-    if (!Apify.isAtHome()) {
-        crawlerOpts.maxConcurrency = 2;
     }
     return new Apify.PuppeteerCrawler({
         ...crawlerOpts,
@@ -232,17 +237,24 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
             } catch(err) {
                 // This issue can happen, mostly because proxy IP was blocked by google
                 // Let's refresh IP using browser refresh.
+                await saveHTML(page, `${request.id}.html`);
+                await saveScreenshot(page, `${request.id}.png`);
                 await puppeteerPool.retire(page.browser());
                 throw err;
             }
         },
         handleFailedRequestFunction: async ({ request }) => {
             // This function is called when crawling of a request failed too many time
+            const defaultStore = await Apify.openKeyValueStore();
             await Apify.pushData({
                 '#url': request.url,
                 '#succeeded': false,
                 '#errors': request.errorMessages,
                 '#debugInfo': Apify.utils.createRequestDebugInfo(request),
+                '#debugFiles': {
+                    html: defaultStore.getPublicUrl(`${request.id}.html`),
+                    screen: defaultStore.getPublicUrl(`${request.id}.png`),
+                }
             });
         },
     });
