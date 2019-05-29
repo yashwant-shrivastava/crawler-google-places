@@ -224,6 +224,11 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
             await injectJQuery(page);
 
             try {
+                // Check if Google shows captcha
+                if (await page.$('form#captcha-form')) {
+                    console.log('******\nGoogle shows captcha. This browser will be retired.\n******');
+                    throw new Error('Needs to fill captcha!');
+                }
                 if (label === 'startUrl') {
                     log.info(`Start enqueuing places details for search: ${searchString}`);
                     await enqueueAllPlaceDetails(page, searchString, requestQueue, maxCrawledPlaces, request);
