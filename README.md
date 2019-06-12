@@ -14,8 +14,8 @@ But unlike the Google Maps Places API, the crawler can provide:
 
 If you want to run the actor on Apify platform, you need to have at least a few proxy IPs to avoid blocking from Google. You can use proxy IPs pool on Apify proxy trial or you can subscribe to one of [Apify subscription plan](https://apify.com/pricing).
 It is recommended to run the actor with at least 8GB memory. On Apify platform with 8GB memory you can get:
-- 100 google places details for 4 compute units
-- 100 google places details with images and reviews for 10 compute units -the usage really depends on how many images and reviews specific places have
+- 100 google place details for 4 compute units
+- 100 google place details with images and reviews for 10 compute units -the usage really depends on how many images and reviews specific places have
 
 ## INPUT
 Follow guide on [actor detail page](https://www.apify.com/drobnikj/crawler-google-places) to see how it works.
