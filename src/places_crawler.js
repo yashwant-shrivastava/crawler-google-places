@@ -1,7 +1,7 @@
 const Apify = require('apify');
 
 const { sleep, log } = Apify.utils;
-const { injectJQuery } = Apify.utils.puppeteer;
+const { injectJQuery, blockRequests } = Apify.utils.puppeteer;
 const infiniteScroll = require('./infinite_scroll');
 const { MAX_PAGE_RETRIES, DEFAULT_TIMEOUT, PLACE_TITLE_SEL } = require('./consts');
 const { enqueueAllPlaceDetails } = require('./enqueue_places_crawler');
@@ -151,7 +151,7 @@ const extractPlaceDetail = async (page, includeReviews, includeImages) => {
                 }, reviewEl);
                 detail.reviews.push(review);
             }
-            await page.click('button.section-header-back-button');
+            await page.click('button[jsaction*=back]');
         }  else {
             log.info(`Skipping reviews scraping for url: ${page.url()}`)
         }
@@ -214,6 +214,10 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
         ...crawlerOpts,
         gotoFunction: async ({ request, page }) => {
             await page._client.send('Emulation.clearDeviceMetricsOverride');
+            await blockRequests(page, {
+                urlPatterns: ['/maps/vt/'],
+                includeDefaults: false,
+            });
             await page.goto(request.url, { timeout: 60000 });
         },
         handlePageFunction: async ({ request, page, puppeteerPool }) => {
