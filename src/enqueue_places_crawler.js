@@ -1,7 +1,7 @@
 const Apify = require('apify');
 
 const { sleep, log } = Apify.utils;
-const { DEFAULT_TIMEOUT, LISTING_PAGINATION_KEY } = require('./consts');
+const { DEFAULT_TIMEOUT, LISTING_PAGINATION_KEY, PLACE_TITLE_SEL } = require('./consts');
 const { waitForGoogleMapLoader } = require('./utils');
 
 const clickOnPlaceDetail = async (page, link) => {
@@ -79,13 +79,13 @@ const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxPlace
     await sleep(5000);
     await waitForGoogleMapLoader(page);
     try {
-        await page.waitForSelector('h1.section-hero-header-title');
+        await page.waitForSelector(PLACE_TITLE_SEL);
     } catch (e) {
         // It can happen if there is list of details.
     }
 
     // In case there is not list of details, it enqueues just detail page
-    const maybeDetailPlace = await page.$('h1.section-hero-header-title');
+    const maybeDetailPlace = await page.$(PLACE_TITLE_SEL);
     if (maybeDetailPlace) {
         const url = page.url();
         await requestQueue.addRequest({ url, userData: { label: 'detail' } });

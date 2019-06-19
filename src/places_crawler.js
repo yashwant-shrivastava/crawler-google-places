@@ -3,7 +3,7 @@ const Apify = require('apify');
 const { sleep, log } = Apify.utils;
 const { injectJQuery } = Apify.utils.puppeteer;
 const infiniteScroll = require('./infinite_scroll');
-const { MAX_PAGE_RETRIES, DEFAULT_TIMEOUT } = require('./consts');
+const { MAX_PAGE_RETRIES, DEFAULT_TIMEOUT, PLACE_TITLE_SEL } = require('./consts');
 const { enqueueAllPlaceDetails } = require('./enqueue_places_crawler');
 const { saveHTML, saveScreenshot, waitForGoogleMapLoader } = require('./utils');
 
@@ -15,11 +15,10 @@ const { saveHTML, saveScreenshot, waitForGoogleMapLoader } = require('./utils');
 const extractPlaceDetail = async (page, includeReviews, includeImages) => {
     // Extract basic information
     await waitForGoogleMapLoader(page);
-    const titleSel = 'h1.section-hero-header-title';
-    await page.waitForSelector(titleSel, { timeout: DEFAULT_TIMEOUT });
-    const detail = await page.evaluate(() => {
+    await page.waitForSelector(PLACE_TITLE_SEL, { timeout: DEFAULT_TIMEOUT });
+    const detail = await page.evaluate((placeTitleSel) => {
         return {
-            title: $('h1.section-hero-header-title').text().trim(),
+            title: $(placeTitleSel).text().trim(),
             totalScore: $('span.section-star-display').eq(0).text().trim(),
             categoryName: $('[jsaction="pane.rating.category"]').text().trim(),
             address: $('[data-section-id="ad"] .widget-pane-link').text().trim(),
@@ -29,7 +28,7 @@ const extractPlaceDetail = async (page, includeReviews, includeImages) => {
                 ? $('[data-section-id="pn0"].section-info-speak-numeral').attr('data-href').replace('tel:', '')
                 : null,
         };
-    });
+    }, PLACE_TITLE_SEL);
 
     // Extract gps from URL
     const url = page.url();
@@ -160,7 +159,7 @@ const extractPlaceDetail = async (page, includeReviews, includeImages) => {
 
     // Extract place images
     if (includeImages) {
-        await page.waitForSelector(titleSel, { timeout: DEFAULT_TIMEOUT });
+        await page.waitForSelector(PLACE_TITLE_SEL, { timeout: DEFAULT_TIMEOUT });
         const imagesButtonSel = '.section-image-pack-image-container';
         const imagesButton = await page.$(imagesButtonSel);
         if (imagesButton) {
