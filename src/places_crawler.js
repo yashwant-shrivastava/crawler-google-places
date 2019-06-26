@@ -198,10 +198,11 @@ const saveScreenForDebug = async (reques, page) => {
  * @param maxCrawledPlaces
  * @return {Apify.PuppeteerCrawler}
  */
-const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, includeReviews, includeImages, startUrlsCount = 1) => {
+const setUpCrawler = (launchPuppeteerOptions, requestQueue, requestList, maxCrawledPlaces, includeReviews, includeImages, startUrlsCount = 1) => {
     const crawlerOpts = {
         launchPuppeteerOptions,
         requestQueue,
+        requestList,
         maxRequestRetries: MAX_PAGE_RETRIES, // Sometimes page can failed because of blocking proxy IP by Google
         retireInstanceAfterRequestCount: 250,
         handlePageTimeoutSecs: 15 * 60, // long timeout, because of startUrl enqueueing
