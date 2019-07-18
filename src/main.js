@@ -19,16 +19,7 @@ Apify.main(async () => {
     log.info('Scraping Google Places for search string:', searchString);
 
     const startUrls = [];
-    const requestQueue = await Apify.openRequestQueue();
-    if (searchString.includes('place_id:')) {
-        /**
-         * User can use place_id:<Google place ID> as search query
-         * TODO: Move place id to separate fields, once we have dependent fields. Than user can fill placeId or search query.
-         */
-        log.info(`Place ID found in search query. We will extract data from ${searchString}.`);
-        const placeUrl = `https://www.google.com/maps/place/?q=${searchString.replace(/\s+/g, '')}`;
-        await requestQueue.addRequest({ url: placeUrl, userData: { label: 'placeDetail' } });
-    } else if (lat || lng) {
+    if (lat || lng) {
         const { zoom = 10 } = input;
         if (!lat || !lng) throw new Error('You have to defined lat and lng!');
         startUrls.push(`https://www.google.com/maps/@${lat},${lng},${zoom}z/search`);
@@ -49,19 +40,27 @@ Apify.main(async () => {
         startUrls.push('https://www.google.com/maps/search/');
     }
 
-    log.info('Number of start url is', startUrls.length);
+    log.info('Start url is', startUrls);
+    const requestQueue = await Apify.openRequestQueue();
+    /**
+     * User can use place_id:<Google place ID> as search query
+     * TODO: Move place id to separate fields, once we have dependent fields. Than user can fill placeId or search query.
+     */
+    if (searchString.includes('place_id:')) {
+        log.info(`Place ID found in search query. We will extract data from ${searchString}.`);
+        const placeUrl = `https://www.google.com/maps/place/?q=${searchString.replace(/\s+/g, '')}`;
+        await requestQueue.addRequest({ url: placeUrl, userData: { label: 'placeDetail' } });
+    } else {
+        for (const url of startUrls) {
+            await requestQueue.addRequest({ url, userData: { label: 'startUrl', searchString } });
+        }
+    }
 
     const launchPuppeteerOptions = {};
     if (proxyConfig) Object.assign(launchPuppeteerOptions, proxyConfig);
 
     // Create and run crawler
-    const requestList = new Apify.RequestList({
-        sources: startUrls.map((url) => ({ url, userData: { label: 'startUrl', searchString } })),
-        persistStateKey: 'startUrls',
-        persistSourcesKey: 'startUrlsSources',
-    });
-    await requestList.initialize();
-    const crawler = placesCrawler.setUpCrawler(launchPuppeteerOptions, requestQueue, requestList,
+    const crawler = placesCrawler.setUpCrawler(launchPuppeteerOptions, requestQueue,
         maxCrawledPlaces, includeReviews, includeImages, startUrls.length);
     await crawler.run();
 
