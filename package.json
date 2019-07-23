@@ -25,6 +25,7 @@
   "homepage": "https://github.com/drobnikj/crawler-google-places#readme",
   "dependencies": {
     "apify": "^0.14.15",
+    "lodash": "^4.17.15",
     "request": "^2.88.0",
     "request-promise": "^4.2.4"
   },
