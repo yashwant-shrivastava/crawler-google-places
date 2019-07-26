@@ -119,7 +119,7 @@ const extractPlaceDetail = async (page, includeReviews, includeImages) => {
                 // It can happen, it is not big issue :)
                 log.debug('Cannot select reviews by newest!');
             }
-            await infiniteScroll(page, 99999999999, '.section-scrollbox.section-listbox', 'reviews list');
+            await infiniteScroll(page, 99999999999, '.section-scrollbox.scrollable-y', 'reviews list');
             const reviewEls = await page.$$('div.section-review');
             for (const reviewEl of reviewEls) {
                 const moreButton = await reviewEl.$('.section-expand-review');
@@ -165,7 +165,7 @@ const extractPlaceDetail = async (page, includeReviews, includeImages) => {
         if (imagesButton) {
             await sleep(2000);
             await imagesButton.click();
-            await infiniteScroll(page, 99999999999, '.section-scrollbox.section-listbox', 'images list');
+            await infiniteScroll(page, 99999999999, '.section-scrollbox.scrollable-y', 'images list');
             detail.imageUrls = await page.evaluate(() => {
                 const urls = [];
                 $('.gallery-image-high-res').each(function () {
@@ -215,7 +215,7 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
         gotoFunction: async ({ request, page }) => {
             await page._client.send('Emulation.clearDeviceMetricsOverride');
             await blockRequests(page, {
-                urlPatterns: ['/maps/vt/'],
+                urlPatterns: ['/maps/vt/', '/earth/BulkMetadata/', 'googleusercontent.com'],
                 includeDefaults: false,
             });
             await page.goto(request.url, { timeout: 60000 });
