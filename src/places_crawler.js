@@ -198,7 +198,7 @@ const saveScreenForDebug = async (reques, page) => {
  * @param maxCrawledPlaces
  * @return {Apify.PuppeteerCrawler}
  */
-const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, includeReviews, includeImages, startUrlsCount = 1) => {
+const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, includeReviews, includeImages) => {
     const crawlerOpts = {
         launchPuppeteerOptions,
         requestQueue,

@@ -41,7 +41,7 @@ const enqueueAllUrlsFromPagination = async (page, requestQueue, paginationFrom, 
         await requestQueue.addRequest({ url, uniqueKey, userData: { label: 'detail' } }, { forefront: true });
         log.info(`Added place detail to queue, url: ${url}`);
         if (maxPlacesPerCrawl && paginationFrom + resultIndex + 1 > maxPlacesPerCrawl) {
-            log.info(`Reach max places per crawl ${maxPlacesPerCrawl}, stopped enqueuing new places.`);
+            log.info(`Reach max places per search ${maxPlacesPerCrawl}, stopped enqueuing new places.`);
             return true;
         }
         const goBack = async () => {
