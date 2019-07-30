@@ -12,7 +12,7 @@ const { saveHTML, saveScreenshot, waitForGoogleMapLoader } = require('./utils');
  * This is the worst part - parsing data from place detail
  * @param page
  */
-const extractPlaceDetail = async (page, includeReviews, includeImages) => {
+const extractPlaceDetail = async (page, searchString, includeReviews, includeImages, includeHistogram, includeOpeningHours) => {
     // Extract basic information
     await waitForGoogleMapLoader(page);
     await page.waitForSelector(PLACE_TITLE_SEL, { timeout: DEFAULT_TIMEOUT });
@@ -37,55 +37,61 @@ const extractPlaceDetail = async (page, includeReviews, includeImages) => {
         detail.location = { lat: parseFloat(latMatch), lng: parseFloat(lngMatch) };
     }
 
+    // Include search string
+    detail.searchString = searchString;
 
     // Extract histogram for popular times
-    const histogramSel = '.section-popular-times';
-    if (await page.$(histogramSel)) {
-        detail.popularTimesHistogram = await page.evaluate(() => {
-            const graphs = {};
-            const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-            // Extract all days graphs
-            $('.section-popular-times-graph').each(function(i) {
-                const day = days[i];
-                graphs[day] = [];
-                let graphStartFromHour;
-                // Finds where x axis starts
-                $(this).find('.section-popular-times-label').each(function(labelIndex) {
-                    if (graphStartFromHour) return;
-                    const hourText = $(this).text().trim();
-                    graphStartFromHour = hourText.includes('p')
-                        ? 12 + (parseInt(hourText) - labelIndex)
-                        : parseInt(hourText) - labelIndex;
+    if (includeHistogram) {
+        const histogramSel = '.section-popular-times';
+        if (await page.$(histogramSel)) {
+            detail.popularTimesHistogram = await page.evaluate(() => {
+                const graphs = {};
+                const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+                // Extract all days graphs
+                $('.section-popular-times-graph').each(function (i) {
+                    const day = days[i];
+                    graphs[day] = [];
+                    let graphStartFromHour;
+                    // Finds where x axis starts
+                    $(this).find('.section-popular-times-label').each(function (labelIndex) {
+                        if (graphStartFromHour) return;
+                        const hourText = $(this).text().trim();
+                        graphStartFromHour = hourText.includes('p')
+                            ? 12 + (parseInt(hourText) - labelIndex)
+                            : parseInt(hourText) - labelIndex;
+                    });
+                    // Finds values from y axis
+                    $(this).find('.section-popular-times-bar').each(function (barIndex) {
+                        const occupancyMatch = $(this).attr('aria-label').match(/\d+(\s+)?%/);
+                        if (occupancyMatch && occupancyMatch.length) {
+                            const maybeHour = graphStartFromHour + barIndex;
+                            graphs[day].push({
+                                hour: maybeHour > 24 ? maybeHour - 24 : maybeHour,
+                                occupancyPercent: parseInt(occupancyMatch[0]),
+                            });
+                        }
+                    });
                 });
-                // Finds values from y axis
-                $(this).find('.section-popular-times-bar').each(function (barIndex) {
-                    const occupancyMatch = $(this).attr('aria-label').match(/\d+(\s+)?%/);
-                    if (occupancyMatch && occupancyMatch.length) {
-                        const maybeHour = graphStartFromHour + barIndex;
-                        graphs[day].push({
-                            hour: maybeHour > 24 ? maybeHour - 24 : maybeHour,
-                            occupancyPercent: parseInt(occupancyMatch[0]),
-                        });
-                    }
-                });
+                return graphs;
             });
-            return graphs;
-        });
+        }
     }
 
     // Extract opening hours
-    const openingHoursSel = '.section-open-hours-container.section-open-hours-container-hoverable';
-    if (await page.$(openingHoursSel)) {
-        const openingHoursText = await page.evaluate(() => {
-            return $('.section-open-hours-container.section-open-hours-container-hoverable').attr('aria-label');
-        });
-        const openingHours = openingHoursText.split(',');
-        if (openingHours.length) {
-            detail.openingHours = openingHours.map((line) => {
-                let [ match, day, hours ] = line.match(/(\S+)\s(.*)/);
-                hours = hours.split('.')[0];
-                return { day, hours };
-            })
+    if (includeOpeningHours) {
+        const openingHoursSel = '.section-open-hours-container.section-open-hours-container-hoverable';
+        if (await page.$(openingHoursSel)) {
+            const openingHoursText = await page.evaluate(() => {
+                return $('.section-open-hours-container.section-open-hours-container-hoverable').attr('aria-label');
+            });
+            const openingHours = openingHoursText.split(',');
+            if (openingHours.length) {
+                detail.openingHours = openingHours.map((line) => {
+                    let [match, day, hours] = line.match(/(\S+)\s(.*)/);
+                    hours = hours.split('.')[0];
+                    return {day, hours};
+                })
+            }
         }
     }
 
@@ -198,7 +204,7 @@ const saveScreenForDebug = async (reques, page) => {
  * @param maxCrawledPlaces
  * @return {Apify.PuppeteerCrawler}
  */
-const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, includeReviews, includeImages) => {
+const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, includeReviews, includeImages, includeHistogram, includeOpeningHours) => {
     const crawlerOpts = {
         launchPuppeteerOptions,
         requestQueue,
@@ -236,7 +242,7 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
                 } else {
                     // Get data for place and save it to dataset
                     log.info(`Extracting details from place url ${request.url}`);
-                    const placeDetail = await extractPlaceDetail(page, includeReviews, includeImages);
+                    const placeDetail = await extractPlaceDetail(page, searchString, includeReviews, includeImages, includeHistogram, includeOpeningHours);
                     placeDetail.url = request.url;
                     await Apify.pushData(placeDetail);
                     log.info(`Finished place url ${request.url}`);

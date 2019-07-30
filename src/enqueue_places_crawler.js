@@ -10,7 +10,7 @@ const clickOnPlaceDetail = async (page, link) => {
     await sleep(1000);
 };
 
-const enqueueAllUrlsFromPagination = async (page, requestQueue, paginationFrom, maxPlacesPerCrawl) => {
+const enqueueAllUrlsFromPagination = async (page, requestQueue, searchString, paginationFrom, maxPlacesPerCrawl) => {
     let results = await page.$$('.section-result');
     const resultsCount = results.length;
     const searchBoxSelector = '.searchbox';
@@ -38,7 +38,7 @@ const enqueueAllUrlsFromPagination = async (page, requestQueue, paginationFrom, 
         const plusCode = await page.evaluate(() => $('[data-section-id="ol"] .widget-pane-link').text().trim());
         const uniqueKey = placeName + plusCode;
         log.debug(`${url} with uniqueKey ${uniqueKey} is adding to queue.`);
-        await requestQueue.addRequest({ url, uniqueKey, userData: { label: 'detail' } }, { forefront: true });
+        await requestQueue.addRequest({ url, uniqueKey, userData: { label: 'detail', searchString } }, { forefront: true });
         log.info(`Added place detail to queue, url: ${url}`);
         if (maxPlacesPerCrawl && paginationFrom + resultIndex + 1 > maxPlacesPerCrawl) {
             log.info(`Reach max places per search ${maxPlacesPerCrawl}, stopped enqueuing new places.`);
@@ -88,7 +88,8 @@ const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxPlace
     const maybeDetailPlace = await page.$(PLACE_TITLE_SEL);
     if (maybeDetailPlace) {
         const url = page.url();
-        await requestQueue.addRequest({ url, userData: { label: 'detail' } });
+        const {searchString} = request.userData;
+        await requestQueue.addRequest({ url, userData: { label: 'detail', searchString } });
         return;
     }
 
@@ -105,7 +106,7 @@ const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxPlace
             log.debug(`Skiped pagination ${from} - ${to}, already done!`);
         } else {
             log.debug(`Added links from pagination ${from} - ${to}`);
-            isFinished = await enqueueAllUrlsFromPagination(page, requestQueue, from, maxPlacesPerCrawl);
+            isFinished = await enqueueAllUrlsFromPagination(page, requestQueue, searchString, from, maxPlacesPerCrawl);
             listingPagination.from = from;
             listingPagination.to = to;
             await Apify.setValue(listingStateKey, listingPagination);

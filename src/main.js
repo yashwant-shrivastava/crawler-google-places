@@ -7,7 +7,7 @@ const { log } = Apify.utils;
 Apify.main(async () => {
     const input = await Apify.getValue('INPUT');
     const { searchString, searchStringsArray, proxyConfig, lat, lng, maxCrawledPlaces, regularTestRun,
-        includeReviews = true, includeImages = true, walker } = input;
+        includeReviews = true, includeImages = true, includeHistogram = true, includeOpeningHours = true, walker } = input;
 
     if (!searchString && !searchStringsArray) throw new Error('Attribute searchString or searchStringsArray is missing in input.');
 
@@ -67,7 +67,7 @@ Apify.main(async () => {
 
     // Create and run crawler
     const crawler = placesCrawler.setUpCrawler(launchPuppeteerOptions, requestQueue,
-        maxCrawledPlaces, includeReviews, includeImages);
+        maxCrawledPlaces, includeReviews, includeImages, includeHistogram, includeOpeningHours);
     await crawler.run();
 
     if (regularTestRun) {
