@@ -30,6 +30,18 @@
       "description": "If checked the crawler scrapes all images for all places. You can speed up crawling if you disable images.",
       "default": true
     },
+    "includeHistogram": {
+      "title": "Include popular times",
+      "type": "boolean",
+      "description": "If checked the crawler scrapes popular times for all places. You can speed up crawling if you disable this.",
+      "default": true
+    },
+    "includeOpeningHours": {
+      "title": "Include opening hours",
+      "type": "boolean",
+      "description": "If checked the crawler scrapes opening hours for all places. You can speed up crawling if you disable this.",
+      "default": true
+    },
     "lat": {
       "title": "Viewport point latitude",
       "type": "string",
