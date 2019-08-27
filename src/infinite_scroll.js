@@ -77,8 +77,12 @@ module.exports = async (page, maxHeight, elementToScroll = 'body', scrollName) =
     logInfo(`Infinite scroll for ${scrollName} started, url: ${page.url()}`);
 
     let previousReviewsCount = 0;
+    // NOTE: In can there are too many reviews like 5K plus. The infinite scroll stops working, but the loader is still there.
+    // This unsure that we stop it after 5 tries
+    let triesWithJustLoader = 0;
     while (true) {
-        scrollInfo = await getPageScrollInfo(page, elementToScroll);
+        const updatedScrollInfo = await getPageScrollInfo(page, elementToScroll);
+        Object.assign(scrollInfo, updatedScrollInfo);
 
         // Forget pending resources that didn't finish loading in time
         const now = Date.now();
@@ -107,14 +111,20 @@ module.exports = async (page, maxHeight, elementToScroll = 'body', scrollName) =
              */
             if (reviewsCount === previousReviewsCount
                     && (scrollInfo.scrollTop + scrollInfo.clientHeight >= Math.min(scrollInfo.scrollHeight, maxHeight))
-                    && !scrollInfo.isLoaderOnPage
+                    && (!scrollInfo.isLoaderOnPage || triesWithJustLoader > 5)
             ) break;
+            if (reviewsCount === previousReviewsCount
+                && (scrollInfo.scrollTop + scrollInfo.clientHeight >= Math.min(scrollInfo.scrollHeight, maxHeight))) {
+                ++triesWithJustLoader;
+            }
             previousReviewsCount = reviewsCount;
 
             logDebug(`Infinite scroll stats (${stringifyScrollInfo(scrollInfo)} resourcesStats=${JSON.stringify(resourcesStats)}).`);
 
             // Otherwise we try to scroll down
             await scrollTo(page, elementToScroll, maxHeight);
+        } else {
+            triesWithJustLoader = 0;
         }
         await sleep(defaultScrollDelay);
     }
