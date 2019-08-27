@@ -37,7 +37,8 @@ module.exports = async (page, maxHeight, elementToScroll = 'body', scrollName) =
         return `scrollTop=${scrollInfo.scrollTop}, `
             + `clientHeight=${scrollInfo.clientHeight}, `
             + `scrollHeight=${scrollInfo.scrollHeight}, `
-            + `maxHeight=${maxHeight}`;
+            + `maxHeight=${maxHeight}`
+            + `isLoaderOnPage=${scrollInfo.isLoaderOnPage}`;
     };
     const defaultScrollDelay = 3000;
     const defaultElementTimeout = 60000;
@@ -96,7 +97,7 @@ module.exports = async (page, maxHeight, elementToScroll = 'body', scrollName) =
 
         // We have to wait if all xhrs are finished
         if (pendingRequestsCount === 0) {
-            const isLoaderOnPage = await page.evaluate(() => {
+            scrollInfo.isLoaderOnPage = await page.evaluate(() => {
                 const loader = $('.section-loading-spinner');
                 if (loader) return loader.parent().attr('style') !== 'display: none;';
             });
@@ -108,7 +109,7 @@ module.exports = async (page, maxHeight, elementToScroll = 'body', scrollName) =
              */
             if (reviewsCount === previousReviewsCount
                     && (scrollInfo.scrollTop + scrollInfo.clientHeight >= Math.min(scrollInfo.scrollHeight, maxHeight))
-                    && !isLoaderOnPage
+                    && !scrollInfo.isLoaderOnPage
             ) break;
             previousReviewsCount = reviewsCount;
 
