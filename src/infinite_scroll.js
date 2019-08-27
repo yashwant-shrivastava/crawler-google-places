@@ -37,7 +37,7 @@ module.exports = async (page, maxHeight, elementToScroll = 'body', scrollName) =
         return `scrollTop=${scrollInfo.scrollTop}, `
             + `clientHeight=${scrollInfo.clientHeight}, `
             + `scrollHeight=${scrollInfo.scrollHeight}, `
-            + `maxHeight=${maxHeight}`
+            + `maxHeight=${maxHeight} `
             + `isLoaderOnPage=${scrollInfo.isLoaderOnPage}`;
     };
     const defaultScrollDelay = 3000;
@@ -91,8 +91,6 @@ module.exports = async (page, maxHeight, elementToScroll = 'body', scrollName) =
                 }
             });
 
-        logDebug(`Infinite scroll stats (${stringifyScrollInfo(scrollInfo)} resourcesStats=${JSON.stringify(resourcesStats)}).`);
-
         const pendingRequestsCount = resourcesStats.requested - (resourcesStats.finished + resourcesStats.failed + resourcesStats.forgotten);
 
         // We have to wait if all xhrs are finished
@@ -112,6 +110,8 @@ module.exports = async (page, maxHeight, elementToScroll = 'body', scrollName) =
                     && !scrollInfo.isLoaderOnPage
             ) break;
             previousReviewsCount = reviewsCount;
+
+            logDebug(`Infinite scroll stats (${stringifyScrollInfo(scrollInfo)} resourcesStats=${JSON.stringify(resourcesStats)}).`);
 
             // Otherwise we try to scroll down
             await scrollTo(page, elementToScroll, maxHeight);
