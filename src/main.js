@@ -10,6 +10,10 @@ Apify.main(async () => {
         includeReviews = true, includeImages = true, includeHistogram = true, includeOpeningHours = true, walker } = input;
 
     if (!searchString && !searchStringsArray) throw new Error('Attribute searchString or searchStringsArray is missing in input.');
+    if (proxyConfig && proxyConfig.apifyProxyGroups
+        && (proxyConfig.apifyProxyGroups.includes('GOOGLESERP') || proxyConfig.apifyProxyGroups.includes('GOOGLE_SERP'))) {
+        throw new Error('It is not possible to crawl google places with GOOGLE SERP proxy group. Please use a different one and rerun crawler.');
+    }
 
     log.info('Scraping Google Places for search string:', searchString);
 
