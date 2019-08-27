@@ -210,7 +210,7 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
         requestQueue,
         maxRequestRetries: MAX_PAGE_RETRIES, // Sometimes page can failed because of blocking proxy IP by Google
         retireInstanceAfterRequestCount: 250,
-        handlePageTimeoutSecs: 15 * 60, // long timeout, because of startUrl enqueueing
+        handlePageTimeoutSecs: 30 * 60, // long timeout, because of long infinite scroll
         maxOpenPagesPerInstance: 1, // because of startUrl enqueueing crashes if we mix tabs with another scraping
     };
     return new Apify.PuppeteerCrawler({
