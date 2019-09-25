@@ -23,6 +23,7 @@ const enqueueAllUrlsFromPagination = async (page, requestQueue, searchString, pa
         }, { timeout: DEFAULT_TIMEOUT }, resultIndex);
         results = await page.$$('.section-result');
         const link = await results[resultIndex].$('h3');
+        const shownAsAd = await results[resultIndex].$eval('.section-ads-placecard', el => $(el).css('display') !== 'none');
         await clickOnPlaceDetail(page, link);
         // If there is still list of places ,try to click again
         if (await page.$('.section-result')) {
@@ -38,7 +39,7 @@ const enqueueAllUrlsFromPagination = async (page, requestQueue, searchString, pa
         const plusCode = await page.evaluate(() => $('[data-section-id="ol"] .widget-pane-link').text().trim());
         const uniqueKey = placeName + plusCode;
         log.debug(`${url} with uniqueKey ${uniqueKey} is adding to queue.`);
-        await requestQueue.addRequest({ url, uniqueKey, userData: { label: 'detail', searchString } }, { forefront: true });
+        await requestQueue.addRequest({ url, uniqueKey, userData: { label: 'detail', searchString, shownAsAd, rank: paginationFrom + resultIndex + 1 } }, { forefront: true });
         log.info(`Added place detail to queue, url: ${url}`);
         if (maxPlacesPerCrawl && paginationFrom + resultIndex + 1 > maxPlacesPerCrawl) {
             log.info(`Reach max places per search ${maxPlacesPerCrawl}, stopped enqueuing new places.`);
