@@ -38,6 +38,14 @@ On this input actor searches places on this start url: https://www.google.com/ma
 - `zoom` - Viewport zoom, e.g zoom: 10 -> https://www.google.com/maps/@50.0860729,14.4135326,10z vs zoom: 1 -> https://www.google.com/maps/@50.0860729,14.4135326,10z
 - `maxCrawledPlaces` - Limit places you want to get from crawler
 
+You can exclude some attributes from results using input parameters. It can help to speed up crawling.
+You need to set the attribute to `false`.
+- `includeReviews`
+- `includeImages`
+- `includeHistogram`
+- `includeOpeningHours`
+- `includePeopleAlsoSearch`
+
 ## OUTPUT
 Once the actor finishes, it outputs results to actor default dataset.
 
