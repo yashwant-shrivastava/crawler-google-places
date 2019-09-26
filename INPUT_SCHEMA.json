@@ -42,7 +42,7 @@
       "description": "If checked the crawler scrapes opening hours for all places. You can speed up crawling if you disable this.",
       "default": true
     },
-    "includePeopleAlsoSearch": {
+    "includePeopleAlsoSearch[BETA]": {
       "title": "Include people also search",
       "type": "boolean",
       "description": "If checked the crawler scrape \"people also search\" for all places. You can speed up crawling if you disable this.",
