@@ -249,7 +249,6 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
         retireInstanceAfterRequestCount: 250,
         handlePageTimeoutSecs: 15 * 60, // long timeout, because of startUrl enqueueing
         maxOpenPagesPerInstance: 1, // because of startUrl enqueueing crashes if we mix tabs with another scraping
-        maxConcurrency: 1,
     };
     return new Apify.PuppeteerCrawler({
         ...crawlerOpts,
