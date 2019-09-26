@@ -71,7 +71,7 @@ Apify.main(async () => {
 
     // Create and run crawler
     const crawler = placesCrawler.setUpCrawler(launchPuppeteerOptions, requestQueue,
-        maxCrawledPlaces, includeReviews, includeImages, includeHistogram, includeOpeningHours);
+        maxCrawledPlaces, input);
     await crawler.run();
 
     if (regularTestRun) {

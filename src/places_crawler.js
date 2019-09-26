@@ -7,12 +7,11 @@ const { MAX_PAGE_RETRIES, DEFAULT_TIMEOUT, PLACE_TITLE_SEL } = require('./consts
 const { enqueueAllPlaceDetails } = require('./enqueue_places_crawler');
 const { saveHTML, saveScreenshot, waitForGoogleMapLoader } = require('./utils');
 
-
 /**
  * This is the worst part - parsing data from place detail
  * @param page
  */
-const extractPlaceDetail = async (page, searchString, includeReviews, includeImages, includeHistogram, includeOpeningHours) => {
+const extractPlaceDetail = async (page, request, searchString, includeReviews, includeImages, includeHistogram, includeOpeningHours, includePeopleAlsoSearch) => {
     // Extract basic information
     await waitForGoogleMapLoader(page);
     await page.waitForSelector(PLACE_TITLE_SEL, { timeout: DEFAULT_TIMEOUT });
@@ -29,6 +28,11 @@ const extractPlaceDetail = async (page, searchString, includeReviews, includeIma
                 : null,
         };
     }, PLACE_TITLE_SEL);
+
+    // Add info from listing page
+    const { userData } = request;
+    detail.shownAsAd = userData.shownAsAd;
+    detail.rank = userData.rank;
 
     // Extract gps from URL
     const url = page.url();
@@ -95,6 +99,37 @@ const extractPlaceDetail = async (page, searchString, includeReviews, includeIma
         }
     }
 
+    // Extract "People also search"
+    const peopleSearchContainer = await page.$('.section-carousel-scroll-container');
+    if (peopleSearchContainer && includePeopleAlsoSearch) {
+        detail.peopleAlsoSearch = [];
+        const cardSel = 'button[class$="card"]';
+        const cards = await peopleSearchContainer.$$(cardSel);
+        for (let i = 0;i < cards.length; i++) {
+            const searchResult = await page.evaluate((index, sel) => {
+                const card = $(sel).eq(index);
+                return {
+                    title: card.find('div[class$="title"]').text().trim(),
+                    totalScore: card.find('span[class$="rating"]').text().trim(),
+                }
+            }, i, cardSel);
+            // For some reason, puppeteer click doesn't work here
+            await Promise.all([
+                page.evaluate((button, index) => {
+                    $(button).eq(index).click();
+                }, cardSel, i),
+                page.waitForNavigation({ waitUntil: [ 'domcontentloaded', 'networkidle2' ] }),
+            ]);
+            searchResult.url = await page.url();
+            detail.peopleAlsoSearch.push(searchResult);
+            await Promise.all([
+                page.goBack({ waitUntil: [ 'domcontentloaded', 'networkidle2' ] }),
+                waitForGoogleMapLoader(page)
+            ]);
+        }
+    }
+
+    // Extract reviews
     const reviewsButtonSel = 'button[jsaction="pane.reviewChart.moreReviews"]';
     if (detail.totalScore) {
         detail.totalScore = parseFloat(detail.totalScore.replace(',', '.'));
@@ -187,6 +222,7 @@ const extractPlaceDetail = async (page, searchString, includeReviews, includeIma
     } else {
         log.info(`Skipping images scraping for url: ${page.url()}`)
     }
+
     return detail;
 };
 
@@ -204,7 +240,8 @@ const saveScreenForDebug = async (reques, page) => {
  * @param maxCrawledPlaces
  * @return {Apify.PuppeteerCrawler}
  */
-const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, includeReviews, includeImages, includeHistogram, includeOpeningHours) => {
+const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, input) => {
+    const { includeReviews, includeImages, includeHistogram, includeOpeningHours, includePeopleAlsoSearch } = input;
     const crawlerOpts = {
         launchPuppeteerOptions,
         requestQueue,
@@ -242,7 +279,8 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
                 } else {
                     // Get data for place and save it to dataset
                     log.info(`Extracting details from place url ${request.url}`);
-                    const placeDetail = await extractPlaceDetail(page, searchString, includeReviews, includeImages, includeHistogram, includeOpeningHours);
+                    const placeDetail = await extractPlaceDetail(page, request, searchString, includeReviews, includeImages,
+                        includeHistogram, includeOpeningHours, includePeopleAlsoSearch);
                     placeDetail.url = request.url;
                     await Apify.pushData(placeDetail);
                     log.info(`Finished place url ${request.url}`);

@@ -6,8 +6,11 @@ const { waitForGoogleMapLoader } = require('./utils');
 
 const clickOnPlaceDetail = async (page, link) => {
     await link.click();
-    await waitForGoogleMapLoader(page);
-    await sleep(1000);
+    await Promise.all([
+        waitForGoogleMapLoader(page),
+        page.waitForNavigation({ waitUntil: [ 'domcontentloaded', 'networkidle2' ] }),
+        sleep(2000),
+    ]);
 };
 
 const enqueueAllUrlsFromPagination = async (page, requestQueue, searchString, paginationFrom, maxPlacesPerCrawl) => {
@@ -23,6 +26,7 @@ const enqueueAllUrlsFromPagination = async (page, requestQueue, searchString, pa
         }, { timeout: DEFAULT_TIMEOUT }, resultIndex);
         results = await page.$$('.section-result');
         const link = await results[resultIndex].$('h3');
+        const shownAsAd = await results[resultIndex].$eval('.section-ads-placecard', el => $(el).css('display') !== 'none');
         await clickOnPlaceDetail(page, link);
         // If there is still list of places ,try to click again
         if (await page.$('.section-result')) {
@@ -38,8 +42,9 @@ const enqueueAllUrlsFromPagination = async (page, requestQueue, searchString, pa
         const plusCode = await page.evaluate(() => $('[data-section-id="ol"] .widget-pane-link').text().trim());
         const uniqueKey = placeName + plusCode;
         log.debug(`${url} with uniqueKey ${uniqueKey} is adding to queue.`);
-        await requestQueue.addRequest({ url, uniqueKey, userData: { label: 'detail', searchString } }, { forefront: true });
-        log.info(`Added place detail to queue, url: ${url}`);
+        const rank = paginationFrom + resultIndex;
+        await requestQueue.addRequest({ url, uniqueKey, userData: { label: 'detail', searchString, shownAsAd, rank } }, { forefront: true });
+        log.info(`Added place detail to queue, url: ${url}, with rank ${rank}`);
         if (maxPlacesPerCrawl && paginationFrom + resultIndex + 1 > maxPlacesPerCrawl) {
             log.info(`Reach max places per search ${maxPlacesPerCrawl}, stopped enqueuing new places.`);
             return true;
@@ -52,7 +57,7 @@ const enqueueAllUrlsFromPagination = async (page, requestQueue, searchString, pa
             } catch (e) {
                 // link didn't work in some case back, it tries page goBack instead
                 log.debug(`${url} Go back link didn't work, try to goback using pptr function`);
-                await page.goBack();
+                await page.goBack({ waitUntil: ['domcontentloaded', 'networkidle2'] });
             }
         };
         await sleep(1000); // 2019-05-03: This needs to be here, otherwise goBack() doesn't work
