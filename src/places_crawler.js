@@ -118,13 +118,12 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
                 page.evaluate((button, index) => {
                     $(button).eq(index).click();
                 }, cardSel, i),
-                page.waitForNavigation({ waitUntil: [ 'domcontentloaded' ] }),
+                page.waitForNavigation({ waitUntil: [ 'domcontentloaded', 'networkidle2' ] }),
             ]);
-            // console.log(requests)
             searchResult.url = await page.url();
             detail.peopleAlsoSearch.push(searchResult);
             await Promise.all([
-                page.goBack({ waitUntil: [ 'domcontentloaded' ] }),
+                page.goBack({ waitUntil: [ 'domcontentloaded', 'networkidle2' ] }),
                 waitForGoogleMapLoader(page)
             ]);
         }
