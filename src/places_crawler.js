@@ -249,6 +249,7 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
         retireInstanceAfterRequestCount: 250,
         handlePageTimeoutSecs: 30 * 60, // long timeout, because of long infinite scroll
         maxOpenPagesPerInstance: 1, // because of startUrl enqueueing crashes if we mix tabs with another scraping
+        // maxConcurrency: 1,
     };
     return new Apify.PuppeteerCrawler({
         ...crawlerOpts,
@@ -256,7 +257,6 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
             await page._client.send('Emulation.clearDeviceMetricsOverride');
             await blockRequests(page, {
                 urlPatterns: ['/maps/vt/', '/earth/BulkMetadata/', 'googleusercontent.com'],
-                includeDefaults: false,
             });
             await page.goto(request.url, { timeout: 60000 });
         },

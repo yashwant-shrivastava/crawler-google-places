@@ -8,7 +8,7 @@ const clickOnPlaceDetail = async (page, link) => {
     await link.click();
     await Promise.all([
         waitForGoogleMapLoader(page),
-        page.waitForNavigation({ waitUntil: [ 'domcontentloaded', 'networkidle2' ] }),
+        page.waitForNavigation({ timeout: 60000, waitUntil: ['domcontentloaded'] }),
         sleep(2000),
     ]);
 };
