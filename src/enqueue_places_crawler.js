@@ -5,10 +5,11 @@ const { DEFAULT_TIMEOUT, LISTING_PAGINATION_KEY, PLACE_TITLE_SEL } = require('./
 const { waitForGoogleMapLoader } = require('./utils');
 
 const clickOnPlaceDetail = async (page, link) => {
+    await link.focus();
     await link.click();
     await Promise.all([
         waitForGoogleMapLoader(page),
-        page.waitForNavigation({ timeout: 60000, waitUntil: ['domcontentloaded'] }),
+        page.waitForNavigation({ timeout: 60000, waitUntil: ['networkidle2'] }),
         sleep(2000),
     ]);
 };
