@@ -4,16 +4,6 @@ const { sleep, log } = Apify.utils;
 const { DEFAULT_TIMEOUT, LISTING_PAGINATION_KEY, PLACE_TITLE_SEL } = require('./consts');
 const { waitForGoogleMapLoader } = require('./utils');
 
-// const clickOnPlaceDetail = async (page, link) => {
-//     await link.focus();
-//     await link.click();
-//     await Promise.all([
-//         waitForGoogleMapLoader(page),
-//         page.waitForNavigation(),
-//         sleep(2000),
-//     ]);
-// };
-
 const clickOnPlaceDetail = async (page, link) => {
     await link.focus();
     await link.click();
