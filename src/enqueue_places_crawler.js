@@ -4,14 +4,21 @@ const { sleep, log } = Apify.utils;
 const { DEFAULT_TIMEOUT, LISTING_PAGINATION_KEY, PLACE_TITLE_SEL } = require('./consts');
 const { waitForGoogleMapLoader } = require('./utils');
 
+// const clickOnPlaceDetail = async (page, link) => {
+//     await link.focus();
+//     await link.click();
+//     await Promise.all([
+//         waitForGoogleMapLoader(page),
+//         page.waitForNavigation(),
+//         sleep(2000),
+//     ]);
+// };
+
 const clickOnPlaceDetail = async (page, link) => {
     await link.focus();
     await link.click();
-    await Promise.all([
-        waitForGoogleMapLoader(page),
-        page.waitForNavigation({ timeout: 60000, waitUntil: ['load'] }),
-        sleep(2000),
-    ]);
+    await waitForGoogleMapLoader(page);
+    await sleep(1000);
 };
 
 const enqueueAllUrlsFromPagination = async (page, requestQueue, searchString, paginationFrom, maxPlacesPerCrawl) => {
