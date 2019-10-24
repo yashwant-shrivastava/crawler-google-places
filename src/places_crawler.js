@@ -35,8 +35,9 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
     detail.rank = userData.rank;
     detail.placeId = request.uniqueKey;
 
-        // Extract gps from URL
-    await sleep(1000); // Sleep to make sure URL was changed.
+    // Extract gps from URL
+    // We need to URL will be change, it happened asynchronously
+    await page.waitForFunction(() => window.location.href.includes('/place/'));
     const url = page.url();
     detail.url = url;
     const [fullMatch, latMatch, lngMatch] = url.match(/!3d(.*)!4d(.*)/);
