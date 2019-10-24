@@ -37,8 +37,32 @@ const waitForGoogleMapLoader = async (page) => {
     await page.waitFor(() => !document.querySelector('.loading-pane-section-loading'), { timeout: DEFAULT_TIMEOUT });
 };
 
+/**
+ * Response from google xhr is kind a weird. Mix of array of array.
+ * This function parse places from the response body.
+ * @param responseBodyBuffer
+ * @return [place]
+ */
+const parseSearchPlacesResponseBody = (responseBodyBuffer) => {
+    const places = [];
+    const jsonString = responseBodyBuffer
+        .toString('utf-8')
+        .replace('/*""*/', '');
+    const jsonObject = JSON.parse(jsonString);
+    const magicParamD = jsonObject.d.replace(')]}\'','');
+    const results = JSON.parse(magicParamD)[0][1];
+    results.forEach((result) => {
+        if (result[14]) {
+            const place = result[14];
+            places.push({ placeId: place[78] });
+        }
+    });
+    return places;
+};
+
 module.exports = {
     saveScreenshot,
     saveHTML,
     waitForGoogleMapLoader,
+    parseSearchPlacesResponseBody,
 };

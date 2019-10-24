@@ -33,9 +33,12 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
     const { userData } = request;
     detail.shownAsAd = userData.shownAsAd;
     detail.rank = userData.rank;
+    detail.placeId = request.uniqueKey;
 
-    // Extract gps from URL
+        // Extract gps from URL
+    await sleep(1000); // Sleep to make sure URL was changed.
     const url = page.url();
+    detail.url = url;
     const [fullMatch, latMatch, lngMatch] = url.match(/!3d(.*)!4d(.*)/);
     if (latMatch && lngMatch) {
         detail.location = { lat: parseFloat(latMatch), lng: parseFloat(lngMatch) };
@@ -246,9 +249,11 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
         launchPuppeteerOptions,
         requestQueue,
         maxRequestRetries: MAX_PAGE_RETRIES, // Sometimes page can failed because of blocking proxy IP by Google
-        retireInstanceAfterRequestCount: 250,
+        retireInstanceAfterRequestCount: 100,
         handlePageTimeoutSecs: 30 * 60, // long timeout, because of long infinite scroll
-        maxOpenPagesPerInstance: 1, // because of startUrl enqueueing crashes if we mix tabs with another scraping
+        puppeteerPoolOptions: {
+            maxOpenPagesPerInstance: 5,
+        }
     };
     return new Apify.PuppeteerCrawler({
         ...crawlerOpts,
@@ -277,18 +282,19 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
                     log.info('Enqueuing places finished.');
                 } else {
                     // Get data for place and save it to dataset
-                    log.info(`Extracting details from place url ${request.url}`);
+                    log.info(`Extracting details from place url ${page.url()}`);
                     const placeDetail = await extractPlaceDetail(page, request, searchString, includeReviews, includeImages,
                         includeHistogram, includeOpeningHours, includePeopleAlsoSearch);
-                    placeDetail.url = request.url;
                     await Apify.pushData(placeDetail);
-                    log.info(`Finished place url ${request.url}`);
+                    log.info(`Finished place url ${placeDetail.url}`);
                 }
             } catch(err) {
                 // This issue can happen, mostly because proxy IP was blocked by google
                 // Let's refresh IP using browser refresh.
-                await saveHTML(page, `${request.id}.html`);
-                await saveScreenshot(page, `${request.id}.png`);
+                if (log.getLevel() === log.LEVELS.DEBUG) {
+                    await saveHTML(page, `${request.id}.html`);
+                    await saveScreenshot(page, `${request.id}.png`);
+                }
                 await puppeteerPool.retire(page.browser());
                 throw err;
             }

@@ -54,6 +54,7 @@ Example results item:
 ```text
 {
   "title": "Scotiabank",
+  "placeId": "ChIJZTZXgbEcdkgRI5fp8iVqzl8",
   "totalScore": 3.7,
   "categoryName": "Bank",
   "address": "201 Bishopsgate, London EC2M 3NS, UK",
