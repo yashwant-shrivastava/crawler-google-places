@@ -272,8 +272,6 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
             await injectJQuery(page);
 
             try {
-                throw new Error('asdasdasdasdasda')
-
                 // Check if Google shows captcha
                 if (await page.$('form#captcha-form')) {
                     console.log('******\nGoogle shows captcha. This browser will be retired.\n******');
