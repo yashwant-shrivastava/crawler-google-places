@@ -252,7 +252,7 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
         retireInstanceAfterRequestCount: 100,
         handlePageTimeoutSecs: 30 * 60, // long timeout, because of long infinite scroll
         puppeteerPoolOptions: {
-            maxOpenPagesPerInstance: 5,
+            maxOpenPagesPerInstance: 1,
         }
     };
     return new Apify.PuppeteerCrawler({
