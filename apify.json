@@ -1,6 +1,6 @@
 {
 	"name": "crawler-google-places",
-	"version": "0.1",
-	"buildTag": "latest",
+	"version": "0.12",
+	"buildTag": "beta",
 	"env": null
 }
