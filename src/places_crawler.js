@@ -272,6 +272,8 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
             await injectJQuery(page);
 
             try {
+                throw new Error('asdasdasdasdasda')
+
                 // Check if Google shows captcha
                 if (await page.$('form#captcha-form')) {
                     console.log('******\nGoogle shows captcha. This browser will be retired.\n******');
@@ -297,10 +299,14 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
                     await saveScreenshot(page, `${request.id}.png`);
                 }
                 await puppeteerPool.retire(page.browser());
+                if (request.retryCount < MAX_PAGE_RETRIES) {
+                    // This fix to not show stack trace in log for retired requests, but we should handle this on SDK
+                    err.stack = null;
+                }
                 throw err;
             }
         },
-        handleFailedRequestFunction: async ({ request }) => {
+        handleFailedRequestFunction: async ({ request, error }) => {
             // This function is called when crawling of a request failed too many time
             const defaultStore = await Apify.openKeyValueStore();
             await Apify.pushData({
@@ -313,6 +319,7 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
                     screen: defaultStore.getPublicUrl(`${request.id}.png`),
                 }
             });
+            log.exception(error, `Page ${request.url} failed ${MAX_PAGE_RETRIES} times! It will not be retired. Check debug fields in dataset to find the issue.`)
         },
     });
 };
