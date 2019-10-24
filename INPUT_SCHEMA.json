@@ -22,13 +22,13 @@
       "title": "Include places reviews",
       "type": "boolean",
       "description": "If checked the crawler scrapes all reviews for all places. You can speed up crawling if you disable reviews.",
-      "default": true
+      "default": false
     },
     "includeImages": {
       "title": "Include places images",
       "type": "boolean",
       "description": "If checked the crawler scrapes all images for all places. You can speed up crawling if you disable images.",
-      "default": true
+      "default": false
     },
     "includeHistogram": {
       "title": "Include popular times",
