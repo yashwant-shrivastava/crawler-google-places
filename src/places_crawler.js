@@ -174,8 +174,12 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
 
             while(true) {
                 reviewUrl = increaseLimitInUrl(reviewUrl);
-                const bufferRequest = await httpRequest({ url: reviewUrl, proxyUrl: Apify.getApifyProxyUrl(proxyConfig) });
-                const reviews = parseReviewFromResponseBody(bufferRequest.body);
+                // Request in browser context to use proxy as in brows
+                const responseBody = await page.evaluate(async (url) => {
+                    const response = await fetch(url);
+                    return await response.text();
+                }, reviewUrl);
+                const reviews = parseReviewFromResponseBody(responseBody);
                 if (reviews.length === 0) break;
                 detail.reviews.push(...reviews);
             }
