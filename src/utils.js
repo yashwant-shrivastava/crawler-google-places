@@ -37,6 +37,10 @@ const waitForGoogleMapLoader = async (page) => {
     await page.waitFor(() => !document.querySelector('.loading-pane-section-loading'), { timeout: DEFAULT_TIMEOUT });
 };
 
+const stringifyGoogleXrhResponse = (googleResponseString) => {
+    return JSON.parse(googleResponseString.replace(')]}\'', ''));
+};
+
 /**
  * Response from google xhr is kind a weird. Mix of array of array.
  * This function parse places from the response body.
@@ -49,8 +53,8 @@ const parseSearchPlacesResponseBody = (responseBodyBuffer) => {
         .toString('utf-8')
         .replace('/*""*/', '');
     const jsonObject = JSON.parse(jsonString);
-    const magicParamD = jsonObject.d.replace(')]}\'','');
-    const results = JSON.parse(magicParamD)[0][1];
+    const magicParamD = stringifyGoogleXrhResponse(jsonObject.d);
+    const results = magicParamD[0][1];
     results.forEach((result) => {
         if (result[14]) {
             const place = result[14];
@@ -60,9 +64,47 @@ const parseSearchPlacesResponseBody = (responseBodyBuffer) => {
     return places;
 };
 
+/**
+ * Response from google xhr is kind a weird. Mix of array of array.
+ * This function parse reviews from the response body.
+ * @param responseBodyBuffer
+ * @return [place]
+ */
+const parseReviewFromResponseBody = (responseBody) => {
+    const reviews = [];
+    const stringBody = typeof responseBody === 'string'
+        ? responseBody
+        : responseBody.toString('utf-8');
+    const results = stringifyGoogleXrhResponse(stringBody);
+    if (!results || !results[2]) return reviews;
+    results[2].forEach((reviewArray) => {
+        const reviewData = {
+            name: reviewArray[0][1],
+            text: reviewArray[3],
+            publishAt: reviewArray[1],
+            likesCount: reviewArray[15],
+        };
+        // On some places google shows reviews from other services like booking
+        // There isn't stars but rating for this places reviews
+        if (reviewArray[4]) {
+            reviewData.stars = reviewArray[4];
+        }
+        // Trip advisor
+        if (reviewArray[25]) {
+            reviewData.rating = reviewArray[25][1];
+        }
+        if (reviewArray[5]) {
+            reviewData.responseFromOwnerText = reviewArray[5][1];
+        }
+        reviews.push(reviewData);
+    });
+    return reviews;
+};
+
 module.exports = {
     saveScreenshot,
     saveHTML,
     waitForGoogleMapLoader,
     parseSearchPlacesResponseBody,
+    parseReviewFromResponseBody,
 };
