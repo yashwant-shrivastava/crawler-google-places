@@ -22,12 +22,12 @@
       "title": "Include places reviews",
       "type": "boolean",
       "description": "If checked the crawler scrapes all reviews for all places. You can speed up crawling if you disable reviews.",
-      "default": false
+      "default": true
     },
     "includeImages": {
-      "title": "Include places images",
+      "title": "Include places images (Very Slow)",
       "type": "boolean",
-      "description": "If checked the crawler scrapes all images for all places. You can speed up crawling if you disable images.",
+      "description": "If checked the crawler scrapes all images for all places. You can speed up crawling if you disable images. Crawling images is quite time and CU consuming.",
       "default": false
     },
     "includeHistogram": {

@@ -1,17 +1,18 @@
 const Apify = require('apify');
+const httpRequest = require('@apify/http-request');
 
 const { sleep, log } = Apify.utils;
 const { injectJQuery, blockRequests } = Apify.utils.puppeteer;
 const infiniteScroll = require('./infinite_scroll');
 const { MAX_PAGE_RETRIES, DEFAULT_TIMEOUT, PLACE_TITLE_SEL } = require('./consts');
 const { enqueueAllPlaceDetails } = require('./enqueue_places_crawler');
-const { saveHTML, saveScreenshot, waitForGoogleMapLoader } = require('./utils');
+const { saveHTML, saveScreenshot, waitForGoogleMapLoader, parseReviewFromResponseBody } = require('./utils');
 
 /**
  * This is the worst part - parsing data from place detail
  * @param page
  */
-const extractPlaceDetail = async (page, request, searchString, includeReviews, includeImages, includeHistogram, includeOpeningHours, includePeopleAlsoSearch) => {
+const extractPlaceDetail = async (page, request, searchString, includeReviews, includeImages, includeHistogram, includeOpeningHours, includePeopleAlsoSearch, proxyConfig) => {
     // Extract basic information
     await waitForGoogleMapLoader(page);
     await page.waitForSelector(PLACE_TITLE_SEL, { timeout: DEFAULT_TIMEOUT });
@@ -152,50 +153,33 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
             await page.click(reviewsButtonSel);
             await page.waitForSelector('.section-star-display', { timeout: DEFAULT_TIMEOUT });
             await sleep(5000);
-            // Sort reviews by newest, one click sometimes didn't work :)
-            try {
-                const sortButtonEl = '.section-tab-info-stats-button-flex';
-                for (let i = 0; i < 3; i++) {
-                    await page.click(sortButtonEl);
-                    await sleep(1000);
-                }
-                await page.click('.context-menu-entry[data-index="1"]');
-            } catch (err) {
-                // It can happen, it is not big issue :)
-                log.debug('Cannot select reviews by newest!');
+
+            // Sort reviews by newest
+            await page.click('.section-dropdown-menu-button-caption');
+            await page.keyboard.press('ArrowDown');
+            await page.keyboard.press('Enter');
+
+            const reviewsResponse = await page.waitForResponse(response => response.url().includes('preview/review/listentitiesreviews'));
+            await sleep(1000);
+
+            let reviewResponseBody = await reviewsResponse.buffer();
+            const reviews = parseReviewFromResponseBody(reviewResponseBody);
+            detail.reviews.push(...reviews);
+            let reviewUrl = reviewsResponse.url();
+            const increaseLimitInUrl = (url) => {
+                const numberString = reviewUrl.match(/\!1i(\d+)/)[1];
+                const number = parseInt(numberString)
+                return url.replace(/\!1i\d+/, `!1i${number+10}`);
+            };
+
+            while(true) {
+                reviewUrl = increaseLimitInUrl(reviewUrl);
+                const bufferRequest = await httpRequest({ url: reviewUrl, proxyUrl: Apify.getApifyProxyUrl(proxyConfig) });
+                const reviews = parseReviewFromResponseBody(bufferRequest.body);
+                if (reviews.length === 0) break;
+                detail.reviews.push(...reviews);
             }
-            await infiniteScroll(page, 99999999999, '.section-scrollbox.scrollable-y', 'reviews list');
-            const reviewEls = await page.$$('div.section-review');
-            for (const reviewEl of reviewEls) {
-                const moreButton = await reviewEl.$('.section-expand-review');
-                if (moreButton) {
-                    await moreButton.click();
-                    await sleep(2000);
-                }
-                const review = await page.evaluate((reviewEl) => {
-                    const $review = $(reviewEl);
-                    const reviewData = {
-                        name: $review.find('.section-review-title').text().trim(),
-                        text: $review.find('.section-review-review-content .section-review-text').text(),
-                        publishAt: $review.find('.section-review-publish-date').text().trim(),
-                        likesCount: $review.find('.section-review-thumbs-up-count').text().trim(),
-                    };
-                    // On some places google shows reviews from other services like booking
-                    // There isn't stars but rating for this places reviews
-                    if ($review.find('.section-review-stars').attr('aria-label')) {
-                        reviewData.stars = $review.find('.section-review-stars').attr('aria-label').trim();
-                    }
-                    if ($review.find('.section-review-numerical-rating')) {
-                        reviewData.rating = $review.find('.section-review-numerical-rating').text().trim();
-                    }
-                    const $response = $review.find('.section-review-owner-response');
-                    if ($response) {
-                        reviewData.responseFromOwnerText = $response.find('.section-review-text').text().trim();
-                    }
-                    return reviewData;
-                }, reviewEl);
-                detail.reviews.push(review);
-            }
+
             await page.click('button[jsaction*=back]');
         }  else {
             log.info(`Skipping reviews scraping for url: ${page.url()}`)
@@ -254,7 +238,8 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
         handlePageTimeoutSecs: 30 * 60, // long timeout, because of long infinite scroll
         puppeteerPoolOptions: {
             maxOpenPagesPerInstance: 1,
-        }
+        },
+        maxConcurrency: Apify.isAtHome() ? undefined : 1,
     };
     return new Apify.PuppeteerCrawler({
         ...crawlerOpts,
@@ -285,7 +270,7 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
                     // Get data for place and save it to dataset
                     log.info(`Extracting details from place url ${page.url()}`);
                     const placeDetail = await extractPlaceDetail(page, request, searchString, includeReviews, includeImages,
-                        includeHistogram, includeOpeningHours, includePeopleAlsoSearch);
+                        includeHistogram, includeOpeningHours, includePeopleAlsoSearch, launchPuppeteerOptions.proxyConfig);
                     await Apify.pushData(placeDetail);
                     log.info(`Finished place url ${placeDetail.url}`);
                 }
@@ -297,7 +282,7 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
                     await saveScreenshot(page, `${request.id}.png`);
                 }
                 await puppeteerPool.retire(page.browser());
-                if (request.retryCount < MAX_PAGE_RETRIES) {
+                if (request.retryCount < MAX_PAGE_RETRIES && Apify.isAtHome()) {
                     // This fix to not show stack trace in log for retired requests, but we should handle this on SDK
                     err.stack = null;
                 }
