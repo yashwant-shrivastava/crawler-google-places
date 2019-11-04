@@ -51,8 +51,13 @@ Apify.main(async () => {
              */
             if (search.includes('place_id:')) {
                 log.info(`Place ID found in search query. We will extract data from ${search}.`);
-                const placeUrl = `https://www.google.com/maps/place/?q=${search.replace(/\s+/g, '')}`;
-                startRequests.push({ url: placeUrl, uniqueKey: search, userData: { label: 'placeDetail' } });
+                const cleanSearch = search.replace(/\s+/g, '')
+                const placeId = cleanSearch.match(/place_id\:(.*)/)[1];
+                startRequests.push({
+                    url: `https://www.google.com/maps/search/?api=1&query=${cleanSearch}&query_place_id=${placeId}`,
+                    uniqueKey: placeId,
+                    userData: { label: 'detail', searchString },
+                });
             } else {
                 startRequests.push({ url: startUrlSearch, uniqueKey: search, userData: { label: 'startUrl', searchString: search } });
             }

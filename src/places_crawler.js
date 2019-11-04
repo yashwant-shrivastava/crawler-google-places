@@ -137,7 +137,7 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
     // Extract reviews
     const reviewsButtonSel = 'button[jsaction="pane.reviewChart.moreReviews"]';
     if (detail.totalScore) {
-        detail.totalScore = parseFloat(detail.totalScore.replace(',', '.'));
+        detail.totalScore = parseFloat(detail.totalScore.replace(',', '.').replace(' ', ''));
         detail.reviewsCount = await page.evaluate((selector) => {
             const numberReviewsText = $(selector).text().trim();
             return (numberReviewsText) ? parseInt(numberReviewsText.replace(/\s/g, '').match(/\d+/)[0]) : null;
