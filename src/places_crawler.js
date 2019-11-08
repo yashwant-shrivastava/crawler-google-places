@@ -1,5 +1,10 @@
 const Apify = require('apify');
-const httpRequest = require('@apify/http-request');
+const Globalize = require('globalize');
+
+const DEFAULT_CRAWLER_LOCALIZATION = ['en', 'cs'];
+
+Globalize.load(require('cldr-data').entireSupplemental());
+Globalize.load(require('cldr-data').entireMainFor(...DEFAULT_CRAWLER_LOCALIZATION));
 
 const { sleep, log } = Apify.utils;
 const { injectJQuery, blockRequests } = Apify.utils.puppeteer;
@@ -137,11 +142,22 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
     // Extract reviews
     const reviewsButtonSel = 'button[jsaction="pane.reviewChart.moreReviews"]';
     if (detail.totalScore) {
-        detail.totalScore = parseFloat(detail.totalScore.replace(',', '.').replace(' ', ''));
-        detail.reviewsCount = await page.evaluate((selector) => {
-            const numberReviewsText = $(selector).text().trim();
-            return (numberReviewsText) ? parseInt(numberReviewsText.replace(/\s/g, '').match(/\d+/)[0]) : null;
+        const { reviewsCountText, localization } = await page.evaluate((selector) => {
+            let numberReviewsText = $(selector).text().trim();
+            const [ reviewText, number] = numberReviewsText.split(':');
+            return {
+                reviewsCountText: number.trim(),
+                localization: navigator.language.slice(0,2),
+            }
         }, reviewsButtonSel);
+        let globalParser;
+        try {
+            globalParser = Globalize(localization);
+        } catch (e) {
+            throw new Error(`Can not find localization for ${localization}, try to use different proxy IP.`);
+        }
+        detail.totalScore = globalParser.numberParser({round:'floor'})(detail.totalScore);
+        detail.reviewsCount = reviewsCountText && globalParser.numberParser({round:'truncate'})(reviewsCountText);
         // If we find consent dialog, close it!
         if (await page.$('.widget-consent-dialog')) {
             await page.click('.widget-consent-dialog .widget-consent-button-later');
