@@ -302,9 +302,9 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
                     await saveScreenshot(page, `${request.id}.png`);
                 }
                 await puppeteerPool.retire(page.browser());
-                if (request.retryCount < MAX_PAGE_RETRIES && Apify.isAtHome()) {
+                if (request.retryCount < MAX_PAGE_RETRIES && log.getLevel() !== log.LEVELS.DEBUG) {
                     // This fix to not show stack trace in log for retired requests, but we should handle this on SDK
-                    err.stack = null;
+                    err.stack = 'Stack trace was omitted for retires requests. Set up debug mode to see it.';
                 }
                 throw err;
             }

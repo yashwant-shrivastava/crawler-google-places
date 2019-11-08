@@ -61,6 +61,10 @@ const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxCrawl
     await waitForGoogleMapLoader(page);
     try {
         await page.waitForSelector(PLACE_TITLE_SEL);
+        // It there is place detail, it means there is just one detail and it was redirected here.
+        // We do not need enqueue other places.
+        log.debug(`Search string ${searchString} has just one place to scraper.`);
+        return;
     } catch (e) {
         // It can happen if there is list of details.
     }
