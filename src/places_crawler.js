@@ -144,9 +144,9 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
     if (detail.totalScore) {
         const { reviewsCountText, localization } = await page.evaluate((selector) => {
             let numberReviewsText = $(selector).text().trim();
-            const [ reviewText, number] = numberReviewsText.split(':');
+            const number = numberReviewsText.match(/(\d.*\d)/);
             return {
-                reviewsCountText: number.trim(),
+                reviewsCountText: number ? number[0] : null,
                 localization: navigator.language.slice(0,2),
             }
         }, reviewsButtonSel);
@@ -157,7 +157,7 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
             throw new Error(`Can not find localization for ${localization}, try to use different proxy IP.`);
         }
         detail.totalScore = globalParser.numberParser({round:'floor'})(detail.totalScore);
-        detail.reviewsCount = reviewsCountText && globalParser.numberParser({round:'truncate'})(reviewsCountText);
+        detail.reviewsCount = reviewsCountText ? globalParser.numberParser({round:'truncate'})(reviewsCountText) : null;
         // If we find consent dialog, close it!
         if (await page.$('.widget-consent-dialog')) {
             await page.click('.widget-consent-dialog .widget-consent-button-later');
