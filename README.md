@@ -54,12 +54,21 @@ Example results item:
 
 ```text
 {
-  "title": "Scotiabank",
-  "placeId": "ChIJZTZXgbEcdkgRI5fp8iVqzl8",
-  "totalScore": 3.7,
-  "categoryName": "Bank",
-  "address": "201 Bishopsgate, London EC2M 3NS, UK",
-  "plusCode": "GWCC+75 City of London, London, UK",
+  "title": "The PUB Praha 2",
+  "totalScore": 4,
+  "categoryName": "Restaurant",
+  "address": "Hálkova 6, 120 00 Nové Město, Czechia",
+  "plusCode": "3CGH+F8 New Town, Prague, Czechia",
+  "website": "thepub.cz",
+  "phone": "+420222940414",
+  "rank": 1,
+  "placeId": "ChIJXRQlXoyUC0cRq5R4OBRKKxU",
+  "url": "https://www.google.com/maps/place/The+PUB+Praha+2/@50.0761791,14.4261789,17z/data=!3m1!4b1!4m5!3m4!1s0x470b948c5e25145d:0x152b4a14387894ab!8m2!3d50.0761791!4d14.4283676",
+  "location": {
+    "lat": 50.0761791,
+    "lng": 14.4283676
+  },
+  "searchString": "pubs near prague 2",
   "popularTimesHistogram": {
     "Su": [],
     "Mo": [
@@ -77,83 +86,129 @@ Example results item:
       },
       {
         "hour": 9,
-        "occupancyPercent": 75
+        "occupancyPercent": 0
       },
       {
         "hour": 10,
-        "occupancyPercent": 73
+        "occupancyPercent": 0
       },
       {
         "hour": 11,
-        "occupancyPercent": 60
+        "occupancyPercent": 20
       },
       {
         "hour": 12,
-        "occupancyPercent": 57
+        "occupancyPercent": 28
       },
       {
         "hour": 13,
-        "occupancyPercent": 56
+        "occupancyPercent": 29
       },
       {
         "hour": 14,
-        "occupancyPercent": 56
+        "occupancyPercent": 24
       },
       {
         "hour": 15,
-        "occupancyPercent": 57
+        "occupancyPercent": 17
       },
       {
         "hour": 16,
-        "occupancyPercent": 50
+        "occupancyPercent": 15
       },
       {
         "hour": 17,
-        "occupancyPercent": 33
+        "occupancyPercent": 18
       },
       {
         "hour": 18,
-        "occupancyPercent": 14
+        "occupancyPercent": 24
       },
       {
         "hour": 19,
-        "occupancyPercent": 4
+        "occupancyPercent": 30
       },
       {
         "hour": 20,
-        "occupancyPercent": 1
+        "occupancyPercent": 37
       },
       {
         "hour": 21,
-        "occupancyPercent": 0
+        "occupancyPercent": 42
       },
       {
         "hour": 22,
-        "occupancyPercent": 0
+        "occupancyPercent": 37
       },
       {
         "hour": 23,
-        "occupancyPercent": 0
+        "occupancyPercent": 25
+      },
+      {
+        "hour": 24,
+        "occupancyPercent": 10
+      },
+      {
+        "hour": 1,
+        "occupancyPercent": 3
       }
     ],
     ...
   },
+  "openingHours": [
+    {
+      "day": "Monday",
+      "hours": "11AM–2AM"
+    },
+    {
+      "day": "Tuesday",
+      "hours": "11AM–2AM"
+    },
+    {
+      "day": "Wednesday",
+      "hours": "11AM–2AM"
+    },
+    {
+      "day": "Thursday",
+      "hours": "11AM–2AM"
+    },
+    {
+      "day": "Friday",
+      "hours": "11AM–5AM"
+    },
+    {
+      "day": "Saturday",
+      "hours": "6PM–5AM"
+    },
+    {
+      "day": "Sunday",
+      "hours": "Closed"
+    }
+  ],
+  "reviewsCount": 698,
   "reviews": [
     {
-      "name": "NELLORE BALA NAVEEN REDDY",
-      "text": "nice  bank in london",
-      "stars": "5 stars",
-      "publishAt": "2 months ago",
-      "likesCount": "",
-      "responseFromOwnerText": ""
+      "name": "Robert Nalepa",
+      "text": null,
+      "publishAt": "a day ago",
+      "likesCount": null,
+      "stars": 4
+    },
+    {
+      "name": "Polina Cherniavsky",
+      "text": null,
+      "publishAt": "a day ago",
+      "likesCount": null,
+      "stars": 5
+    },
+    {
+      "name": "Martin Mudra",
+      "text": null,
+      "publishAt": "6 days ago",
+      "likesCount": null,
+      "stars": 4
     },
     ...
-  ],
-  "reviewsCount": 6,
-  "imageUrls": [
-    "https://lh5.googleusercontent.com/p/AF1QipPvm-rzo7_mlLRmctQwDJV6agVGHZMUJYLinU_t=s508-k-no",
-    ...
-    ],
-  "url": "https://www.google.com/maps/place/Scotiabank/@51.5258542,-0.335595,11z/data=!4m8!1m2!2m1!1sbanks+london!3m4!1s0x48761cb181573665:0x5fce6a25f2e99723!8m2!3d51.5206306!4d-0.0795672"
+  ]
 }
 ```
