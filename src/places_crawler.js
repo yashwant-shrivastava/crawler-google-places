@@ -171,7 +171,7 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
             await sleep(5000);
 
             // Sort reviews by newest
-            await page.click('.section-dropdown-menu-button-caption');
+            await page.click('.section-layout>[role="menu"]>div');
             await page.keyboard.press('ArrowDown');
             await page.keyboard.press('Enter');
 
