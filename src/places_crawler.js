@@ -144,7 +144,11 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
     if (detail.totalScore) {
         const { reviewsCountText, localization } = await page.evaluate((selector) => {
             let numberReviewsText = $(selector).text().trim();
-            const number = numberReviewsText.match(/(\d.*\d)/);
+            // NOTE: Needs handle:
+            // Recenze: 7
+            // 1.609 reviews
+            // 9 reviews
+            const number = numberReviewsText.match(/[.,0-9]+/);
             return {
                 reviewsCountText: number ? number[0] : null,
                 localization: navigator.language.slice(0,2),
