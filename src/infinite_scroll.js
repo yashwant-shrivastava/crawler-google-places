@@ -1,17 +1,10 @@
 const Apify = require('apify');
+const { scrollTo } = require('./utils')
 
 const { sleep, log } = Apify.utils;
 
 const logInfo = (msg) => log.info(msg);
 const logDebug = (msg) => log.debug(msg);
-
-/**
- * Method scrolls page to xpos, ypos.
- */
-const scrollTo = (page, elementToScroll, scrollToHeight) => page.evaluate((elementToScroll, scrollToHeight) => {
-    const scrollable = document.querySelector(elementToScroll);
-    scrollable.scrollTop = scrollToHeight;
-}, elementToScroll, scrollToHeight);
 
 /**
  * Method returns info about page scroll

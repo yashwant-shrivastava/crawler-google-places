@@ -101,10 +101,19 @@ const parseReviewFromResponseBody = (responseBody) => {
     return reviews;
 };
 
+/**
+ * Method scrolls page to xpos, ypos.
+ */
+const scrollTo = (page, elementToScroll, scrollToHeight) => page.evaluate((elementToScroll, scrollToHeight) => {
+    const scrollable = document.querySelector(elementToScroll);
+    scrollable.scrollTop = scrollToHeight;
+}, elementToScroll, scrollToHeight);
+
 module.exports = {
     saveScreenshot,
     saveHTML,
     waitForGoogleMapLoader,
     parseSearchPlacesResponseBody,
     parseReviewFromResponseBody,
+    scrollTo,
 };

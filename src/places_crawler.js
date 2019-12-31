@@ -11,7 +11,8 @@ const { injectJQuery, blockRequests } = Apify.utils.puppeteer;
 const infiniteScroll = require('./infinite_scroll');
 const { MAX_PAGE_RETRIES, DEFAULT_TIMEOUT, PLACE_TITLE_SEL } = require('./consts');
 const { enqueueAllPlaceDetails } = require('./enqueue_places_crawler');
-const { saveHTML, saveScreenshot, waitForGoogleMapLoader, parseReviewFromResponseBody } = require('./utils');
+const { saveHTML, saveScreenshot, waitForGoogleMapLoader,
+    parseReviewFromResponseBody, scrollTo } = require('./utils');
 
 /**
  * This is the worst part - parsing data from place detail
@@ -174,10 +175,8 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
             await page.waitForSelector('.section-star-display', { timeout: DEFAULT_TIMEOUT });
             await sleep(5000);
 
-            // Sort reviews by newest
-            await page.click('.section-layout>[role="menu"]>div');
-            await page.keyboard.press('ArrowDown');
-            await page.keyboard.press('Enter');
+            // Scroll to get response to catch
+            await scrollTo(page, '.section-scrollbox.scrollable-y', 10000);
 
             const reviewsResponse = await page.waitForResponse(response => response.url().includes('preview/review/listentitiesreviews'));
             await sleep(1000);
@@ -186,6 +185,10 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
             const reviews = parseReviewFromResponseBody(reviewResponseBody);
             detail.reviews.push(...reviews);
             let reviewUrl = reviewsResponse.url();
+            // Replace !3e1 in URL with !3e2, it makes list sort by newest
+            reviewUrl = reviewUrl.replace(/\!3e\d/, '!3e2');
+            // Make sure that we star review from 0, setting !1i0
+            reviewUrl = reviewUrl.replace(/\!1i\d+/, '!1i0');
             const increaseLimitInUrl = (url) => {
                 const numberString = reviewUrl.match(/\!1i(\d+)/)[1];
                 const number = parseInt(numberString)
@@ -193,7 +196,6 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
             };
 
             while(true) {
-                reviewUrl = increaseLimitInUrl(reviewUrl);
                 // Request in browser context to use proxy as in brows
                 const responseBody = await page.evaluate(async (url) => {
                     const response = await fetch(url);
@@ -202,6 +204,7 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
                 const reviews = parseReviewFromResponseBody(responseBody);
                 if (reviews.length === 0) break;
                 detail.reviews.push(...reviews);
+                reviewUrl = increaseLimitInUrl(reviewUrl);
             }
 
             await page.click('button[jsaction*=back]');
