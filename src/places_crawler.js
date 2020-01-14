@@ -173,18 +173,28 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
             await page.waitForSelector(reviewsButtonSel);
             await page.click(reviewsButtonSel);
             // Set up sort from newest
-            const sortPromise = async () => {
+            const sortPromise1 = async () => {
                 try {
                     await page.click('[class*=dropdown-icon]');
                     await page.keyboard.press('ArrowDown');
                     await page.keyboard.press('Enter');
                 } catch (e) {
-                    log.debug('Can not sort reviews!');
+                    log.debug('Can not sort reviews with 1 options!');
+                }
+            };
+            const sortPromise2 = async () => {
+                try {
+                    await page.click('button[data-value="Sort"]');
+                    await page.keyboard.press('ArrowDown');
+                    await page.keyboard.press('Enter');
+                } catch (e) {
+                    log.debug('Can not sort with 2 options!');
                 }
             };
             await sleep(5000);
-            const [sort, scroll, reviewsResponse ] = await Promise.all([
-                sortPromise(),
+            const [sort1, sort2, scroll, reviewsResponse ] = await Promise.all([
+                sortPromise1(),
+                sortPromise2(),
                 scrollTo(page, '.section-scrollbox.scrollable-y', 10000),
                 page.waitForResponse(response => response.url().includes('preview/review/listentitiesreviews')),
             ]);
