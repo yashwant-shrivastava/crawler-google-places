@@ -172,14 +172,22 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
             detail.reviews = [];
             await page.waitForSelector(reviewsButtonSel);
             await page.click(reviewsButtonSel);
-            await page.waitForSelector('.section-star-display', { timeout: DEFAULT_TIMEOUT });
+            // Set up sort from newest
+            const sortPromise = async () => {
+                try {
+                    await page.click('[class*=dropdown-icon]');
+                    await page.keyboard.press('ArrowDown');
+                    await page.keyboard.press('Enter');
+                } catch (e) {
+                    log.debug('Can not sort reviews!');
+                }
+            };
             await sleep(5000);
-
-            // Scroll to get response to catch
-            await scrollTo(page, '.section-scrollbox.scrollable-y', 10000);
-
-            const reviewsResponse = await page.waitForResponse(response => response.url().includes('preview/review/listentitiesreviews'));
-            await sleep(1000);
+            const [sort, scroll, reviewsResponse ] = await Promise.all([
+                sortPromise(),
+                scrollTo(page, '.section-scrollbox.scrollable-y', 10000),
+                page.waitForResponse(response => response.url().includes('preview/review/listentitiesreviews')),
+            ]);
 
             let reviewResponseBody = await reviewsResponse.buffer();
             const reviews = parseReviewFromResponseBody(reviewResponseBody);
