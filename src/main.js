@@ -75,7 +75,8 @@ Apify.main(async () => {
 
     const launchPuppeteerOptions = {};
     if (proxyConfig && proxyConfig.useApifyProxy) {
-        const proxyUrl = Apify.getApifyProxyUrl({ groups: proxyConfig.apifyProxyGroups, country: proxyConfig.apifyProxyCountry })
+        const proxyUrl = Apify.getApifyProxyUrl({ groups: proxyConfig.apifyProxyGroups, country: proxyConfig.apifyProxyCountry });
+        log.info(`Constructed proxy url: ${proxyUrl}`);
         launchPuppeteerOptions.proxyUrl = proxyUrl;
     }
 
