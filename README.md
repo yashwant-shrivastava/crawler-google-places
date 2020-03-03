@@ -47,6 +47,16 @@ You need to set the attribute to `false`.
 - `includeOpeningHours`
 - `includePeopleAlsoSearch`
 
+### Country localization
+You can force the scraper to access the places only from specific country location. We recommend this to ensure the correct language in results. This works reliably only for US (most of our proxies are from US). Currently, this option is not available in the Editor input , you have switch to JSON input. After you switch, your configuration will remain the same so just update the `proxyconfig` field with `apifyProxyCountry` property to specify the country, example:
+
+```
+"proxyConfig": {
+    "useApifyProxy": true,
+    "apifyProxyCountry": "US"
+  }
+```
+
 ## OUTPUT
 Once the actor finishes, it outputs results to actor default dataset.
 
