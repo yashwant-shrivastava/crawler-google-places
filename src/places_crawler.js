@@ -18,7 +18,7 @@ const { saveHTML, saveScreenshot, waitForGoogleMapLoader,
  * This is the worst part - parsing data from place detail
  * @param page
  */
-const extractPlaceDetail = async (page, request, searchString, includeReviews, includeImages, includeHistogram, includeOpeningHours, includePeopleAlsoSearch, proxyConfig) => {
+const extractPlaceDetail = async (page, request, searchString, includeReviews, includeImages, includeHistogram, includeOpeningHours, includePeopleAlsoSearch) => {
     // Extract basic information
     await waitForGoogleMapLoader(page);
     await page.waitForSelector(PLACE_TITLE_SEL, { timeout: DEFAULT_TIMEOUT });
@@ -273,17 +273,14 @@ const saveScreenForDebug = async (reques, page) => {
  * @param maxCrawledPlaces
  * @return {Apify.PuppeteerCrawler}
  */
-const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, input) => {
+const setUpCrawler = (puppeteerPoolOptions, requestQueue, maxCrawledPlaces, input) => {
     const { includeReviews, includeImages, includeHistogram, includeOpeningHours, includePeopleAlsoSearch } = input;
     const crawlerOpts = {
-        launchPuppeteerOptions,
         requestQueue,
         maxRequestRetries: MAX_PAGE_RETRIES, // Sometimes page can failed because of blocking proxy IP by Google
         retireInstanceAfterRequestCount: 100,
         handlePageTimeoutSecs: 30 * 60, // long timeout, because of long infinite scroll
-        puppeteerPoolOptions: {
-            maxOpenPagesPerInstance: 1,
-        },
+        puppeteerPoolOptions,
         maxConcurrency: Apify.isAtHome() ? undefined : 1,
     };
     return new Apify.PuppeteerCrawler({
@@ -315,7 +312,7 @@ const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, in
                     // Get data for place and save it to dataset
                     log.info(`Extracting details from place url ${page.url()}`);
                     const placeDetail = await extractPlaceDetail(page, request, searchString, includeReviews, includeImages,
-                        includeHistogram, includeOpeningHours, includePeopleAlsoSearch, launchPuppeteerOptions.proxyConfig);
+                        includeHistogram, includeOpeningHours, includePeopleAlsoSearch);
                     await Apify.pushData(placeDetail);
                     log.info(`Finished place url ${placeDetail.url}`);
                 }
