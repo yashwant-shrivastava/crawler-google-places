@@ -273,17 +273,14 @@ const saveScreenForDebug = async (reques, page) => {
  * @param maxCrawledPlaces
  * @return {Apify.PuppeteerCrawler}
  */
-const setUpCrawler = (launchPuppeteerOptions, requestQueue, maxCrawledPlaces, input) => {
+const setUpCrawler = (puppeteerPoolOptions, requestQueue, maxCrawledPlaces, input) => {
     const { includeReviews, includeImages, includeHistogram, includeOpeningHours, includePeopleAlsoSearch } = input;
     const crawlerOpts = {
-        launchPuppeteerOptions,
         requestQueue,
         maxRequestRetries: MAX_PAGE_RETRIES, // Sometimes page can failed because of blocking proxy IP by Google
         retireInstanceAfterRequestCount: 100,
         handlePageTimeoutSecs: 30 * 60, // long timeout, because of long infinite scroll
-        puppeteerPoolOptions: {
-            maxOpenPagesPerInstance: 1,
-        },
+        puppeteerPoolOptions,
         maxConcurrency: Apify.isAtHome() ? undefined : 1,
     };
     return new Apify.PuppeteerCrawler({
