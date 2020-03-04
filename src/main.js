@@ -74,7 +74,11 @@ Apify.main(async () => {
     }
 
     const launchPuppeteerOptions = {};
-    if (proxyConfig) Object.assign(launchPuppeteerOptions, proxyConfig);
+    if (proxyConfig && proxyConfig.useApifyProxy) {
+        const proxyUrl = Apify.getApifyProxyUrl({ groups: proxyConfig.apifyProxyGroups, country: proxyConfig.apifyProxyCountry });
+        log.info(`Constructed proxy url: ${proxyUrl}`);
+        launchPuppeteerOptions.proxyUrl = proxyUrl;
+    }
 
     // Create and run crawler
     const crawler = placesCrawler.setUpCrawler(launchPuppeteerOptions, requestQueue,
