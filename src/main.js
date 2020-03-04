@@ -73,15 +73,23 @@ Apify.main(async () => {
         await requestQueue.addRequest(request);
     }
 
-    const launchPuppeteerOptions = {};
-    if (proxyConfig && proxyConfig.useApifyProxy) {
-        const proxyUrl = Apify.getApifyProxyUrl({ groups: proxyConfig.apifyProxyGroups, country: proxyConfig.apifyProxyCountry });
-        log.info(`Constructed proxy url: ${proxyUrl}`);
-        launchPuppeteerOptions.proxyUrl = proxyUrl;
+    const puppeteerPoolOptions = {
+        launchPuppeteerOptions: {},
+        maxOpenPagesPerInstance: 1,
+    };
+    if (proxyConfig) {
+        if (proxyConfig.useApifyProxy) {
+            const proxyUrl = Apify.getApifyProxyUrl({ groups: proxyConfig.apifyProxyGroups, country: proxyConfig.apifyProxyCountry });
+            log.info(`Constructed proxy url: ${proxyUrl}`);
+            puppeteerPoolOptions.launchPuppeteerOptions.proxyUrl = proxyUrl;
+        }
+        if (proxyConfig.proxyUrls && proxyConfig.proxyUrls.length > 0) {
+            puppeteerPoolOptions.proxyUrls = proxyConfig.proxyUrls;
+        }
     }
 
     // Create and run crawler
-    const crawler = placesCrawler.setUpCrawler(launchPuppeteerOptions, requestQueue,
+    const crawler = placesCrawler.setUpCrawler(puppeteerPoolOptions, requestQueue,
         maxCrawledPlaces, input);
     await crawler.run();
 
