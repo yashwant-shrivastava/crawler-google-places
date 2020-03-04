@@ -18,7 +18,7 @@ const { saveHTML, saveScreenshot, waitForGoogleMapLoader,
  * This is the worst part - parsing data from place detail
  * @param page
  */
-const extractPlaceDetail = async (page, request, searchString, includeReviews, includeImages, includeHistogram, includeOpeningHours, includePeopleAlsoSearch, proxyConfig) => {
+const extractPlaceDetail = async (page, request, searchString, includeReviews, includeImages, includeHistogram, includeOpeningHours, includePeopleAlsoSearch) => {
     // Extract basic information
     await waitForGoogleMapLoader(page);
     await page.waitForSelector(PLACE_TITLE_SEL, { timeout: DEFAULT_TIMEOUT });
@@ -312,7 +312,7 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, maxCrawledPlaces, inpu
                     // Get data for place and save it to dataset
                     log.info(`Extracting details from place url ${page.url()}`);
                     const placeDetail = await extractPlaceDetail(page, request, searchString, includeReviews, includeImages,
-                        includeHistogram, includeOpeningHours, includePeopleAlsoSearch, launchPuppeteerOptions.proxyConfig);
+                        includeHistogram, includeOpeningHours, includePeopleAlsoSearch);
                     await Apify.pushData(placeDetail);
                     log.info(`Finished place url ${placeDetail.url}`);
                 }
