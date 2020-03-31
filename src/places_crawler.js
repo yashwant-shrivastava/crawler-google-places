@@ -55,11 +55,22 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
     // Include search string
     detail.searchString = searchString;
     
-    // Include live popular times value
-    detail.popularTimesLive = (await page.evaluate(() => $('.section-popular-times-live-description').text().trim())) || null;
+    
 
     // Extract histogram for popular times
     if (includeHistogram) {
+        // Include live popular times value
+        const popularTimesLiveRawValue = await page.evaluate(() => 
+            $('.section-popular-times-value.section-popular-times-live-value-lower.section-popular-times-current-value')
+                .parent().attr('aria-label')
+        );
+        const popularTimesLiveRawText = await page.evaluate(() => $('.section-popular-times-live-description').text().trim()));
+        detail.popularTimesLiveText = popularTimesLiveRawValue || popularTimesLiveRawText
+            ? `${popularTimesLiveRawValue}; ${popularTimesLiveRawText}`
+            : null;
+        const popularTimesLivePercentMatch = popularTimesLiveRawValue.match(/(\d+)\s%/);
+        detail.popularTimesLivePercent = popularTimesLivePercentMatch ? Number(popularTimesLivePercentMatch[1]) : null;
+            
         const histogramSel = '.section-popular-times';
         if (await page.$(histogramSel)) {
             detail.popularTimesHistogram = await page.evaluate(() => {
