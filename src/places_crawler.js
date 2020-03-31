@@ -54,6 +54,9 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
 
     // Include search string
     detail.searchString = searchString;
+    
+    // Include live popular times value
+    detail.popularTimesLive = (await page.evaluate(() => $('.section-popular-times-live-description').text().trim())) || null;
 
     // Extract histogram for popular times
     if (includeHistogram) {
