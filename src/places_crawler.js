@@ -68,7 +68,7 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
         detail.popularTimesLiveText = popularTimesLiveRawValue && popularTimesLiveRawText
             ? `${popularTimesLiveRawValue}; ${popularTimesLiveRawText}`
             : null;
-        const popularTimesLivePercentMatch = popularTimesLiveRawValue.match(/(\d+)\s%/);
+        const popularTimesLivePercentMatch = popularTimesLiveRawValue.match(/(\d+)\s?%/);
         detail.popularTimesLivePercent = popularTimesLivePercentMatch ? Number(popularTimesLivePercentMatch[1]) : null;
             
         const histogramSel = '.section-popular-times';
