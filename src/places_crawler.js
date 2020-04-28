@@ -23,11 +23,16 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
     await waitForGoogleMapLoader(page);
     await page.waitForSelector(PLACE_TITLE_SEL, { timeout: DEFAULT_TIMEOUT });
     const detail = await page.evaluate((placeTitleSel) => {
+        let address = $('[data-section-id="ad"] .section-info-line').text().trim();
+        const secondaryAddressLine = $('[data-section-id="ad"] .section-info-secondary-text');
+        if (address && secondaryAddressLine) {
+            address += ` ${secondaryAddressLine.text().trim()}`;
+        }
         return {
             title: $(placeTitleSel).text().trim(),
             totalScore: $('span.section-star-display').eq(0).text().trim(),
             categoryName: $('[jsaction="pane.rating.category"]').text().trim(),
-            address: $('[data-section-id="ad"] .widget-pane-link').text().trim(),
+            address,
             plusCode: $('[data-section-id="ol"] .widget-pane-link').text().trim(),
             website: $('[data-section-id="ap"]').length ? $('[data-section-id="ap"]').eq('0').text().trim() : null,
             phone: $('[data-section-id="pn0"].section-info-speak-numeral').length
@@ -54,8 +59,8 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
 
     // Include search string
     detail.searchString = searchString;
-    
-    
+
+
 
     // Extract histogram for popular times
     if (includeHistogram) {
@@ -70,7 +75,7 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
             : null;
         const popularTimesLivePercentMatch = popularTimesLiveRawValue ? popularTimesLiveRawValue.match(/(\d+)\s?%/) : null;
         detail.popularTimesLivePercent = popularTimesLivePercentMatch ? Number(popularTimesLivePercentMatch[1]) : null;
-            
+
         const histogramSel = '.section-popular-times';
         if (await page.$(histogramSel)) {
             detail.popularTimesHistogram = await page.evaluate(() => {
