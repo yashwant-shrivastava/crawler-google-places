@@ -35,7 +35,7 @@ On this input actor searches places on this start url: https://www.google.com/ma
 - `proxyConfig` - Apify proxy configuration
 - `lat` - Use it with combination with longitude and zoom to set up viewport to search on.
 - `lng` - Use it with combination with latitude and zoom to set up viewport to search on.
-- `zoom` - Viewport zoom, e.g zoom: 10 -> https://www.google.com/maps/@50.0860729,14.4135326,10z vs zoom: 1 -> https://www.google.com/maps/@50.0860729,14.4135326,10z
+- `zoom` - Viewport zoom, e.g zoom: 10 -> https://www.google.com/maps/@50.0860729,14.4135326,10z vs zoom: 1 -> https://www.google.com/maps/@50.0860729,14.4135326,1z
 - `maxCrawledPlaces` - Limit places you want to get from crawler
 - `debug` - Debug messages will be included in log.
 
