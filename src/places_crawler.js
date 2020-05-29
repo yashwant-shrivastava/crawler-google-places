@@ -345,7 +345,8 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, maxCrawledPlaces, inpu
                 await puppeteerPool.retire(page.browser());
                 if (request.retryCount < MAX_PAGE_RETRIES && log.getLevel() !== log.LEVELS.DEBUG) {
                     // This fix to not show stack trace in log for retired requests, but we should handle this on SDK
-                    err.stack = 'Stack trace was omitted for retires requests. Set up debug mode to see it.';
+                    const info = 'Stack trace was omitted for retires requests. Set up debug mode to see it.';
+                    throw `${err.message} (${info})`;
                 }
                 throw err;
             }
