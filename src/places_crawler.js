@@ -253,7 +253,7 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
     // Extract place images
     if (includeImages) {
         await page.waitForSelector(PLACE_TITLE_SEL, { timeout: DEFAULT_TIMEOUT });
-        const imagesButtonSel = '.section-image-pack-image-container';
+        const imagesButtonSel = '.section-hero-header-image-hero-container';
         const imagesButton = await page.$(imagesButtonSel);
         if (imagesButton) {
             await sleep(2000);
@@ -306,9 +306,12 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, maxCrawledPlaces, inpu
         ...crawlerOpts,
         gotoFunction: async ({ request, page }) => {
             await page._client.send('Emulation.clearDeviceMetricsOverride');
-            await blockRequests(page, {
-                urlPatterns: ['/maps/vt/', '/earth/BulkMetadata/', 'googleusercontent.com'],
-            });
+            // This blocks images so we have to skip it
+            if (!input.includeImages) {
+                await blockRequests(page, {
+                    urlPatterns: ['/maps/vt/', '/earth/BulkMetadata/', 'googleusercontent.com'],
+                });
+            }
             await page.goto(request.url, { timeout: 60000 });
         },
         handlePageFunction: async ({ request, page, puppeteerPool }) => {
