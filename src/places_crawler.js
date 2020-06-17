@@ -28,16 +28,24 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
         if (address && secondaryAddressLine) {
             address += ` ${secondaryAddressLine.text().trim()}`;
         }
+        let addressAlt = $("button[data-tooltip*='address']").text().trim();
+        const secondaryAddressLineAlt = $("button[data-item-id*='locatedin']").text().trim();
+        if (addressAlt && secondaryAddressLineAlt) {
+            addressAlt += ` ${secondaryAddressLineAlt}`;
+        }
         return {
             title: $(placeTitleSel).text().trim(),
             totalScore: $('span.section-star-display').eq(0).text().trim(),
             categoryName: $('[jsaction="pane.rating.category"]').text().trim(),
-            address,
-            plusCode: $('[data-section-id="ol"] .widget-pane-link').text().trim(),
-            website: $('[data-section-id="ap"]').length ? $('[data-section-id="ap"]').eq('0').text().trim() : null,
+            address: address || addressAlt || null,
+            plusCode: $('[data-section-id="ol"] .widget-pane-link').text().trim()
+                || $("button[data-tooltip*='plus code']").text().trim() || null,
+            website: $('[data-section-id="ap"]').length
+                ? $('[data-section-id="ap"]').eq('0').text().trim()
+                : $("button[data-tooltip*='website']").text().trim() || null,
             phone: $('[data-section-id="pn0"].section-info-speak-numeral').length
                 ? $('[data-section-id="pn0"].section-info-speak-numeral').attr('data-href').replace('tel:', '')
-                : null,
+                : $("button[data-tooltip*='phone']").text().trim() || null,
         };
     }, PLACE_TITLE_SEL);
 
