@@ -11,6 +11,12 @@
       "prefill": "pubs near prague 2",
       "editor": "textfield"
     },
+    "searchStringArray": {
+      "title": "Search",
+      "type": "array",
+      "description": "Array of strings, that will be searched on Google maps.",
+      "editor": "json"
+    },
     "country": {
       "title": "Country",
       "type": "string",

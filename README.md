@@ -36,6 +36,7 @@ Example input:
 On this input actor searches places on this start url: https://www.google.com/maps/search/pubs+near+prague/@50.0860729,14.4135326,10z
 
 - `searchString` - String will be search on Google maps. It is possible fill [Google Place ID](https://developers.google.com/places/place-id) in format `place_id:ChIJp4JiUCNP0xQR1JaSjpW_Hms`.
+- `searchStringArray` - Array of strings, that will be searched on Google maps.
 - `proxyConfig` - Apify proxy configuration
 - `country` - Country name for polygon localization
 - `state` - State name for polygon localization
