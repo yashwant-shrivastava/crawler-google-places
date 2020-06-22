@@ -17,6 +17,10 @@ It is recommended to run the actor with at least 8GB memory. On Apify platform w
 - 100 google place details for 4 compute units
 - 100 google place details with images and reviews for 10 compute units - the usage really depends on how many images and reviews specific places have
 
+## Using polygons
+For determining polygons to exact search location are used [nominatim maps](https://nominatim.org/).
+Currently search is done for first found polygon for combination of input fields: `country`, `state`, `city`. 
+
 ## INPUT
 Follow guide on [actor detail page](https://www.apify.com/drobnikj/crawler-google-places) to see how it works.
 
@@ -33,6 +37,9 @@ On this input actor searches places on this start url: https://www.google.com/ma
 
 - `searchString` - String will be search on Google maps. It is possible fill [Google Place ID](https://developers.google.com/places/place-id) in format `place_id:ChIJp4JiUCNP0xQR1JaSjpW_Hms`.
 - `proxyConfig` - Apify proxy configuration
+- `country` - Country name for polygon localization
+- `state` - State name for polygon localization
+- `city` - City name for polygon localization
 - `maxReviews` - Maximum number of reviews per place
 - `maxImages` - Maximum number of images per place
 - `lat` - Use it with combination with longitude and zoom to set up viewport to search on.

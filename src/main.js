@@ -3,12 +3,15 @@ const placesCrawler = require('./places_crawler');
 const resultJsonSchema = require('./result_item_schema');
 const _ = require('lodash');
 const { log } = Apify.utils;
+const { getGeolocation, getPolygons, findPointsInPolygon, distanceByZoom } = require('./polygon');
 
 Apify.main(async () => {
     const input = await Apify.getValue('INPUT');
-    const { searchString, searchStringsArray, proxyConfig, lat, lng, maxCrawledPlaces, regularTestRun,
+    const {
+        searchString, searchStringsArray, proxyConfig, lat, lng, maxCrawledPlaces, regularTestRun,
         includeReviews = true, includeImages = true, includeHistogram = true, includeOpeningHours = true,
-        walker, debug } = input;
+        walker, debug, country, state, city, zoom = 10
+    } = input;
 
     if (debug) log.setLevel(log.LEVELS.DEBUG);
     if (!searchString && !searchStringsArray) throw new Error('Attribute searchString or searchStringsArray is missing in input.');
@@ -20,11 +23,19 @@ Apify.main(async () => {
     log.info('Scraping Google Places for search string:', searchString);
 
     const startRequests = [];
-    let startUrlSearch = 'https://www.google.com/maps/search/';
+    const startUrlSearchs = [];
     if (lat || lng) {
-        const { zoom = 10 } = input;
         if (!lat || !lng) throw new Error('You have to defined lat and lng!');
-        startUrlSearch = `https://www.google.com/maps/@${lat},${lng},${zoom}z/search`;
+        startUrlSearchs.push(`https://www.google.com/maps/@${lat},${lng},${zoom}z/search`);
+    } else if (country || state || city) {
+        let points = [];
+        const geo = await getGeolocation({ country, state, city });
+        points = await findPointsInPolygon(geo, zoom, points);
+        for (const point of points) {
+            startUrlSearchs.push(`https://www.google.com/maps/@${point.lat},${point.lon},${zoom}z/search`);
+        }
+    } else {
+        startUrlSearchs.push('https://www.google.com/maps/search/')
     }
 
     if (walker && searchString) {
@@ -61,7 +72,13 @@ Apify.main(async () => {
                     userData: { label: 'detail', searchString },
                 });
             } else {
-                startRequests.push({ url: startUrlSearch, uniqueKey: search, userData: { label: 'startUrl', searchString: search } });
+                for (const startUrlSearch of startUrlSearchs) {
+                    startRequests.push({
+                        url: startUrlSearch,
+                        uniqueKey: `${startUrlSearch}+${search}`,
+                        userData: { label: 'startUrl', searchString: search }
+                    });
+                }
             }
         }
     }

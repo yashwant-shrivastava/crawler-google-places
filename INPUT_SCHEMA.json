@@ -11,6 +11,27 @@
       "prefill": "pubs near prague 2",
       "editor": "textfield"
     },
+    "country": {
+      "title": "Country",
+      "type": "string",
+      "description": "",
+      "prefill": "Czech Republic",
+      "editor": "textfield"
+    },
+    "state": {
+      "title": "State",
+      "type": "string",
+      "description": "",
+      "prefill": "",
+      "editor": "textfield"
+    },
+    "city": {
+      "title": "City",
+      "type": "string",
+      "description": "",
+      "prefill": "Prague",
+      "editor": "textfield"
+    },
     "proxyConfig": {
       "title": "Proxy configuration",
       "type": "object",

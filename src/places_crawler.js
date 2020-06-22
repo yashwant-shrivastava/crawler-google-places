@@ -412,6 +412,7 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, maxCrawledPlaces, inpu
                 });
             }
             if (forceEng) request.url = request.url + `&hl=en`;
+            await page.setViewport({ width: 800, height: 800 })
             await page.goto(request.url, { timeout: 60000 });
         },
         handlePageFunction: async ({ request, page, puppeteerPool }) => {
@@ -446,6 +447,7 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, maxCrawledPlaces, inpu
                         maxImages,
                         additionalInfo
                     });
+                    // TODO recheck location according to polygon, can be outside for border searches. turf.booleanContains()
                     await Apify.pushData(placeDetail);
                     log.info(`Finished place url ${placeDetail.url}`);
                 }
