@@ -41,7 +41,9 @@ On this input actor searches places on this start url: https://www.google.com/ma
 - `maxCrawledPlaces` - Limit places you want to get from crawler
 - `debug` - Debug messages will be included in log.
 - `exportPlaceUrls` - Won't crawl through place pages, return links to places
-- `forceEng` - Force localization to be in english
+- `forceEng` - Force localization to be in english, some fields are dependent on english and won't work in different language:
+    - `temporarilyClosed`
+    - `permanentlyClosed`
 
 You can exclude some attributes from results using input parameters. It can help to speed up crawling.
 You need to set the attribute to `false`.

@@ -39,6 +39,14 @@ const extractPlaceDetail = async (options) => {
         if (addressAlt && secondaryAddressLineAlt) {
             addressAlt += ` ${secondaryAddressLineAlt}`;
         }
+        let temporarilyClosed = false;
+        let permanentlyClosed = false;
+        const altOpeningHoursText = $('[class*="section-info-hour-text"] [class*="section-info-text"]').text().trim();
+        if (altOpeningHoursText === 'Temporarily closed')
+            temporarilyClosed = true;
+        else if (altOpeningHoursText === 'Permanently closed')
+            permanentlyClosed = true;
+
         return {
             title: $(placeTitleSel).text().trim(),
             totalScore: $('span.section-star-display').eq(0).text().trim(),
@@ -52,6 +60,8 @@ const extractPlaceDetail = async (options) => {
             phone: $('[data-section-id="pn0"].section-info-speak-numeral').length
                 ? $('[data-section-id="pn0"].section-info-speak-numeral').attr('data-href').replace('tel:', '')
                 : $("button[data-tooltip*='phone']").text().trim() || null,
+            temporarilyClosed,
+            permanentlyClosed,
         };
     }, PLACE_TITLE_SEL);
 
@@ -127,16 +137,25 @@ const extractPlaceDetail = async (options) => {
     // Extract opening hours
     if (includeOpeningHours) {
         const openingHoursSel = '.section-open-hours-container.section-open-hours-container-hoverable';
-        if (await page.$(openingHoursSel)) {
-            const openingHoursText = await page.evaluate(() => {
-                return $('.section-open-hours-container.section-open-hours-container-hoverable').attr('aria-label');
-            });
-            const openingHours = openingHoursText.split(',');
+        const openingHoursSelAlt = '.section-open-hours-container.section-open-hours';
+        const openingHoursSelAlt2 = '.section-open-hours-container';
+        const openingHoursEl = (await page.$(openingHoursSel)) || (await page.$(openingHoursSelAlt)) || (await page.$(openingHoursSelAlt2));
+        if (openingHoursEl) {
+            const openingHoursText = await page.evaluate((openingHoursEl) => {
+                return openingHoursEl.getAttribute('aria-label');
+            }, openingHoursEl);
+            let splitter = ',';
+            let regexp = /(\S+)\s(.*)/
+            if (openingHoursText.includes(';')) {
+                splitter = ';';
+                regexp = /(\w+),\s+(\d+[AP]M\s+to\s+\d+[AP]M)/i
+            }
+            const openingHours = openingHoursText.split(splitter);
             if (openingHours.length) {
                 detail.openingHours = openingHours.map((line) => {
-                    let [match, day, hours] = line.match(/(\S+)\s(.*)/);
+                    let [match, day, hours] = line.trim().match(regexp);
                     hours = hours.split('.')[0];
-                    return {day, hours};
+                    return { day, hours };
                 })
             }
         }
@@ -148,7 +167,7 @@ const extractPlaceDetail = async (options) => {
         detail.peopleAlsoSearch = [];
         const cardSel = 'button[class$="card"]';
         const cards = await peopleSearchContainer.$$(cardSel);
-        for (let i = 0;i < cards.length; i++) {
+        for (let i = 0; i < cards.length; i++) {
             const searchResult = await page.evaluate((index, sel) => {
                 const card = $(sel).eq(index);
                 return {
@@ -215,7 +234,7 @@ const extractPlaceDetail = async (options) => {
             const number = numberReviewsText.match(/[.,0-9]+/);
             return {
                 reviewsCountText: number ? number[0] : null,
-                localization: navigator.language.slice(0,2),
+                localization: navigator.language.slice(0, 2),
             }
         }, reviewsButtonSel);
         let globalParser;
@@ -224,8 +243,8 @@ const extractPlaceDetail = async (options) => {
         } catch (e) {
             throw new Error(`Can not find localization for ${localization}, try to use different proxy IP.`);
         }
-        detail.totalScore = globalParser.numberParser({round:'floor'})(detail.totalScore);
-        detail.reviewsCount = reviewsCountText ? globalParser.numberParser({round:'truncate'})(reviewsCountText) : null;
+        detail.totalScore = globalParser.numberParser({ round: 'floor' })(detail.totalScore);
+        detail.reviewsCount = reviewsCountText ? globalParser.numberParser({ round: 'truncate' })(reviewsCountText) : null;
         // If we find consent dialog, close it!
         if (await page.$('.widget-consent-dialog')) {
             await page.click('.widget-consent-dialog .widget-consent-button-later');
@@ -255,7 +274,7 @@ const extractPlaceDetail = async (options) => {
                 }
             };
             await sleep(5000);
-            const [sort1, sort2, scroll, reviewsResponse ] = await Promise.all([
+            const [sort1, sort2, scroll, reviewsResponse] = await Promise.all([
                 sortPromise1(),
                 sortPromise2(),
                 scrollTo(page, '.section-scrollbox.scrollable-y', 10000),
