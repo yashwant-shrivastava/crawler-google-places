@@ -33,6 +33,8 @@ On this input actor searches places on this start url: https://www.google.com/ma
 
 - `searchString` - String will be search on Google maps. It is possible fill [Google Place ID](https://developers.google.com/places/place-id) in format `place_id:ChIJp4JiUCNP0xQR1JaSjpW_Hms`.
 - `proxyConfig` - Apify proxy configuration
+- `maxReviews` - Maximum number of reviews per place
+- `maxImages` - Maximum number of images per place
 - `lat` - Use it with combination with longitude and zoom to set up viewport to search on.
 - `lng` - Use it with combination with latitude and zoom to set up viewport to search on.
 - `zoom` - Viewport zoom, e.g zoom: 10 -> https://www.google.com/maps/@50.0860729,14.4135326,10z vs zoom: 1 -> https://www.google.com/maps/@50.0860729,14.4135326,1z

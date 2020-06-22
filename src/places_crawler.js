@@ -11,8 +11,10 @@ const { injectJQuery, blockRequests } = Apify.utils.puppeteer;
 const infiniteScroll = require('./infinite_scroll');
 const { MAX_PAGE_RETRIES, DEFAULT_TIMEOUT, PLACE_TITLE_SEL } = require('./consts');
 const { enqueueAllPlaceDetails } = require('./enqueue_places_crawler');
-const { saveHTML, saveScreenshot, waitForGoogleMapLoader,
-    parseReviewFromResponseBody, scrollTo } = require('./utils');
+const {
+    saveHTML, saveScreenshot, waitForGoogleMapLoader,
+    parseReviewFromResponseBody, scrollTo
+} = require('./utils');
 
 /**
  * This is the worst part - parsing data from place detail
@@ -21,7 +23,7 @@ const { saveHTML, saveScreenshot, waitForGoogleMapLoader,
 const extractPlaceDetail = async (options) => {
     const {
         page, request, searchString, includeReviews, includeImages, includeHistogram, includeOpeningHours,
-        includePeopleAlsoSearch, additionalInfo = false
+        includePeopleAlsoSearch, maxReviews, maxImages, additionalInfo = false
     } = options;
     // Extract basic information
     await waitForGoogleMapLoader(page);
@@ -262,32 +264,40 @@ const extractPlaceDetail = async (options) => {
 
             let reviewResponseBody = await reviewsResponse.buffer();
             const reviews = parseReviewFromResponseBody(reviewResponseBody);
-            detail.reviews.push(...reviews);
-            let reviewUrl = reviewsResponse.url();
-            // Replace !3e1 in URL with !3e2, it makes list sort by newest
-            reviewUrl = reviewUrl.replace(/\!3e\d/, '!3e2');
-            // Make sure that we star review from 0, setting !1i0
-            reviewUrl = reviewUrl.replace(/\!1i\d+/, '!1i0');
-            const increaseLimitInUrl = (url) => {
-                const numberString = reviewUrl.match(/\!1i(\d+)/)[1];
-                const number = parseInt(numberString)
-                return url.replace(/\!1i\d+/, `!1i${number+10}`);
-            };
-
-            while(true) {
-                // Request in browser context to use proxy as in brows
-                const responseBody = await page.evaluate(async (url) => {
-                    const response = await fetch(url);
-                    return await response.text();
-                }, reviewUrl);
-                const reviews = parseReviewFromResponseBody(responseBody);
-                if (reviews.length === 0) break;
+            if (maxReviews && reviews.length > maxReviews)
+                detail.reviews.push(...reviews.slice(0, maxReviews));
+            else {
                 detail.reviews.push(...reviews);
-                reviewUrl = increaseLimitInUrl(reviewUrl);
+                let reviewUrl = reviewsResponse.url();
+                // Replace !3e1 in URL with !3e2, it makes list sort by newest
+                reviewUrl = reviewUrl.replace(/\!3e\d/, '!3e2');
+                // Make sure that we star review from 0, setting !1i0
+                reviewUrl = reviewUrl.replace(/\!1i\d+/, '!1i0');
+                const increaseLimitInUrl = (url) => {
+                    const numberString = reviewUrl.match(/\!1i(\d+)/)[1];
+                    const number = parseInt(numberString)
+                    return url.replace(/\!1i\d+/, `!1i${number + 10}`);
+                };
+
+                while (true) {
+                    // Request in browser context to use proxy as in brows
+                    const responseBody = await page.evaluate(async (url) => {
+                        const response = await fetch(url);
+                        return await response.text();
+                    }, reviewUrl);
+                    const reviews = parseReviewFromResponseBody(responseBody);
+                    if (reviews.length === 0) break;
+                    if (maxReviews && (reviews.length + detail.reviews.length) > maxReviews) {
+                        detail.reviews.push(...reviews.slice(0, maxReviews - detail.reviews.length));
+                        break;
+                    } else
+                        detail.reviews.push(...reviews);
+                    reviewUrl = increaseLimitInUrl(reviewUrl);
+                }
             }
 
             await page.click('button[jsaction*=back]');
-        }  else {
+        } else {
             log.info(`Skipping reviews scraping for url: ${page.url()}`)
         }
     }
@@ -300,18 +310,43 @@ const extractPlaceDetail = async (options) => {
         if (imagesButton) {
             await sleep(2000);
             await imagesButton.click();
-            await infiniteScroll(page, 99999999999, '.section-scrollbox.scrollable-y', 'images list');
-            detail.imageUrls = await page.evaluate(() => {
-                const urls = [];
-                $('.gallery-image-high-res').each(function () {
-                    const urlMatch = $(this).attr('style').match(/url\("(.*)"\)/);
-                    if (!urlMatch) return;
-                    let imageUrl = urlMatch[1];
-                    if (imageUrl[0] === '/') imageUrl = `https:${imageUrl}`;
-                    urls.push(imageUrl);
+            let lastImage = null;
+            let pageBottom = 10000;
+            let imageUrls = [];
+            if (maxImages) {
+                while (true) {
+                    await infiniteScroll(page, pageBottom, '.section-scrollbox.scrollable-y', 'images list', 1);
+                    imageUrls = await page.evaluate(() => {
+                        const urls = [];
+                        $('.gallery-image-high-res').each(function () {
+                            const urlMatch = $(this).attr('style').match(/url\("(.*)"\)/);
+                            if (!urlMatch) return;
+                            let imageUrl = urlMatch[1];
+                            if (imageUrl[0] === '/') imageUrl = `https:${imageUrl}`;
+                            urls.push(imageUrl);
+                        });
+                        return urls;
+                    });
+                    if (imageUrls.length >= maxImages || lastImage === imageUrls[imageUrls.length - 1]) break;
+                    lastImage = imageUrls[imageUrls.length - 1];
+                    pageBottom = pageBottom + 6000;
+                }
+                detail.imageUrls = imageUrls.slice(0, maxImages);
+            } else {
+                await infiniteScroll(page, 99999999999, '.section-scrollbox.scrollable-y', 'images list');
+                imageUrls = await page.evaluate(() => {
+                    const urls = [];
+                    $('.gallery-image-high-res').each(function () {
+                        const urlMatch = $(this).attr('style').match(/url\("(.*)"\)/);
+                        if (!urlMatch) return;
+                        let imageUrl = urlMatch[1];
+                        if (imageUrl[0] === '/') imageUrl = `https:${imageUrl}`;
+                        urls.push(imageUrl);
+                    });
+                    return urls;
                 });
-                return urls;
-            });
+                detail.imageUrls = imageUrls;
+            }
         }
     } else {
         log.info(`Skipping images scraping for url: ${page.url()}`)
@@ -337,7 +372,7 @@ const saveScreenForDebug = async (reques, page) => {
 const setUpCrawler = (puppeteerPoolOptions, requestQueue, maxCrawledPlaces, input) => {
     const {
         includeReviews, includeImages, includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
-        exportPlaceUrls = false, forceEng, additionalInfo
+        maxReviews, maxImages, exportPlaceUrls = false, forceEng, additionalInfo
     } = input;
     const crawlerOpts = {
         requestQueue,
@@ -388,6 +423,8 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, maxCrawledPlaces, inpu
                         includeHistogram,
                         includeOpeningHours,
                         includePeopleAlsoSearch,
+                        maxReviews,
+                        maxImages,
                         additionalInfo
                     });
                     await Apify.pushData(placeDetail);
