@@ -38,6 +38,7 @@ On this input actor searches places on this start url: https://www.google.com/ma
 - `zoom` - Viewport zoom, e.g zoom: 10 -> https://www.google.com/maps/@50.0860729,14.4135326,10z vs zoom: 1 -> https://www.google.com/maps/@50.0860729,14.4135326,1z
 - `maxCrawledPlaces` - Limit places you want to get from crawler
 - `debug` - Debug messages will be included in log.
+- `exportPlaceUrls` - Won't crawl through place pages, return links to places
 - `forceEng` - Force localization to be in english
 
 You can exclude some attributes from results using input parameters. It can help to speed up crawling.
@@ -47,6 +48,7 @@ You need to set the attribute to `false`.
 - `includeHistogram`
 - `includeOpeningHours`
 - `includePeopleAlsoSearch`
+- `additionalInfo` - Service Options, Highlights, Offerings,..
 
 ### Country localization
 You can force the scraper to access the places only from specific country location. We recommend this to ensure the correct language in results. This works reliably only for US (most of our proxies are from US). Currently, this option is not available in the Editor input , you have switch to JSON input. After you switch, your configuration will remain the same so just update the `proxyconfig` field with `apifyProxyCountry` property to specify the country, example:
@@ -219,6 +221,84 @@ Example results item:
       "likesCount": null,
       "stars": 4
     },
+  "additionalInfo": {
+    "Service options": [
+      {
+        "Takeaway": true
+      },
+      {
+        "Delivery": false
+      }
+    ],
+    "Highlights": [
+      {
+        "Bar games": true
+      },
+      {
+        "Karaoke": true
+      },
+      {
+        "Live music": true
+      },
+      {
+        "Outdoor seating": true
+      }
+    ],
+    "Offerings": [
+      {
+        "Beer": true
+      },
+      {
+        "Food": true
+      },
+      {
+        "Vegetarian options": true
+      },
+      {
+        "Wine": true
+      }
+    ],
+    "Dining options": [
+      {
+        "Breakfast": true
+      },
+      {
+        "Lunch": true
+      },
+      {
+        "Dinner": true
+      },
+      {
+        "Dessert": true
+      },
+      {
+        "Seating": true
+      }
+    ],
+    "Amenities": [
+      {
+        "Toilets": true
+      }
+    ],
+    "Atmosphere": [
+      {
+        "Casual": true
+      },
+      {
+        "Cosy": true
+      }
+    ],
+    "Crowd": [
+      {
+        "Groups": true
+      }
+    ],
+    "Planning": [
+      {
+        "LGBTQ-friendly": true
+      }
+    ]
+  },
     ...
   ]
 }

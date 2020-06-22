@@ -12,7 +12,7 @@ const { waitForGoogleMapLoader, parseSearchPlacesResponseBody } = require('./uti
  * @param maxPlacesPerCrawl
  * @return {Function}
  */
-const enqueuePlacesFromResponse = (requestQueue, searchString, maxPlacesPerCrawl) => {
+const enqueuePlacesFromResponse = (requestQueue, searchString, maxPlacesPerCrawl, exportPlaceUrls) => {
     return async (response) => {
         const url = response.url();
         if (url.startsWith('https://www.google.com/search')) {
@@ -26,12 +26,18 @@ const enqueuePlacesFromResponse = (requestQueue, searchString, maxPlacesPerCrawl
             places.forEach((place, index) => {
                 const rank = ((pageNumber - 1) * 20) + (index + 1);
                 if (!maxPlacesPerCrawl || rank <= maxPlacesPerCrawl) {
-                    const promise = requestQueue.addRequest({
-                        url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${place.placeId}`,
-                        uniqueKey: place.placeId,
-                        userData: { label: 'detail', searchString, rank },
-                    },
-                    { forefront: true });
+                    let promise;
+                    if (exportPlaceUrls)
+                        promise = Apify.pushData({
+                            url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${place.placeId}`
+                        })
+                    else
+                        promise = requestQueue.addRequest({
+                                url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${place.placeId}`,
+                                uniqueKey: place.placeId,
+                                userData: { label: 'detail', searchString, rank },
+                            },
+                            { forefront: true });
                     enqueuePromises.push(promise);
                 }
             });
@@ -47,8 +53,8 @@ const enqueuePlacesFromResponse = (requestQueue, searchString, maxPlacesPerCrawl
  * @param requestQueue
  * @param maxCrawledPlaces
  */
-const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxCrawledPlaces, request) => {
-    page.on('response', enqueuePlacesFromResponse(requestQueue, searchString, maxCrawledPlaces));
+const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxCrawledPlaces, request, exportPlaceUrls) => {
+    page.on('response', enqueuePlacesFromResponse(requestQueue, searchString, maxCrawledPlaces, exportPlaceUrls));
     // Save state of listing pagination
     // NOTE: If pageFunction failed crawler skipped already scraped pagination
     const listingStateKey = `${LISTING_PAGINATION_KEY}-${request.id}`;

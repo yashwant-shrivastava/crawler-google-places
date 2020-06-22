@@ -83,6 +83,18 @@
       "description": "Debug messages will be included in log.",
       "default": false
     },
+    "exportPlaceUrls": {
+      "title": "Export Place Urls",
+      "type": "boolean",
+      "description": "Scraper will return only places urls without details.",
+      "default": false
+    },
+    "additionalInfo": {
+      "title": "Additional Info",
+      "type": "boolean",
+      "description": "Export additional info: Service Options, Highlights, Offerings,...",
+      "default": false
+    },
     "forceEng": {
       "title": "Force English",
       "type": "boolean",

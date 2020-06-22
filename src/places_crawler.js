@@ -18,7 +18,11 @@ const { saveHTML, saveScreenshot, waitForGoogleMapLoader,
  * This is the worst part - parsing data from place detail
  * @param page
  */
-const extractPlaceDetail = async (page, request, searchString, includeReviews, includeImages, includeHistogram, includeOpeningHours, includePeopleAlsoSearch) => {
+const extractPlaceDetail = async (options) => {
+    const {
+        page, request, searchString, includeReviews, includeImages, includeHistogram, includeOpeningHours,
+        includePeopleAlsoSearch, additionalInfo = false
+    } = options;
     // Extract basic information
     await waitForGoogleMapLoader(page);
     await page.waitForSelector(PLACE_TITLE_SEL, { timeout: DEFAULT_TIMEOUT });
@@ -155,14 +159,45 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
                 page.evaluate((button, index) => {
                     $(button).eq(index).click();
                 }, cardSel, i),
-                page.waitForNavigation({ waitUntil: [ 'domcontentloaded', 'networkidle2' ] }),
+                page.waitForNavigation({ waitUntil: ['domcontentloaded', 'networkidle2'] }),
             ]);
             searchResult.url = await page.url();
             detail.peopleAlsoSearch.push(searchResult);
             await Promise.all([
-                page.goBack({ waitUntil: [ 'domcontentloaded', 'networkidle2' ] }),
+                page.goBack({ waitUntil: ['domcontentloaded', 'networkidle2'] }),
                 waitForGoogleMapLoader(page)
             ]);
+        }
+    }
+
+    // Extract additional info
+    if (additionalInfo) {
+        log.debug('Scraping additional info.')
+        const button = await page.$('button.section-editorial');
+        try {
+            await button.click();
+            await page.waitForSelector('.section-attribute-group', { timeout: 3000 });
+            const sections = await page.evaluate(() => {
+                const result = {};
+                $('.section-attribute-group').each(function (i, section) {
+                    const key = $(section).find('.section-attribute-group-title').text().trim();
+                    const values = []
+                    $(section).find('.section-attribute-group-container .section-attribute-group-item').each(function (i, sub) {
+                        const res = {}
+                        const title = $(sub).text().trim();
+                        const val = $(sub).find(".section-attribute-group-item-icon.maps-sprite-place-attributes-done").length > 0;
+                        res[title] = val;
+                        values.push(res);
+                    });
+                    result[key] = values;
+                });
+                return result;
+            });
+            detail.additionalInfo = sections;
+            const backButton = await page.$('button[aria-label*=Back]');
+            await backButton.click();
+        } catch (e) {
+            log.info(e + 'Additional info not parsed');
         }
     }
 
@@ -301,7 +336,8 @@ const saveScreenForDebug = async (reques, page) => {
  */
 const setUpCrawler = (puppeteerPoolOptions, requestQueue, maxCrawledPlaces, input) => {
     const {
-        includeReviews, includeImages, includeHistogram, includeOpeningHours, includePeopleAlsoSearch, forceEng
+        includeReviews, includeImages, includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
+        exportPlaceUrls = false, forceEng, additionalInfo
     } = input;
     const crawlerOpts = {
         requestQueue,
@@ -338,17 +374,26 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, maxCrawledPlaces, inpu
                 }
                 if (label === 'startUrl') {
                     log.info(`Start enqueuing places details for search: ${searchString}`);
-                    await enqueueAllPlaceDetails(page, searchString, requestQueue, maxCrawledPlaces, request);
+                    await enqueueAllPlaceDetails(page, searchString, requestQueue, maxCrawledPlaces, request, exportPlaceUrls);
                     log.info('Enqueuing places finished.');
                 } else {
                     // Get data for place and save it to dataset
                     log.info(`Extracting details from place url ${page.url()}`);
-                    const placeDetail = await extractPlaceDetail(page, request, searchString, includeReviews, includeImages,
-                        includeHistogram, includeOpeningHours, includePeopleAlsoSearch);
+                    const placeDetail = await extractPlaceDetail({
+                        page,
+                        request,
+                        searchString,
+                        includeReviews,
+                        includeImages,
+                        includeHistogram,
+                        includeOpeningHours,
+                        includePeopleAlsoSearch,
+                        additionalInfo
+                    });
                     await Apify.pushData(placeDetail);
                     log.info(`Finished place url ${placeDetail.url}`);
                 }
-            } catch(err) {
+            } catch (err) {
                 // This issue can happen, mostly because proxy IP was blocked by google
                 // Let's refresh IP using browser refresh.
                 if (log.getLevel() === log.LEVELS.DEBUG) {
