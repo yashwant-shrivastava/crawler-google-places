@@ -82,6 +82,12 @@
       "type": "boolean",
       "description": "Debug messages will be included in log.",
       "default": false
+    },
+    "forceEng": {
+      "title": "Force English",
+      "type": "boolean",
+      "description": "Force places to be in specific english",
+      "default": true
     }
   },
   "required": [

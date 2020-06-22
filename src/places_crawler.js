@@ -69,7 +69,6 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
     detail.searchString = searchString;
 
 
-
     // Extract histogram for popular times
     if (includeHistogram) {
         // Include live popular times value
@@ -301,7 +300,9 @@ const saveScreenForDebug = async (reques, page) => {
  * @return {Apify.PuppeteerCrawler}
  */
 const setUpCrawler = (puppeteerPoolOptions, requestQueue, maxCrawledPlaces, input) => {
-    const { includeReviews, includeImages, includeHistogram, includeOpeningHours, includePeopleAlsoSearch } = input;
+    const {
+        includeReviews, includeImages, includeHistogram, includeOpeningHours, includePeopleAlsoSearch, forceEng
+    } = input;
     const crawlerOpts = {
         requestQueue,
         maxRequestRetries: MAX_PAGE_RETRIES, // Sometimes page can failed because of blocking proxy IP by Google
@@ -320,6 +321,7 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, maxCrawledPlaces, inpu
                     urlPatterns: ['/maps/vt/', '/earth/BulkMetadata/', 'googleusercontent.com'],
                 });
             }
+            if (forceEng) request.url = request.url + `&hl=en`;
             await page.goto(request.url, { timeout: 60000 });
         },
         handlePageFunction: async ({ request, page, puppeteerPool }) => {
