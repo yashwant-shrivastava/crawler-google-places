@@ -29,16 +29,16 @@ const extractPlaceDetail = async (options) => {
     await waitForGoogleMapLoader(page);
     await page.waitForSelector(PLACE_TITLE_SEL, { timeout: DEFAULT_TIMEOUT });
     const detail = await page.evaluate((placeTitleSel) => {
-        let address = $('[data-section-id="ad"] .section-info-line').text().trim();
-        const secondaryAddressLine = $('[data-section-id="ad"] .section-info-secondary-text');
-        if (address && secondaryAddressLine) {
-            address += ` ${secondaryAddressLine.text().trim()}`;
-        }
-        let addressAlt = $("button[data-tooltip*='address']").text().trim();
-        const secondaryAddressLineAlt = $("button[data-item-id*='locatedin']").text().trim();
-        if (addressAlt && secondaryAddressLineAlt) {
-            addressAlt += ` ${secondaryAddressLineAlt}`;
-        }
+        const address = $('[data-section-id="ad"] .section-info-line').text().trim();
+        const addressAlt = $("button[data-tooltip*='address']").text().trim();
+        const addressAlt2 = $("button[data-item-id*='address']").text().trim();
+        const secondaryAddressLine = $('[data-section-id="ad"] .section-info-secondary-text').text().trim();
+        const secondaryAddressLineAlt = $("button[data-tooltip*='locatedin']").text().trim();
+        const secondaryAddressLineAlt2 = $("button[data-item-id*='locatedin']").text().trim();
+        const phone = $('[data-section-id="pn0"].section-info-speak-numeral').length
+            ? $('[data-section-id="pn0"].section-info-speak-numeral').attr('data-href').replace('tel:', '')
+            : $("button[data-tooltip*='phone']").text().trim();
+        const phoneAlt = $('button[data-item-id*=phone]').text().trim();
         let temporarilyClosed = false;
         let permanentlyClosed = false;
         const altOpeningHoursText = $('[class*="section-info-hour-text"] [class*="section-info-text"]').text().trim();
@@ -51,15 +51,16 @@ const extractPlaceDetail = async (options) => {
             title: $(placeTitleSel).text().trim(),
             totalScore: $('span.section-star-display').eq(0).text().trim(),
             categoryName: $('[jsaction="pane.rating.category"]').text().trim(),
-            address: address || addressAlt || null,
+            address: address || addressAlt || addressAlt2 || null,
+            locatedIn: secondaryAddressLine || secondaryAddressLineAlt || secondaryAddressLineAlt2 || null,
             plusCode: $('[data-section-id="ol"] .widget-pane-link').text().trim()
-                || $("button[data-tooltip*='plus code']").text().trim() || null,
+                || $("button[data-tooltip*='plus code']").text().trim()
+                || $("button[data-item-id*='oloc']").text().trim() || null,
             website: $('[data-section-id="ap"]').length
                 ? $('[data-section-id="ap"]').eq('0').text().trim()
-                : $("button[data-tooltip*='website']").text().trim() || null,
-            phone: $('[data-section-id="pn0"].section-info-speak-numeral').length
-                ? $('[data-section-id="pn0"].section-info-speak-numeral').attr('data-href').replace('tel:', '')
-                : $("button[data-tooltip*='phone']").text().trim() || null,
+                : $("button[data-tooltip*='website']").text().trim()
+                || $("button[data-item-id*='authority']").text().trim() || null,
+            phone: phone || phoneAlt || null,
             temporarilyClosed,
             permanentlyClosed,
         };
