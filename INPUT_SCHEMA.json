@@ -47,13 +47,13 @@
     },
     "maxReviews": {
       "title": "Max reviews",
-      "type": "number",
+      "type": "integer",
       "description": "Maximum number of reviews for place. If you fill 0 or nothing all reviews will be scraped.",
       "default": 5
     },
     "maxImages": {
       "title": "Max Images",
-      "type": "number",
+      "type": "integer",
       "description": "Max number images per place. If you fill 0 or nothing all images will be scraped.",
       "default": 1
     },
