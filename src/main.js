@@ -8,19 +8,19 @@ const { getGeolocation, getPolygons, findPointsInPolygon, distanceByZoom } = req
 Apify.main(async () => {
     const input = await Apify.getValue('INPUT');
     const {
-        searchString, searchStringsArray, proxyConfig, lat, lng, maxCrawledPlaces, regularTestRun,
+        startUrls, searchString, searchStringsArray, proxyConfig, lat, lng, maxCrawledPlaces, regularTestRun,
         includeReviews = true, includeImages = true, includeHistogram = true, includeOpeningHours = true,
         walker, debug, country, state, city, zoom = 10
     } = input;
 
     if (debug) log.setLevel(log.LEVELS.DEBUG);
-    if (!searchString && !searchStringsArray) throw new Error('Attribute searchString or searchStringsArray is missing in input.');
+    if (!searchString && !searchStringsArray && !startUrls) throw new Error('Attribute startUrls or searchString or searchStringsArray is missing in input.');
     if (proxyConfig && proxyConfig.apifyProxyGroups
         && (proxyConfig.apifyProxyGroups.includes('GOOGLESERP') || proxyConfig.apifyProxyGroups.includes('GOOGLE_SERP'))) {
         throw new Error('It is not possible to crawl google places with GOOGLE SERP proxy group. Please use a different one and rerun crawler.');
     }
 
-    log.info('Scraping Google Places for search string:', searchString);
+    if (!startUrls) log.info('Scraping Google Places for search string:', searchString);
 
     const startRequests = [];
     const startUrlSearchs = [];
@@ -53,6 +53,13 @@ Apify.main(async () => {
                     userData: { label: 'startUrl', searchString },
                 });
             }
+        }
+    } else if (startUrls) {
+        for (const url of startUrls) {
+            startRequests.push({
+                url,
+                userData: { label: 'startUrl', searchString: url }
+            });
         }
     } else if (searchString || searchStringsArray) {
         if (searchStringsArray && !_.isArray(searchStringsArray)) throw new Error('Attribute searchStringsArray has to be an array.');
@@ -91,7 +98,9 @@ Apify.main(async () => {
     }
 
     const puppeteerPoolOptions = {
-        launchPuppeteerOptions: {},
+        launchPuppeteerOptions: {
+            headless: true,
+        },
         maxOpenPagesPerInstance: 1,
     };
     if (proxyConfig) {

@@ -1,4 +1,4 @@
-# Crawler Google Places
+# Crawler Google Maps
 Get data from Google Places that the official [Google Maps Places API](https://developers.google.com/places/web-service/search) does not provide.
 
 ## Why?
