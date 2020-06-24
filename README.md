@@ -1,4 +1,4 @@
-# Crawler Google Places
+# Crawler Google Maps
 Get data from Google Places that the official [Google Maps Places API](https://developers.google.com/places/web-service/search) does not provide.
 
 ## Why?
@@ -17,6 +17,10 @@ It is recommended to run the actor with at least 8GB memory. On Apify platform w
 - 100 google place details for 4 compute units
 - 100 google place details with images and reviews for 10 compute units - the usage really depends on how many images and reviews specific places have
 
+## Using polygons
+For determining polygons to exact search location are used [nominatim maps](https://nominatim.org/).
+Currently search is done for first found polygon for combination of input fields: `country`, `state`, `city`. 
+
 ## INPUT
 Follow guide on [actor detail page](https://www.apify.com/drobnikj/crawler-google-places) to see how it works.
 
@@ -32,12 +36,22 @@ Example input:
 On this input actor searches places on this start url: https://www.google.com/maps/search/pubs+near+prague/@50.0860729,14.4135326,10z
 
 - `searchString` - String will be search on Google maps. It is possible fill [Google Place ID](https://developers.google.com/places/place-id) in format `place_id:ChIJp4JiUCNP0xQR1JaSjpW_Hms`.
+- `searchStringArray` - Array of strings, that will be searched on Google maps.
 - `proxyConfig` - Apify proxy configuration
+- `country` - Country name for polygon localization
+- `state` - State name for polygon localization
+- `city` - City name for polygon localization
+- `maxReviews` - Maximum number of reviews per place
+- `maxImages` - Maximum number of images per place
 - `lat` - Use it with combination with longitude and zoom to set up viewport to search on.
 - `lng` - Use it with combination with latitude and zoom to set up viewport to search on.
 - `zoom` - Viewport zoom, e.g zoom: 10 -> https://www.google.com/maps/@50.0860729,14.4135326,10z vs zoom: 1 -> https://www.google.com/maps/@50.0860729,14.4135326,1z
 - `maxCrawledPlaces` - Limit places you want to get from crawler
 - `debug` - Debug messages will be included in log.
+- `exportPlaceUrls` - Won't crawl through place pages, return links to places
+- `forceEng` - Force localization to be in english, some fields are dependent on english and won't work in different language:
+    - `temporarilyClosed`
+    - `permanentlyClosed`
 
 You can exclude some attributes from results using input parameters. It can help to speed up crawling.
 You need to set the attribute to `false`.
@@ -46,6 +60,7 @@ You need to set the attribute to `false`.
 - `includeHistogram`
 - `includeOpeningHours`
 - `includePeopleAlsoSearch`
+- `additionalInfo` - Service Options, Highlights, Offerings,..
 
 ### Country localization
 You can force the scraper to access the places only from specific country location. We recommend this to ensure the correct language in results. This works reliably only for US (most of our proxies are from US). Currently, this option is not available in the Editor input , you have switch to JSON input. After you switch, your configuration will remain the same so just update the `proxyconfig` field with `apifyProxyCountry` property to specify the country, example:
@@ -218,6 +233,84 @@ Example results item:
       "likesCount": null,
       "stars": 4
     },
+  "additionalInfo": {
+    "Service options": [
+      {
+        "Takeaway": true
+      },
+      {
+        "Delivery": false
+      }
+    ],
+    "Highlights": [
+      {
+        "Bar games": true
+      },
+      {
+        "Karaoke": true
+      },
+      {
+        "Live music": true
+      },
+      {
+        "Outdoor seating": true
+      }
+    ],
+    "Offerings": [
+      {
+        "Beer": true
+      },
+      {
+        "Food": true
+      },
+      {
+        "Vegetarian options": true
+      },
+      {
+        "Wine": true
+      }
+    ],
+    "Dining options": [
+      {
+        "Breakfast": true
+      },
+      {
+        "Lunch": true
+      },
+      {
+        "Dinner": true
+      },
+      {
+        "Dessert": true
+      },
+      {
+        "Seating": true
+      }
+    ],
+    "Amenities": [
+      {
+        "Toilets": true
+      }
+    ],
+    "Atmosphere": [
+      {
+        "Casual": true
+      },
+      {
+        "Cosy": true
+      }
+    ],
+    "Crowd": [
+      {
+        "Groups": true
+      }
+    ],
+    "Planning": [
+      {
+        "LGBTQ-friendly": true
+      }
+    ]
+  },
     ...
   ]
 }

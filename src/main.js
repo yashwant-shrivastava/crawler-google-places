@@ -3,28 +3,46 @@ const placesCrawler = require('./places_crawler');
 const resultJsonSchema = require('./result_item_schema');
 const _ = require('lodash');
 const { log } = Apify.utils;
+const { getGeolocation, findPointsInPolygon } = require('./polygon');
 
 Apify.main(async () => {
     const input = await Apify.getValue('INPUT');
-    const { searchString, searchStringsArray, proxyConfig, lat, lng, maxCrawledPlaces, regularTestRun,
+    const {
+        startUrls, searchString, searchStringsArray, proxyConfig, lat, lng, maxCrawledPlaces, regularTestRun,
         includeReviews = true, includeImages = true, includeHistogram = true, includeOpeningHours = true,
-        walker, debug } = input;
+        walker, debug, country, state, city, zoom = 10
+    } = input;
 
     if (debug) log.setLevel(log.LEVELS.DEBUG);
-    if (!searchString && !searchStringsArray) throw new Error('Attribute searchString or searchStringsArray is missing in input.');
+    if (!searchString && !searchStringsArray && !startUrls) throw new Error('Attribute startUrls or searchString or searchStringsArray is missing in input.');
     if (proxyConfig && proxyConfig.apifyProxyGroups
         && (proxyConfig.apifyProxyGroups.includes('GOOGLESERP') || proxyConfig.apifyProxyGroups.includes('GOOGLE_SERP'))) {
         throw new Error('It is not possible to crawl google places with GOOGLE SERP proxy group. Please use a different one and rerun crawler.');
     }
 
-    log.info('Scraping Google Places for search string:', searchString);
+    if (!startUrls) log.info('Scraping Google Places for search string:', searchString);
+
+    // save geolocation to keyval
+    let geo = await Apify.getValue('GEO');
+    Apify.events.on('migrating', async () => {
+        await Apify.setValue('GEO', geo);
+    });
 
     const startRequests = [];
-    let startUrlSearch = 'https://www.google.com/maps/search/';
+    const startUrlSearches = [];
     if (lat || lng) {
-        const { zoom = 10 } = input;
         if (!lat || !lng) throw new Error('You have to defined lat and lng!');
-        startUrlSearch = `https://www.google.com/maps/@${lat},${lng},${zoom}z/search`;
+        startUrlSearches.push(`https://www.google.com/maps/@${lat},${lng},${zoom}z/search`);
+    } else if (country || state || city) {
+        geo =  geo || await getGeolocation({ country, state, city });
+
+        let points = [];
+        points = await findPointsInPolygon(geo, zoom, points);
+        for (const point of points) {
+            startUrlSearches.push(`https://www.google.com/maps/@${point.lat},${point.lon},${zoom}z/search`);
+        }
+    } else {
+        startUrlSearches.push('https://www.google.com/maps/search/')
     }
 
     if (walker && searchString) {
@@ -42,6 +60,13 @@ Apify.main(async () => {
                     userData: { label: 'startUrl', searchString },
                 });
             }
+        }
+    } else if (startUrls) {
+        for (const url of startUrls) {
+            startRequests.push({
+                url,
+                userData: { label: 'startUrl', searchString: url }
+            });
         }
     } else if (searchString || searchStringsArray) {
         if (searchStringsArray && !_.isArray(searchStringsArray)) throw new Error('Attribute searchStringsArray has to be an array.');
@@ -61,7 +86,13 @@ Apify.main(async () => {
                     userData: { label: 'detail', searchString },
                 });
             } else {
-                startRequests.push({ url: startUrlSearch, uniqueKey: search, userData: { label: 'startUrl', searchString: search } });
+                for (const startUrlSearch of startUrlSearches) {
+                    startRequests.push({
+                        url: startUrlSearch,
+                        uniqueKey: `${startUrlSearch}+${search}`,
+                        userData: { label: 'startUrl', searchString: search, geo }
+                    });
+                }
             }
         }
     }
@@ -74,12 +105,17 @@ Apify.main(async () => {
     }
 
     const puppeteerPoolOptions = {
-        launchPuppeteerOptions: {},
+        launchPuppeteerOptions: {
+            headless: true,
+        },
         maxOpenPagesPerInstance: 1,
     };
     if (proxyConfig) {
         if (proxyConfig.useApifyProxy) {
-            const proxyUrl = Apify.getApifyProxyUrl({ groups: proxyConfig.apifyProxyGroups, country: proxyConfig.apifyProxyCountry });
+            const proxyUrl = Apify.getApifyProxyUrl({
+                groups: proxyConfig.apifyProxyGroups,
+                country: proxyConfig.apifyProxyCountry
+            });
             log.info(`Constructed proxy url: ${proxyUrl}`);
             puppeteerPoolOptions.launchPuppeteerOptions.proxyUrl = proxyUrl;
         }

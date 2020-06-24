@@ -24,7 +24,7 @@ const getPageScrollInfo = (page, elementToScroll) => page.evaluate((elementToScr
  * @param elementToScroll - CSS selector of element where we want to scroll, default is 'body'
  * @return {Promise.<void>}
  */
-module.exports = async (page, maxHeight, elementToScroll = 'body', scrollName) => {
+module.exports = async (page, maxHeight, elementToScroll = 'body', scrollName, numberOfRetries = 5) => {
     const maybeResourceTypesInfiniteScroll = ['xhr', 'fetch', 'websocket', 'other'];
     const stringifyScrollInfo = (scrollInfo) => {
         return `scrollTop=${scrollInfo.scrollTop}, `
@@ -104,7 +104,7 @@ module.exports = async (page, maxHeight, elementToScroll = 'body', scrollName) =
              */
             if (reviewsCount === previousReviewsCount
                     && (scrollInfo.scrollTop + scrollInfo.clientHeight >= Math.min(scrollInfo.scrollHeight, maxHeight))
-                    && (!scrollInfo.isLoaderOnPage || triesWithJustLoader > 5)
+                    && (!scrollInfo.isLoaderOnPage || triesWithJustLoader > numberOfRetries)
             ) break;
             if (reviewsCount === previousReviewsCount
                 && (scrollInfo.scrollTop + scrollInfo.clientHeight >= Math.min(scrollInfo.scrollHeight, maxHeight))) {

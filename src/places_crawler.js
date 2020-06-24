@@ -11,41 +11,60 @@ const { injectJQuery, blockRequests } = Apify.utils.puppeteer;
 const infiniteScroll = require('./infinite_scroll');
 const { MAX_PAGE_RETRIES, DEFAULT_TIMEOUT, PLACE_TITLE_SEL } = require('./consts');
 const { enqueueAllPlaceDetails } = require('./enqueue_places_crawler');
-const { saveHTML, saveScreenshot, waitForGoogleMapLoader,
-    parseReviewFromResponseBody, scrollTo } = require('./utils');
+const {
+    saveHTML, saveScreenshot, waitForGoogleMapLoader,
+    parseReviewFromResponseBody, scrollTo
+} = require('./utils');
+const { checkInPolygon } = require('./polygon');
+
 
 /**
  * This is the worst part - parsing data from place detail
  * @param page
  */
-const extractPlaceDetail = async (page, request, searchString, includeReviews, includeImages, includeHistogram, includeOpeningHours, includePeopleAlsoSearch) => {
+const extractPlaceDetail = async (options) => {
+    const {
+        page, request, searchString, includeReviews, includeImages, includeHistogram, includeOpeningHours,
+        includePeopleAlsoSearch, maxReviews, maxImages, additionalInfo = false, geo
+    } = options;
     // Extract basic information
     await waitForGoogleMapLoader(page);
     await page.waitForSelector(PLACE_TITLE_SEL, { timeout: DEFAULT_TIMEOUT });
     const detail = await page.evaluate((placeTitleSel) => {
-        let address = $('[data-section-id="ad"] .section-info-line').text().trim();
-        const secondaryAddressLine = $('[data-section-id="ad"] .section-info-secondary-text');
-        if (address && secondaryAddressLine) {
-            address += ` ${secondaryAddressLine.text().trim()}`;
-        }
-        let addressAlt = $("button[data-tooltip*='address']").text().trim();
-        const secondaryAddressLineAlt = $("button[data-item-id*='locatedin']").text().trim();
-        if (addressAlt && secondaryAddressLineAlt) {
-            addressAlt += ` ${secondaryAddressLineAlt}`;
-        }
+        const address = $('[data-section-id="ad"] .section-info-line').text().trim();
+        const addressAlt = $("button[data-tooltip*='address']").text().trim();
+        const addressAlt2 = $("button[data-item-id*='address']").text().trim();
+        const secondaryAddressLine = $('[data-section-id="ad"] .section-info-secondary-text').text().trim();
+        const secondaryAddressLineAlt = $("button[data-tooltip*='locatedin']").text().trim();
+        const secondaryAddressLineAlt2 = $("button[data-item-id*='locatedin']").text().trim();
+        const phone = $('[data-section-id="pn0"].section-info-speak-numeral').length
+            ? $('[data-section-id="pn0"].section-info-speak-numeral').attr('data-href').replace('tel:', '')
+            : $("button[data-tooltip*='phone']").text().trim();
+        const phoneAlt = $('button[data-item-id*=phone]').text().trim();
+        let temporarilyClosed = false;
+        let permanentlyClosed = false;
+        const altOpeningHoursText = $('[class*="section-info-hour-text"] [class*="section-info-text"]').text().trim();
+        if (altOpeningHoursText === 'Temporarily closed')
+            temporarilyClosed = true;
+        else if (altOpeningHoursText === 'Permanently closed')
+            permanentlyClosed = true;
+
         return {
             title: $(placeTitleSel).text().trim(),
             totalScore: $('span.section-star-display').eq(0).text().trim(),
             categoryName: $('[jsaction="pane.rating.category"]').text().trim(),
-            address: address || addressAlt || null,
+            address: address || addressAlt || addressAlt2 || null,
+            locatedIn: secondaryAddressLine || secondaryAddressLineAlt || secondaryAddressLineAlt2 || null,
             plusCode: $('[data-section-id="ol"] .widget-pane-link').text().trim()
-                || $("button[data-tooltip*='plus code']").text().trim() || null,
+                || $("button[data-tooltip*='plus code']").text().trim()
+                || $("button[data-item-id*='oloc']").text().trim() || null,
             website: $('[data-section-id="ap"]').length
                 ? $('[data-section-id="ap"]').eq('0').text().trim()
-                : $("button[data-tooltip*='website']").text().trim() || null,
-            phone: $('[data-section-id="pn0"].section-info-speak-numeral').length
-                ? $('[data-section-id="pn0"].section-info-speak-numeral').attr('data-href').replace('tel:', '')
-                : $("button[data-tooltip*='phone']").text().trim() || null,
+                : $("button[data-tooltip*='website']").text().trim()
+                || $("button[data-item-id*='authority']").text().trim() || null,
+            phone: phone || phoneAlt || null,
+            temporarilyClosed,
+            permanentlyClosed,
         };
     }, PLACE_TITLE_SEL);
 
@@ -60,14 +79,15 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
     await page.waitForFunction(() => window.location.href.includes('/place/'));
     const url = page.url();
     detail.url = url;
-    const [fullMatch, latMatch, lngMatch] = url.match(/!3d(.*)!4d(.*)/);
+    const [fullMatch, latMatch, lngMatch] = url.match(/!3d(.*)!4d(.*)\?hl=en/);
     if (latMatch && lngMatch) {
         detail.location = { lat: parseFloat(latMatch), lng: parseFloat(lngMatch) };
     }
+    // check if place is inside of polygon, if not return null
+    if (geo && detail.location && !checkInPolygon(geo, detail.location)) return null;
 
     // Include search string
     detail.searchString = searchString;
-
 
 
     // Extract histogram for popular times
@@ -122,16 +142,25 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
     // Extract opening hours
     if (includeOpeningHours) {
         const openingHoursSel = '.section-open-hours-container.section-open-hours-container-hoverable';
-        if (await page.$(openingHoursSel)) {
-            const openingHoursText = await page.evaluate(() => {
-                return $('.section-open-hours-container.section-open-hours-container-hoverable').attr('aria-label');
-            });
-            const openingHours = openingHoursText.split(',');
+        const openingHoursSelAlt = '.section-open-hours-container.section-open-hours';
+        const openingHoursSelAlt2 = '.section-open-hours-container';
+        const openingHoursEl = (await page.$(openingHoursSel)) || (await page.$(openingHoursSelAlt)) || (await page.$(openingHoursSelAlt2));
+        if (openingHoursEl) {
+            const openingHoursText = await page.evaluate((openingHoursEl) => {
+                return openingHoursEl.getAttribute('aria-label');
+            }, openingHoursEl);
+            let splitter = ',';
+            let regexp = /(\S+)\s(.*)/
+            if (openingHoursText.includes(';')) {
+                splitter = ';';
+                regexp = /(\w+),\s+(\d+[AP]M\s+to\s+\d+[AP]M)/i
+            }
+            const openingHours = openingHoursText.split(splitter);
             if (openingHours.length) {
                 detail.openingHours = openingHours.map((line) => {
-                    let [match, day, hours] = line.match(/(\S+)\s(.*)/);
+                    let [match, day, hours] = line.trim().match(regexp);
                     hours = hours.split('.')[0];
-                    return {day, hours};
+                    return { day, hours };
                 })
             }
         }
@@ -143,7 +172,7 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
         detail.peopleAlsoSearch = [];
         const cardSel = 'button[class$="card"]';
         const cards = await peopleSearchContainer.$$(cardSel);
-        for (let i = 0;i < cards.length; i++) {
+        for (let i = 0; i < cards.length; i++) {
             const searchResult = await page.evaluate((index, sel) => {
                 const card = $(sel).eq(index);
                 return {
@@ -156,14 +185,45 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
                 page.evaluate((button, index) => {
                     $(button).eq(index).click();
                 }, cardSel, i),
-                page.waitForNavigation({ waitUntil: [ 'domcontentloaded', 'networkidle2' ] }),
+                page.waitForNavigation({ waitUntil: ['domcontentloaded', 'networkidle2'] }),
             ]);
             searchResult.url = await page.url();
             detail.peopleAlsoSearch.push(searchResult);
             await Promise.all([
-                page.goBack({ waitUntil: [ 'domcontentloaded', 'networkidle2' ] }),
+                page.goBack({ waitUntil: ['domcontentloaded', 'networkidle2'] }),
                 waitForGoogleMapLoader(page)
             ]);
+        }
+    }
+
+    // Extract additional info
+    if (additionalInfo) {
+        log.debug('Scraping additional info.')
+        const button = await page.$('button.section-editorial');
+        try {
+            await button.click();
+            await page.waitForSelector('.section-attribute-group', { timeout: 3000 });
+            const sections = await page.evaluate(() => {
+                const result = {};
+                $('.section-attribute-group').each(function (i, section) {
+                    const key = $(section).find('.section-attribute-group-title').text().trim();
+                    const values = []
+                    $(section).find('.section-attribute-group-container .section-attribute-group-item').each(function (i, sub) {
+                        const res = {}
+                        const title = $(sub).text().trim();
+                        const val = $(sub).find(".section-attribute-group-item-icon.maps-sprite-place-attributes-done").length > 0;
+                        res[title] = val;
+                        values.push(res);
+                    });
+                    result[key] = values;
+                });
+                return result;
+            });
+            detail.additionalInfo = sections;
+            const backButton = await page.$('button[aria-label*=Back]');
+            await backButton.click();
+        } catch (e) {
+            log.info(e + 'Additional info not parsed');
         }
     }
 
@@ -179,7 +239,7 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
             const number = numberReviewsText.match(/[.,0-9]+/);
             return {
                 reviewsCountText: number ? number[0] : null,
-                localization: navigator.language.slice(0,2),
+                localization: navigator.language.slice(0, 2),
             }
         }, reviewsButtonSel);
         let globalParser;
@@ -188,8 +248,8 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
         } catch (e) {
             throw new Error(`Can not find localization for ${localization}, try to use different proxy IP.`);
         }
-        detail.totalScore = globalParser.numberParser({round:'floor'})(detail.totalScore);
-        detail.reviewsCount = reviewsCountText ? globalParser.numberParser({round:'truncate'})(reviewsCountText) : null;
+        detail.totalScore = globalParser.numberParser({ round: 'floor' })(detail.totalScore);
+        detail.reviewsCount = reviewsCountText ? globalParser.numberParser({ round: 'truncate' })(reviewsCountText) : null;
         // If we find consent dialog, close it!
         if (await page.$('.widget-consent-dialog')) {
             await page.click('.widget-consent-dialog .widget-consent-button-later');
@@ -219,7 +279,7 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
                 }
             };
             await sleep(5000);
-            const [sort1, sort2, scroll, reviewsResponse ] = await Promise.all([
+            const [sort1, sort2, scroll, reviewsResponse] = await Promise.all([
                 sortPromise1(),
                 sortPromise2(),
                 scrollTo(page, '.section-scrollbox.scrollable-y', 10000),
@@ -228,32 +288,40 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
 
             let reviewResponseBody = await reviewsResponse.buffer();
             const reviews = parseReviewFromResponseBody(reviewResponseBody);
-            detail.reviews.push(...reviews);
-            let reviewUrl = reviewsResponse.url();
-            // Replace !3e1 in URL with !3e2, it makes list sort by newest
-            reviewUrl = reviewUrl.replace(/\!3e\d/, '!3e2');
-            // Make sure that we star review from 0, setting !1i0
-            reviewUrl = reviewUrl.replace(/\!1i\d+/, '!1i0');
-            const increaseLimitInUrl = (url) => {
-                const numberString = reviewUrl.match(/\!1i(\d+)/)[1];
-                const number = parseInt(numberString)
-                return url.replace(/\!1i\d+/, `!1i${number+10}`);
-            };
-
-            while(true) {
-                // Request in browser context to use proxy as in brows
-                const responseBody = await page.evaluate(async (url) => {
-                    const response = await fetch(url);
-                    return await response.text();
-                }, reviewUrl);
-                const reviews = parseReviewFromResponseBody(responseBody);
-                if (reviews.length === 0) break;
+            if (maxReviews && reviews.length > maxReviews)
+                detail.reviews.push(...reviews.slice(0, maxReviews));
+            else {
                 detail.reviews.push(...reviews);
-                reviewUrl = increaseLimitInUrl(reviewUrl);
+                let reviewUrl = reviewsResponse.url();
+                // Replace !3e1 in URL with !3e2, it makes list sort by newest
+                reviewUrl = reviewUrl.replace(/\!3e\d/, '!3e2');
+                // Make sure that we star review from 0, setting !1i0
+                reviewUrl = reviewUrl.replace(/\!1i\d+/, '!1i0');
+                const increaseLimitInUrl = (url) => {
+                    const numberString = reviewUrl.match(/\!1i(\d+)/)[1];
+                    const number = parseInt(numberString)
+                    return url.replace(/\!1i\d+/, `!1i${number + 10}`);
+                };
+
+                while (true) {
+                    // Request in browser context to use proxy as in brows
+                    const responseBody = await page.evaluate(async (url) => {
+                        const response = await fetch(url);
+                        return await response.text();
+                    }, reviewUrl);
+                    const reviews = parseReviewFromResponseBody(responseBody);
+                    if (reviews.length === 0) break;
+                    if (maxReviews && (reviews.length + detail.reviews.length) > maxReviews) {
+                        detail.reviews.push(...reviews.slice(0, maxReviews - detail.reviews.length));
+                        break;
+                    } else
+                        detail.reviews.push(...reviews);
+                    reviewUrl = increaseLimitInUrl(reviewUrl);
+                }
             }
 
             await page.click('button[jsaction*=back]');
-        }  else {
+        } else {
             log.info(`Skipping reviews scraping for url: ${page.url()}`)
         }
     }
@@ -266,18 +334,43 @@ const extractPlaceDetail = async (page, request, searchString, includeReviews, i
         if (imagesButton) {
             await sleep(2000);
             await imagesButton.click();
-            await infiniteScroll(page, 99999999999, '.section-scrollbox.scrollable-y', 'images list');
-            detail.imageUrls = await page.evaluate(() => {
-                const urls = [];
-                $('.gallery-image-high-res').each(function () {
-                    const urlMatch = $(this).attr('style').match(/url\("(.*)"\)/);
-                    if (!urlMatch) return;
-                    let imageUrl = urlMatch[1];
-                    if (imageUrl[0] === '/') imageUrl = `https:${imageUrl}`;
-                    urls.push(imageUrl);
+            let lastImage = null;
+            let pageBottom = 10000;
+            let imageUrls = [];
+            if (maxImages) {
+                while (true) {
+                    await infiniteScroll(page, pageBottom, '.section-scrollbox.scrollable-y', 'images list', 1);
+                    imageUrls = await page.evaluate(() => {
+                        const urls = [];
+                        $('.gallery-image-high-res').each(function () {
+                            const urlMatch = $(this).attr('style').match(/url\("(.*)"\)/);
+                            if (!urlMatch) return;
+                            let imageUrl = urlMatch[1];
+                            if (imageUrl[0] === '/') imageUrl = `https:${imageUrl}`;
+                            urls.push(imageUrl);
+                        });
+                        return urls;
+                    });
+                    if (imageUrls.length >= maxImages || lastImage === imageUrls[imageUrls.length - 1]) break;
+                    lastImage = imageUrls[imageUrls.length - 1];
+                    pageBottom = pageBottom + 6000;
+                }
+                detail.imageUrls = imageUrls.slice(0, maxImages);
+            } else {
+                await infiniteScroll(page, 99999999999, '.section-scrollbox.scrollable-y', 'images list');
+                imageUrls = await page.evaluate(() => {
+                    const urls = [];
+                    $('.gallery-image-high-res').each(function () {
+                        const urlMatch = $(this).attr('style').match(/url\("(.*)"\)/);
+                        if (!urlMatch) return;
+                        let imageUrl = urlMatch[1];
+                        if (imageUrl[0] === '/') imageUrl = `https:${imageUrl}`;
+                        urls.push(imageUrl);
+                    });
+                    return urls;
                 });
-                return urls;
-            });
+                detail.imageUrls = imageUrls;
+            }
         }
     } else {
         log.info(`Skipping images scraping for url: ${page.url()}`)
@@ -301,7 +394,10 @@ const saveScreenForDebug = async (reques, page) => {
  * @return {Apify.PuppeteerCrawler}
  */
 const setUpCrawler = (puppeteerPoolOptions, requestQueue, maxCrawledPlaces, input) => {
-    const { includeReviews, includeImages, includeHistogram, includeOpeningHours, includePeopleAlsoSearch } = input;
+    const {
+        includeReviews, includeImages, includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
+        maxReviews, maxImages, exportPlaceUrls = false, forceEng, additionalInfo
+    } = input;
     const crawlerOpts = {
         requestQueue,
         maxRequestRetries: MAX_PAGE_RETRIES, // Sometimes page can failed because of blocking proxy IP by Google
@@ -320,10 +416,12 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, maxCrawledPlaces, inpu
                     urlPatterns: ['/maps/vt/', '/earth/BulkMetadata/', 'googleusercontent.com'],
                 });
             }
+            if (forceEng) request.url = request.url + `&hl=en`;
+            await page.setViewport({ width: 800, height: 800 })
             await page.goto(request.url, { timeout: 60000 });
         },
         handlePageFunction: async ({ request, page, puppeteerPool }) => {
-            const { label, searchString } = request.userData;
+            const { label, searchString, geo } = request.userData;
 
             log.info(`Open ${request.url} with label: ${label}`);
             await injectJQuery(page);
@@ -336,17 +434,32 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, maxCrawledPlaces, inpu
                 }
                 if (label === 'startUrl') {
                     log.info(`Start enqueuing places details for search: ${searchString}`);
-                    await enqueueAllPlaceDetails(page, searchString, requestQueue, maxCrawledPlaces, request);
+                    await enqueueAllPlaceDetails(page, searchString, requestQueue, maxCrawledPlaces, request, exportPlaceUrls, geo);
                     log.info('Enqueuing places finished.');
                 } else {
                     // Get data for place and save it to dataset
                     log.info(`Extracting details from place url ${page.url()}`);
-                    const placeDetail = await extractPlaceDetail(page, request, searchString, includeReviews, includeImages,
-                        includeHistogram, includeOpeningHours, includePeopleAlsoSearch);
-                    await Apify.pushData(placeDetail);
-                    log.info(`Finished place url ${placeDetail.url}`);
+                    const placeDetail = await extractPlaceDetail({
+                        page,
+                        request,
+                        searchString,
+                        includeReviews,
+                        includeImages,
+                        includeHistogram,
+                        includeOpeningHours,
+                        includePeopleAlsoSearch,
+                        maxReviews,
+                        maxImages,
+                        additionalInfo,
+                        geo
+                    });
+                    // TODO recheck location according to polygon, can be outside for border searches. turf.booleanContains()
+                    if (placeDetail) {
+                        await Apify.pushData(placeDetail);
+                        log.info(`Finished place url ${placeDetail.url}`);
+                    } else log.info(`Place outside of polygon, url: ${page.url()}`);
                 }
-            } catch(err) {
+            } catch (err) {
                 // This issue can happen, mostly because proxy IP was blocked by google
                 // Let's refresh IP using browser refresh.
                 if (log.getLevel() === log.LEVELS.DEBUG) {

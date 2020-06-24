@@ -4,12 +4,43 @@
   "type": "object",
   "schemaVersion": 1,
   "properties": {
-    "searchString": {
-      "title": "Search",
+    "startUrls": {
+      "title": "Start URLs",
+      "type": "array",
+      "description": "Can be main page URL or any category URLs. If you want direct article URLs, you have to add `{ \"label\": \"article\"}` to the userData`",
+      "editor": "requestListSources"
+    },
+    "searchStringsArray": {
+      "title": "Search Terms",
+      "type": "array",
+      "description": "Array of strings, that will be searched on Google maps. 'Pups near Prague'. If you are setting specific location later, do not include it into search string",
+      "editor": "stringList"
+    },
+    "country": {
+      "title": "Country",
       "type": "string",
-      "description": "String will be search on Google maps. It is possible to fill Google Place ID in format 'place_id:ChIJp4JiUCNP0xQR1JaSjpW_Hms'.",
-      "prefill": "pubs near prague 2",
+      "description": "Set country where search should be performed - 'USA'",
       "editor": "textfield"
+    },
+    "state": {
+      "title": "State",
+      "type": "string",
+      "description": "Set State where search should be performed - 'Massachusetts'",
+      "editor": "textfield"
+    },
+    "city": {
+      "title": "City",
+      "type": "string",
+      "description": "Set City where search should be performed - 'Pittsfield",
+      "editor": "textfield"
+    },
+    "maxCrawledPlaces": {
+      "title": "Max crawled places",
+      "type": "integer",
+      "description": "Use to limit places you want to get from crawl one search. If you fill 0 or nothing all places will be scrape",
+      "prefill": 20,
+      "default": 20,
+      "minimum": 0
     },
     "proxyConfig": {
       "title": "Proxy configuration",
@@ -21,8 +52,15 @@
     "includeReviews": {
       "title": "Include places reviews",
       "type": "boolean",
-      "description": "If checked the crawler scrapes all reviews for all places. You can speed up crawling if you disable reviews.",
-      "default": true
+      "description": "If checked the crawler scrapes reviews for all places. You can speed up crawling if you disable reviews.",
+      "default": false
+    },
+    "maxReviews": {
+      "title": "Max reviews",
+      "type": "integer",
+      "description": "Maximum number of reviews for place. If you fill 0 or nothing all reviews will be scraped.",
+      "default": 5,
+      "prefill": 5
     },
     "includeImages": {
       "title": "Include places images (Very Slow)",
@@ -30,17 +68,32 @@
       "description": "If checked the crawler scrapes all images for all places. You can speed up crawling if you disable images. Crawling images is quite time and CU consuming.",
       "default": false
     },
+    "maxImages": {
+      "title": "Max Images",
+      "type": "integer",
+      "description": "Max number images per place. If you fill 0 or nothing all images will be scraped.",
+      "default": 1
+    },
+    "exportPlaceUrls": {
+      "title": "Export Place Urls",
+      "type": "boolean",
+      "description": "Scraper will return only places urls without details.",
+      "default": false
+    },
     "includeHistogram": {
       "title": "Include popular times",
       "type": "boolean",
       "description": "If checked the crawler scrapes popular times for all places. You can speed up crawling if you disable this.",
-      "default": true
+      "default": true,
+      "sectionCaption": "Advanced",
+      "sectionDescription": "These are more advanced settings for actor run."
+
     },
     "includeOpeningHours": {
       "title": "Include opening hours",
       "type": "boolean",
       "description": "If checked the crawler scrapes opening hours for all places. You can speed up crawling if you disable this.",
-      "default": true
+      "default": false
     },
     "includePeopleAlsoSearch": {
       "title": "Include people also search [BETA]",
@@ -52,36 +105,39 @@
       "title": "Viewport point latitude",
       "type": "string",
       "description": "Use it with combination with longitude and zoom to set up viewport to search on.",
-      "prefill": "50.0598058",
       "editor": "textfield"
     },
     "lng": {
       "title": "Viewport point longitude",
       "type": "string",
       "description": "Use it with combination with latitude and zoom to set up viewport to search on.",
-      "prefill": "14.3255401",
       "editor": "textfield"
     },
     "zoom": {
       "title": "Viewport zoom level",
       "type": "integer",
       "description": "Use it with combination with point longitude and latitude to set up viewport to search on. You have whole world on map with zoom level 1.",
-      "prefill": 10,
+      "default": 12,
       "minimum": 1,
       "maximum": 20
-    },
-    "maxCrawledPlaces": {
-      "title": "Max crawled places",
-      "type": "integer",
-      "description": "Use to limit places you want to get from crawl one search. If you fill 0 or nothing all places will be scrape",
-      "prefill": 5,
-      "minimum": 0
     },
     "debug": {
       "title": "Debug log",
       "type": "boolean",
       "description": "Debug messages will be included in log.",
       "default": false
+    },
+    "additionalInfo": {
+      "title": "Additional Info",
+      "type": "boolean",
+      "description": "Export additional info: Service Options, Highlights, Offerings,...",
+      "default": false
+    },
+    "forceEng": {
+      "title": "Force English",
+      "type": "boolean",
+      "description": "Force places to be in specific english",
+      "default": true
     }
   },
   "required": [
