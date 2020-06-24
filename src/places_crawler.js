@@ -15,6 +15,8 @@ const {
     saveHTML, saveScreenshot, waitForGoogleMapLoader,
     parseReviewFromResponseBody, scrollTo
 } = require('./utils');
+const { checkInPolygon } = require('./polygon');
+
 
 /**
  * This is the worst part - parsing data from place detail
@@ -23,7 +25,7 @@ const {
 const extractPlaceDetail = async (options) => {
     const {
         page, request, searchString, includeReviews, includeImages, includeHistogram, includeOpeningHours,
-        includePeopleAlsoSearch, maxReviews, maxImages, additionalInfo = false
+        includePeopleAlsoSearch, maxReviews, maxImages, additionalInfo = false, geo
     } = options;
     // Extract basic information
     await waitForGoogleMapLoader(page);
@@ -77,10 +79,12 @@ const extractPlaceDetail = async (options) => {
     await page.waitForFunction(() => window.location.href.includes('/place/'));
     const url = page.url();
     detail.url = url;
-    const [fullMatch, latMatch, lngMatch] = url.match(/!3d(.*)!4d(.*)/);
+    const [fullMatch, latMatch, lngMatch] = url.match(/!3d(.*)!4d(.*)\?hl=en/);
     if (latMatch && lngMatch) {
         detail.location = { lat: parseFloat(latMatch), lng: parseFloat(lngMatch) };
     }
+    // check if place is inside of polygon, if not return null
+    if (geo && detail.location && !checkInPolygon(geo, detail.location)) return null;
 
     // Include search string
     detail.searchString = searchString;
@@ -417,7 +421,7 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, maxCrawledPlaces, inpu
             await page.goto(request.url, { timeout: 60000 });
         },
         handlePageFunction: async ({ request, page, puppeteerPool }) => {
-            const { label, searchString } = request.userData;
+            const { label, searchString, geo } = request.userData;
 
             log.info(`Open ${request.url} with label: ${label}`);
             await injectJQuery(page);
@@ -430,7 +434,7 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, maxCrawledPlaces, inpu
                 }
                 if (label === 'startUrl') {
                     log.info(`Start enqueuing places details for search: ${searchString}`);
-                    await enqueueAllPlaceDetails(page, searchString, requestQueue, maxCrawledPlaces, request, exportPlaceUrls);
+                    await enqueueAllPlaceDetails(page, searchString, requestQueue, maxCrawledPlaces, request, exportPlaceUrls, geo);
                     log.info('Enqueuing places finished.');
                 } else {
                     // Get data for place and save it to dataset
@@ -446,11 +450,14 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, maxCrawledPlaces, inpu
                         includePeopleAlsoSearch,
                         maxReviews,
                         maxImages,
-                        additionalInfo
+                        additionalInfo,
+                        geo
                     });
                     // TODO recheck location according to polygon, can be outside for border searches. turf.booleanContains()
-                    await Apify.pushData(placeDetail);
-                    log.info(`Finished place url ${placeDetail.url}`);
+                    if (placeDetail) {
+                        await Apify.pushData(placeDetail);
+                        log.info(`Finished place url ${placeDetail.url}`);
+                    } else log.info(`Place outside of polygon, url: ${page.url()}`);
                 }
             } catch (err) {
                 // This issue can happen, mostly because proxy IP was blocked by google

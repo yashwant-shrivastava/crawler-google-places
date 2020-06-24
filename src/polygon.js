@@ -15,6 +15,17 @@ const GEO_TYPES = {
 const FEATURE_COLLECTION = 'FeatureCollection';
 const FEATURE = 'Feature';
 
+function checkInPolygon(geo, location) {
+    const point = turf.point([location.lng, location.lat])
+    let included = false;
+    const polygons = getPolygons(geo.geojson);
+    polygons.forEach((polygon) => {
+        included = turf.booleanContains(polygon, point);
+        if (included) return false;
+    });
+    return included;
+}
+
 function getPolygons(geoJson, distanceKilometers = 5) {
     const { coordinates, type } = geoJson;
     if (type === GEO_TYPES.POLYGON) {
@@ -51,9 +62,9 @@ function getPolygons(geoJson, distanceKilometers = 5) {
 
 async function getGeolocation(options) {
     const { city, state, country } = options;
-    const cityString = city.trim().replace(/\s+/g, '+');
-    const stateString = state.trim().replace(/\s+/g, '+');
-    const countryString = country.trim().replace(/\s+/g, '+');
+    const cityString = (city || '').trim().replace(/\s+/g, '+');
+    const stateString = (state || '').trim().replace(/\s+/g, '+');
+    const countryString = (country || '').trim().replace(/\s+/g, '+');
 
     // TODO when get more results? Currently only first match is returned!
     const res = await Apify.utils.requestAsBrowser({
@@ -125,5 +136,5 @@ async function findPointsInPolygon(location, zoom, points) {
 }
 
 exports.getGeolocation = getGeolocation;
-exports.getPolygons = getPolygons;
+exports.checkInPolygon = checkInPolygon;
 exports.findPointsInPolygon = findPointsInPolygon;

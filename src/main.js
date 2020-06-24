@@ -3,7 +3,7 @@ const placesCrawler = require('./places_crawler');
 const resultJsonSchema = require('./result_item_schema');
 const _ = require('lodash');
 const { log } = Apify.utils;
-const { getGeolocation, getPolygons, findPointsInPolygon, distanceByZoom } = require('./polygon');
+const { getGeolocation, findPointsInPolygon } = require('./polygon');
 
 Apify.main(async () => {
     const input = await Apify.getValue('INPUT');
@@ -22,20 +22,27 @@ Apify.main(async () => {
 
     if (!startUrls) log.info('Scraping Google Places for search string:', searchString);
 
+    // save geolocation to keyval
+    let geo = await Apify.getValue('GEO');
+    Apify.events.on('migrating', async () => {
+        await Apify.setValue('GEO', geo);
+    });
+
     const startRequests = [];
-    const startUrlSearchs = [];
+    const startUrlSearches = [];
     if (lat || lng) {
         if (!lat || !lng) throw new Error('You have to defined lat and lng!');
-        startUrlSearchs.push(`https://www.google.com/maps/@${lat},${lng},${zoom}z/search`);
+        startUrlSearches.push(`https://www.google.com/maps/@${lat},${lng},${zoom}z/search`);
     } else if (country || state || city) {
+        geo =  geo || await getGeolocation({ country, state, city });
+
         let points = [];
-        const geo = await getGeolocation({ country, state, city });
         points = await findPointsInPolygon(geo, zoom, points);
         for (const point of points) {
-            startUrlSearchs.push(`https://www.google.com/maps/@${point.lat},${point.lon},${zoom}z/search`);
+            startUrlSearches.push(`https://www.google.com/maps/@${point.lat},${point.lon},${zoom}z/search`);
         }
     } else {
-        startUrlSearchs.push('https://www.google.com/maps/search/')
+        startUrlSearches.push('https://www.google.com/maps/search/')
     }
 
     if (walker && searchString) {
@@ -79,11 +86,11 @@ Apify.main(async () => {
                     userData: { label: 'detail', searchString },
                 });
             } else {
-                for (const startUrlSearch of startUrlSearchs) {
+                for (const startUrlSearch of startUrlSearches) {
                     startRequests.push({
                         url: startUrlSearch,
                         uniqueKey: `${startUrlSearch}+${search}`,
-                        userData: { label: 'startUrl', searchString: search }
+                        userData: { label: 'startUrl', searchString: search, geo }
                     });
                 }
             }
