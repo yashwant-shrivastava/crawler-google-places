@@ -68,7 +68,7 @@ async function getGeolocation(options) {
 
     // TODO when get more results? Currently only first match is returned!
     const res = await Apify.utils.requestAsBrowser({
-        url: `https://nominatim.openstreetmap.org/search?country=${countryString}&state=${stateString}&city=${cityString}&format=json&polygon_geojson=1&limit=1&polygon_threshold=0.005`,
+        url: encodeURI(`https://nominatim.openstreetmap.org/search?country=${countryString}&state=${stateString}&city=${cityString}&format=json&polygon_geojson=1&limit=1&polygon_threshold=0.005`),
         headers: { referer: "http://google.com" }
     })
     const body = JSON.parse(res.body);

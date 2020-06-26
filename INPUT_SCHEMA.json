@@ -13,7 +13,7 @@
     "searchStringsArray": {
       "title": "Search Terms",
       "type": "array",
-      "description": "Array of strings, that will be searched on Google maps. 'Pups near Prague'. If you are setting specific location later, do not include it into search string",
+      "description": "Array of strings, that will be searched on Google maps. 'Pubs near Prague'. If you are setting specific location later, do not include it into search string",
       "editor": "stringList"
     },
     "country": {

@@ -149,18 +149,16 @@ const extractPlaceDetail = async (options) => {
             const openingHoursText = await page.evaluate((openingHoursEl) => {
                 return openingHoursEl.getAttribute('aria-label');
             }, openingHoursEl);
-            let splitter = ',';
-            let regexp = /(\S+)\s(.*)/
-            if (openingHoursText.includes(';')) {
-                splitter = ';';
-                regexp = /(\w+),\s+(\d+[AP]M\s+to\s+\d+[AP]M)/i
-            }
-            const openingHours = openingHoursText.split(splitter);
+            const openingHours = openingHoursText.split(openingHoursText.includes(';') ? ';' : ',');
             if (openingHours.length) {
                 detail.openingHours = openingHours.map((line) => {
-                    let [match, day, hours] = line.trim().match(regexp);
-                    hours = hours.split('.')[0];
-                    return { day, hours };
+                    const regexpResult = line.trim().match(/(\S+)\s(.*)/);
+                    if (regexpResult){
+                        let [match, day, hours] = regexpResult;
+                        hours = hours.split('.')[0];
+                        return { day, hours };
+                    }
+                    log.info(`Not able to parse opening hours: ${line}`);
                 })
             }
         }
