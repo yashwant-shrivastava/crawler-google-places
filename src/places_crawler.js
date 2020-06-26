@@ -79,9 +79,9 @@ const extractPlaceDetail = async (options) => {
     await page.waitForFunction(() => window.location.href.includes('/place/'));
     const url = page.url();
     detail.url = url;
-    const [fullMatch, latMatch, lngMatch] = url.match(/!3d(.*)!4d(.*)\?hl=en/);
+    const [fullMatch, latMatch, lngMatch] = url.match(/!3d(.*)!4d(.*)/);
     if (latMatch && lngMatch) {
-        detail.location = { lat: parseFloat(latMatch), lng: parseFloat(lngMatch) };
+        detail.location = { lat: parseFloat(latMatch), lng: parseFloat(lngMatch.replace('?hl=en')) };
     }
     // check if place is inside of polygon, if not return null
     if (geo && detail.location && !checkInPolygon(geo, detail.location)) return null;
