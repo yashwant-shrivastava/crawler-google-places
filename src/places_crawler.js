@@ -153,14 +153,18 @@ const extractPlaceDetail = async (options) => {
             let regexp = /(\S+)\s(.*)/
             if (openingHoursText.includes(';')) {
                 splitter = ';';
-                regexp = /(\w+),\s+(\d+[AP]M\s+to\s+\d+[AP]M)/i
+                regexp = /(\w+),\s*(\d+.*\d+.*)/i
             }
             const openingHours = openingHoursText.split(splitter);
             if (openingHours.length) {
                 detail.openingHours = openingHours.map((line) => {
-                    let [match, day, hours] = line.trim().match(regexp);
-                    hours = hours.split('.')[0];
-                    return { day, hours };
+                    const regexpResult = line.trim().match(regexp);
+                    if (regexpResult){
+                        let [match, day, hours] = regexpResult;
+                        hours = hours.split('.')[0];
+                        return { day, hours };
+                    }
+                    log.info(`Not able to parse opening hours: ${line}`);
                 })
             }
         }
