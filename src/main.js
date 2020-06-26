@@ -20,7 +20,7 @@ Apify.main(async () => {
         throw new Error('It is not possible to crawl google places with GOOGLE SERP proxy group. Please use a different one and rerun crawler.');
     }
 
-    if (!startUrls) log.info('Scraping Google Places for search string:', searchString);
+    if (!startUrls) log.info('Scraping Google Places for search string:', searchString || searchStringsArray.join('; '));
 
     // save geolocation to keyval
     let geo = await Apify.getValue('GEO');
