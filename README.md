@@ -35,16 +35,17 @@ Example input:
 ```
 On this input actor searches places on this start url: https://www.google.com/maps/search/pubs+near+prague/@50.0860729,14.4135326,10z
 
-- `searchString` - String will be search on Google maps. It is possible fill [Google Place ID](https://developers.google.com/places/place-id) in format `place_id:ChIJp4JiUCNP0xQR1JaSjpW_Hms`.
+- `startUrls` - list of urls with search results to scrape places from.
+- `searchString` - String will be search on Google maps. It is possible fill [Google Place ID](https://developers.google.com/places/place-id) in format `place_id:ChIJp4JiUCNP0xQR1JaSjpW_Hms`. Do not include location in search string if you are using polygon localization (`country`, `state`, `city`).
 - `searchStringArray` - Array of strings, that will be searched on Google maps.
-- `proxyConfig` - Apify proxy configuration
+- `proxyConfig` - Apify proxy configuration, it is required to provide proxy.
 - `country` - Country name for polygon localization
 - `state` - State name for polygon localization
 - `city` - City name for polygon localization
 - `maxReviews` - Maximum number of reviews per place
 - `maxImages` - Maximum number of images per place
-- `lat` - Use it with combination with longitude and zoom to set up viewport to search on.
-- `lng` - Use it with combination with latitude and zoom to set up viewport to search on.
+- `lat` - Use it with combination with longitude and zoom to set up viewport to search on.Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
+- `lng` - Use it with combination with latitude and zoom to set up viewport to search on.Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
 - `zoom` - Viewport zoom, e.g zoom: 10 -> https://www.google.com/maps/@50.0860729,14.4135326,10z vs zoom: 1 -> https://www.google.com/maps/@50.0860729,14.4135326,1z
 - `maxCrawledPlaces` - Limit places you want to get from crawler
 - `debug` - Debug messages will be included in log.
