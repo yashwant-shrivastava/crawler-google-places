@@ -59,8 +59,8 @@ const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxCrawl
     // NOTE: If pageFunction failed crawler skipped already scraped pagination
     const listingStateKey = `${LISTING_PAGINATION_KEY}-${request.id}`;
     const listingPagination = await Apify.getValue(listingStateKey) || {};
-
-    await page.type('#searchboxinput', searchString);
+    // there is no searchString when startUrls are used
+    if (searchString) await page.type('#searchboxinput', searchString);
     await sleep(5000);
     await page.click('#searchbox-searchbutton');
     await sleep(5000);
