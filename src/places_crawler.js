@@ -153,7 +153,7 @@ const extractPlaceDetail = async (options) => {
             if (openingHours.length) {
                 detail.openingHours = openingHours.map((line) => {
                     const regexpResult = line.trim().match(/(\S+)\s(.*)/);
-                    if (regexpResult){
+                    if (regexpResult) {
                         let [match, day, hours] = regexpResult;
                         hours = hours.split('.')[0];
                         return { day, hours };
@@ -418,7 +418,7 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, maxCrawledPlaces, inpu
             await page.setViewport({ width: 800, height: 800 })
             await page.goto(request.url, { timeout: 60000 });
         },
-        handlePageFunction: async ({ request, page, puppeteerPool }) => {
+        handlePageFunction: async ({ request, page, puppeteerPool, autoscaledPool }) => {
             const { label, searchString, geo } = request.userData;
 
             log.info(`Open ${request.url} with label: ${label}`);
@@ -451,9 +451,18 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, maxCrawledPlaces, inpu
                         additionalInfo,
                         geo
                     });
-                    // TODO recheck location according to polygon, can be outside for border searches. turf.booleanContains()
                     if (placeDetail) {
                         await Apify.pushData(placeDetail);
+                        // when using polygon search multiple start urls are used. Therefore more links are added to request queue,
+                        // there is also good possibility that some of places will be out of desired polygon, so we do not check number of queued places,
+                        // only number of places with correct geolocation
+                        if (maxCrawledPlaces && maxCrawledPlaces !== 0) {
+                            const dataset = await Apify.openDataset();
+                            const cleanItemCount = (await dataset.getInfo()).cleanItemCount;
+                            if (cleanItemCount >= maxCrawledPlaces) {
+                                await autoscaledPool.abort();
+                            }
+                        }
                         log.info(`Finished place url ${placeDetail.url}`);
                     } else log.info(`Place outside of polygon, url: ${page.url()}`);
                 }
