@@ -113,16 +113,23 @@ async function findPointsInPolygon(location, zoom, points) {
         polygons.forEach((polygon) => {
             const bbox = turf.bbox(polygon);
             // distance in meters per pixel * viewport / 1000 meters
-            const distanceKilometers = distanceByZoom(bbox[3], zoom) * 800 / 1000;
-            const options = {
-                units: 'kilometers',
-                mask: polygon,
-            };
-
-            // Use lower distance for points
-            const distance = geojson.type === GEO_TYPES.POINT ? distanceKilometers / 2 : distanceKilometers;
+            let distanceKilometers = distanceByZoom(bbox[3], zoom) * 800 / 1000;
             // Creates grid of points inside given polygon
-            const pointGrid = turf.pointGrid(bbox, distance, options);
+            let pointGrid;
+            // point grid can be empty for to large distance.
+            while (distanceKilometers > 0) {
+                log.debug(distanceKilometers);
+                // Use lower distance for points
+                const distance = geojson.type === GEO_TYPES.POINT ? distanceKilometers / 2 : distanceKilometers;
+                const options = {
+                    units: 'kilometers',
+                    mask: polygon,
+                };
+                pointGrid = turf.pointGrid(bbox, distance, options);
+
+                if (pointGrid.features && pointGrid.features.length > 0) break;
+                distanceKilometers = distanceKilometers - 1;
+            }
             pointGrid.features.forEach((feature) => {
                 const [lon, lat] = feature.geometry.coordinates;
                 points.push({ lon, lat });
