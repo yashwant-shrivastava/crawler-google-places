@@ -34,7 +34,7 @@ Apify.main(async () => {
         if (!lat || !lng) throw new Error('You have to defined lat and lng!');
         startUrlSearches.push(`https://www.google.com/maps/@${lat},${lng},${zoom}z/search`);
     } else if (country || state || city) {
-        geo =  geo || await getGeolocation({ country, state, city });
+        geo = geo || await getGeolocation({ country, state, city });
 
         let points = [];
         points = await findPointsInPolygon(geo, zoom, points);
@@ -97,7 +97,7 @@ Apify.main(async () => {
         }
     }
 
-    log.info('Start urls are', startRequests);
+    log.info('Start urls are', startRequests.map(r => r.url));
     const requestQueue = await Apify.openRequestQueue();
 
     for (const request of startRequests) {
