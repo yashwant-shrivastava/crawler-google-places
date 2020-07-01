@@ -19,10 +19,10 @@ function checkInPolygon(geo, location) {
     const point = turf.point([location.lng, location.lat])
     let included = false;
     const polygons = getPolygons(geo.geojson);
-    polygons.forEach((polygon) => {
+    for (const polygon of polygons) {
         included = turf.booleanContains(polygon, point);
-        if (included) return false;
-    });
+        if (included) break;
+    }
     return included;
 }
 
