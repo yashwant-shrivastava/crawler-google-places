@@ -65,7 +65,7 @@ Apify.main(async () => {
         for (const url of startUrls) {
             startRequests.push({
                 ...url,
-                userData: { label: 'startUrl', searchString: url }
+                userData: { label: 'startUrl', searchString: null }
             });
         }
     } else if (searchString || searchStringsArray) {
