@@ -158,7 +158,7 @@ const extractPlaceDetail = async (options) => {
                         hours = hours.split('.')[0];
                         return { day, hours };
                     }
-                    log.info(`Not able to parse opening hours: ${line}`);
+                    log.debug(`Not able to parse opening hours: ${line}`);
                 })
             }
         }
