@@ -1,4 +1,7 @@
 # 2020-07 polygon search and bug fixes
+### breaking change
+ - reworked input search string
+
 ### Bug fixes
  - opening hour parsing (#39)
  - separate locatedIn field (#32)

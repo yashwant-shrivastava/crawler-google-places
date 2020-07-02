@@ -7,7 +7,7 @@
     "startUrls": {
       "title": "Start URLs",
       "type": "array",
-      "description": "Can be main page URL or any category URLs. If you want direct article URLs, you have to add `{ \"label\": \"article\"}` to the userData`",
+      "description": "List of urls with search results, that should be scraped.",
       "editor": "requestListSources"
     },
     "searchStringsArray": {
