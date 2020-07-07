@@ -15,4 +15,4 @@ RUN npm --quiet set progress=false \
  
 ENV APIFY_DISABLE_OUTDATED_WARNING 1
 
-CMD [ "npm", "start", "--silent" ]
+# No CMD here because xvfb does its own thing
