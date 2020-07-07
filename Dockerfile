@@ -12,5 +12,7 @@ RUN npm --quiet set progress=false \
  && node --version \
  && echo "NPM version:" \
  && npm --version
+ 
+ENV APIFY_DISABLE_OUTDATED_WARNING 1
 
-#CMD [ "npm", "start" ]
+CMD [ "npm", "start", "--silent" ]
