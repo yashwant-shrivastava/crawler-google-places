@@ -34,9 +34,9 @@ const extractPlaceDetail = async (options) => {
         const address = $('[data-section-id="ad"] .section-info-line').text().trim();
         const addressAlt = $("button[data-tooltip*='address']").text().trim();
         const addressAlt2 = $("button[data-item-id*='address']").text().trim();
-        const secondaryAddressLine = $('[data-section-id="ad"] .section-info-secondary-text').text().trim();
-        const secondaryAddressLineAlt = $("button[data-tooltip*='locatedin']").text().trim();
-        const secondaryAddressLineAlt2 = $("button[data-item-id*='locatedin']").text().trim();
+        const secondaryAddressLine = $('[data-section-id="ad"] .section-info-secondary-text').text().replace('Located in:', '').trim();
+        const secondaryAddressLineAlt = $("button[data-tooltip*='locatedin']").text().replace('Located in:', '').trim();
+        const secondaryAddressLineAlt2 = $("button[data-item-id*='locatedin']").text().replace('Located in:', '').trim();
         const phone = $('[data-section-id="pn0"].section-info-speak-numeral').length
             ? $('[data-section-id="pn0"].section-info-speak-numeral').attr('data-href').replace('tel:', '')
             : $("button[data-tooltip*='phone']").text().trim();
