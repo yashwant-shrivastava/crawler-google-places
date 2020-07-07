@@ -8,8 +8,7 @@ const { getGeolocation, findPointsInPolygon } = require('./polygon');
 Apify.main(async () => {
     const input = await Apify.getValue('INPUT');
     const {
-        startUrls, searchString, searchStringsArray, proxyConfig, lat, lng, maxCrawledPlaces, regularTestRun,
-        includeReviews = true, includeImages = true, includeHistogram = true, includeOpeningHours = true,
+        startUrls, searchString, searchStringsArray, proxyConfig, lat, lng, regularTestRun,
         walker, debug, country, state, city, zoom = 10
     } = input;
 
@@ -19,8 +18,6 @@ Apify.main(async () => {
         && (proxyConfig.apifyProxyGroups.includes('GOOGLESERP') || proxyConfig.apifyProxyGroups.includes('GOOGLE_SERP'))) {
         throw new Error('It is not possible to crawl google places with GOOGLE SERP proxy group. Please use a different one and rerun crawler.');
     }
-
-    if (!startUrls) log.info('Scraping Google Places for search string:', searchString || searchStringsArray.join('; '));
 
     // save geolocation to keyval
     let geo = await Apify.getValue('GEO');
@@ -69,7 +66,7 @@ Apify.main(async () => {
             });
         }
     } else if (searchString || searchStringsArray) {
-        if (searchStringsArray && !_.isArray(searchStringsArray)) throw new Error('Attribute searchStringsArray has to be an array.');
+        if (searchStringsArray && !Array.isArray(searchStringsArray)) throw new Error('Attribute searchStringsArray has to be an array.');
         const searches = searchStringsArray || [searchString];
         for (const search of searches) {
             /**
@@ -97,7 +94,9 @@ Apify.main(async () => {
         }
     }
 
-    log.info('Start urls are', startRequests.map(r => r.url));
+    log.info('Start urls are:');
+    console.dir(startRequests.map(r => r.url));
+
     const requestQueue = await Apify.openRequestQueue();
 
     for (const request of startRequests) {
@@ -110,23 +109,19 @@ Apify.main(async () => {
         },
         maxOpenPagesPerInstance: 1,
     };
-    if (proxyConfig) {
-        if (proxyConfig.useApifyProxy) {
-            const proxyUrl = Apify.getApifyProxyUrl({
-                groups: proxyConfig.apifyProxyGroups,
-                country: proxyConfig.apifyProxyCountry
-            });
-            log.info(`Constructed proxy url: ${proxyUrl}`);
-            puppeteerPoolOptions.launchPuppeteerOptions.proxyUrl = proxyUrl;
-        }
-        if (proxyConfig.proxyUrls && proxyConfig.proxyUrls.length > 0) {
-            puppeteerPoolOptions.proxyUrls = proxyConfig.proxyUrls;
-        }
+
+    let proxyConfiguration;
+    const hasCustomProxies = proxyConfig.proxyUrls && proxyConfig.proxyUrls.length > 0;
+    if (proxyConfig && (proxyConfig.useApifyProxy || hasCustomProxies)) {
+        proxyConfiguration = await Apify.createProxyConfiguration({
+            groups: proxyConfig.apifyProxyGroups,
+            countryCode: proxyConfig.apifyProxyCountry,
+            proxyUrls: proxyConfig.proxyUrls
+        });
     }
 
     // Create and run crawler
-    const crawler = placesCrawler.setUpCrawler(puppeteerPoolOptions, requestQueue,
-        maxCrawledPlaces, input);
+    const crawler = placesCrawler.setUpCrawler(puppeteerPoolOptions, requestQueue, proxyConfiguration, input);
     await crawler.run();
 
     if (regularTestRun) {

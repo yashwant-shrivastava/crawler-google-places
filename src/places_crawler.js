@@ -25,7 +25,7 @@ const { checkInPolygon } = require('./polygon');
 const extractPlaceDetail = async (options) => {
     const {
         page, request, searchString, includeReviews, includeImages, includeHistogram, includeOpeningHours,
-        includePeopleAlsoSearch, maxReviews, maxImages, additionalInfo = false, geo
+        includePeopleAlsoSearch, maxReviews, maxImages, additionalInfo, geo
     } = options;
     // Extract basic information
     await waitForGoogleMapLoader(page);
@@ -384,20 +384,14 @@ const saveScreenForDebug = async (reques, page) => {
     await saveScreenshot
 };
 
-/**
- * Method to set up crawler to get all place details and save them to default dataset
- * @param launchPuppeteerOptions
- * @param requestQueue
- * @param maxCrawledPlaces
- * @return {Apify.PuppeteerCrawler}
- */
-const setUpCrawler = (puppeteerPoolOptions, requestQueue, maxCrawledPlaces, input) => {
+const setUpCrawler = (puppeteerPoolOptions, requestQueue, proxyConfiguration, input) => {
     const {
-        includeReviews, includeImages, includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
-        maxReviews, maxImages, exportPlaceUrls = false, forceEng, additionalInfo
+        includeReviews = false, includeImages = false, includeHistogram = false, includeOpeningHours = false, includePeopleAlsoSearch = false,
+        maxReviews, maxImages, exportPlaceUrls = false, forceEng = false, additionalInfo = false, maxCrawledPlaces,
     } = input;
     const crawlerOpts = {
         requestQueue,
+        proxyConfiguration,
         maxRequestRetries: MAX_PAGE_RETRIES, // Sometimes page can failed because of blocking proxy IP by Google
         retireInstanceAfterRequestCount: 100,
         handlePageTimeoutSecs: 30 * 60, // long timeout, because of long infinite scroll
