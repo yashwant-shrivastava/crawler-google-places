@@ -90,7 +90,7 @@ Example results item:
   "totalScore": 4,
   "categoryName": "Restaurant",
   "address": "Hálkova 6, 120 00 Nové Město, Czechia",
-  "locatedIn": null,
+  "locatedIn": Azalea Square,
   "plusCode": "3CGH+F8 New Town, Prague, Czechia",
   "website": "thepub.cz",
   "phone": "+420222940414",
@@ -103,8 +103,9 @@ Example results item:
     "lat": 50.0761791,
     "lng": 14.4283676
   },
-  "reviewsCount": 789,
   "searchString": "pubs near prague 2",
+  "popularTimesLiveText": "25% busy at .; Not too busy",
+  "popularTimesLivePercent": 25,
   "popularTimesHistogram": {
     "Su": [],
     "Mo": [
@@ -221,6 +222,7 @@ Example results item:
       "hours": "Closed"
     }
   ],
+  "peopleAlsoSearch": [],
   "reviewsCount": 698,
   "reviews": [
     {
@@ -243,7 +245,20 @@ Example results item:
       "publishAt": "6 days ago",
       "likesCount": null,
       "stars": 4
-    },
+    }
+  ],
+  "imageUrls": [
+    "https://lh5.googleusercontent.com/p/AF1QipMQKrnbWNFed4bhBaMn_E1hf83ro3af1JT6BuPe=s508-k-no",
+    "https://lh5.googleusercontent.com/p/AF1QipNVV1EkzaddM7UsE9bh0KgT5BFIRfvAwsRPVo0a=s516-k-no",
+    "https://lh5.googleusercontent.com/p/AF1QipPDAjMIuulyFvHqTWCz_xeQhiDgretyMsHO6Rq_=s677-k-no",
+    "https://lh5.googleusercontent.com/p/AF1QipOEsLwms2XreZ7_kzgH_As5SeTfS7jz32ctw5iY=s516-k-no",
+    "https://lh5.googleusercontent.com/p/AF1QipPxIaP1YBTpiBNRETq52IG_BC01bhOiJK-xCVVj=s516-k-no",
+    "https://lh5.googleusercontent.com/p/AF1QipO4WRAg3nwgyret7jCb1rkgwkmy9sP02m5xNzUk=s387-k-no",
+    "https://lh5.googleusercontent.com/p/AF1QipPP2dFuuOfCA4iSmNR_1bhmmkvqcKnezqLGTOjJ=s508-k-no",
+    "https://lh5.googleusercontent.com/p/AF1QipOzqk-BheLxt1ojbDvlmNzpMrixcmudyZ17KXhl=s516-k-no",
+    "https://lh5.googleusercontent.com/p/AF1QipN1wQ2885ST1qzggCC5AqtmaIMTraYaxZ2uzxV9=s406-k-no",
+    "https://lh5.googleusercontent.com/p/AF1QipM5AVgD65Pt1bc0KdpTGan00LQ22kvlOteYOnz2=s677-k-no"
+  ],
   "additionalInfo": {
     "Service options": [
       {
