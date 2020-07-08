@@ -3,9 +3,6 @@ const { scrollTo } = require('./utils')
 
 const { sleep, log } = Apify.utils;
 
-const logInfo = (msg) => log.info(msg);
-const logDebug = (msg) => log.debug(msg);
-
 /**
  * Method returns info about page scroll
  */
@@ -67,7 +64,6 @@ module.exports = async (page, maxHeight, elementToScroll = 'body', scrollName, n
 
     await page.waitForSelector(elementToScroll, { timeout: defaultElementTimeout });
     let scrollInfo = await getPageScrollInfo(page, elementToScroll);
-    logInfo(`Infinite scroll for ${scrollName} started, url: ${page.url()}`);
 
     let previousReviewsCount = 0;
     // NOTE: In can there are too many reviews like 5K plus. The infinite scroll stops working, but the loader is still there.
@@ -112,7 +108,7 @@ module.exports = async (page, maxHeight, elementToScroll = 'body', scrollName, n
             }
             previousReviewsCount = reviewsCount;
 
-            logDebug(`Infinite scroll stats (${stringifyScrollInfo(scrollInfo)} resourcesStats=${JSON.stringify(resourcesStats)}).`);
+            log.debug(`Infinite scroll stats (${stringifyScrollInfo(scrollInfo)} resourcesStats=${JSON.stringify(resourcesStats)}).`);
 
             // Otherwise we try to scroll down
             await scrollTo(page, elementToScroll, maxHeight);
@@ -122,5 +118,4 @@ module.exports = async (page, maxHeight, elementToScroll = 'body', scrollName, n
         await sleep(defaultScrollDelay);
     }
     page.removeAllListeners('request');
-    logInfo(`Infinite scroll for ${scrollName} finished, url: ${page.url()}`);
 };

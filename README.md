@@ -23,7 +23,7 @@ It is recommended to run the actor with at least 8GB memory. On Apify platform w
 
 ## Using polygons
 For determining polygons to exact search location are used [nominatim maps](https://nominatim.org/).
-Currently search is done for first found polygon for combination of input fields: `country`, `state`, `city`. 
+Currently search is done for first found polygon for combination of input fields: `country`, `state`, `city`.
 After finding polygon in nominatim maps, start urls are prepared screen by screen to cover all area. Please be careful with zoom option in this case, as it changes number of steps and accuracy of search.
 Each place is also rechecked, whether it is located inside of desired location, as google often find places in nearby locations.
 
@@ -43,7 +43,7 @@ On this input actor searches places on this start url: https://www.google.com/ma
 
 - `startUrls` - list of urls with search results to scrape places from.
 - `searchString` - String will be search on Google maps. It is possible fill [Google Place ID](https://developers.google.com/places/place-id) in format `place_id:ChIJp4JiUCNP0xQR1JaSjpW_Hms`. Do not include location in search string if you are using polygon localization (`country`, `state`, `city`).
-- `searchStringArray` - Array of strings, that will be searched on Google maps.
+- `searchStringArray` - Array of strings, that will be searched on Google maps. Use if you need to search more different types of places at once.
 - `proxyConfig` - Apify proxy configuration, it is required to provide proxy.
 - `country` - Country name for polygon localization
 - `state` - State name for polygon localization
@@ -57,17 +57,14 @@ On this input actor searches places on this start url: https://www.google.com/ma
 - `debug` - Debug messages will be included in log.
 - `exportPlaceUrls` - Won't crawl through place pages, return links to places
 - `forceEng` - Force localization to be in english, some fields are dependent on english and won't work in different language:
-    - `temporarilyClosed`
-    - `permanentlyClosed`
 
 You can exclude some attributes from results using input parameters. It can help to speed up crawling.
-You need to set the attribute to `false`.
-- `includeReviews`
-- `includeImages`
-- `includeHistogram`
-- `includeOpeningHours`
-- `includePeopleAlsoSearch`
-- `additionalInfo` - Service Options, Highlights, Offerings,..
+- set `maxImages` to `0`
+- set `maxReviews` to `0`
+- set `includeHistogram` to `false`
+- set`includeOpeningHours` to `false`
+- set`includePeopleAlsoSearch` to `false`
+- set `additionalInfo` - Service Options, Highlights, Offerings,.. to `false`
 
 ### Country localization
 You can force the scraper to access the places only from specific country location. We recommend this to ensure the correct language in results. This works reliably only for US (most of our proxies are from US). Currently, this option is not available in the Editor input , you have switch to JSON input. After you switch, your configuration will remain the same so just update the `proxyconfig` field with `apifyProxyCountry` property to specify the country, example:

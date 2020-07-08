@@ -49,32 +49,22 @@
       "prefill": { "useApifyProxy": true },
       "editor": "proxy"
     },
-    "includeReviews": {
-      "title": "Include places reviews",
-      "type": "boolean",
-      "description": "If checked the crawler scrapes reviews for all places. You can speed up crawling if you disable reviews.",
-      "default": false
-    },
     "maxReviews": {
-      "title": "Max reviews",
+      "title": "Max reviews (Slow)",
       "type": "integer",
-      "description": "Maximum number of reviews for place. If you fill 0 or nothing all reviews will be scraped.",
-      "prefill": 5
-    },
-    "includeImages": {
-      "title": "Include places images (Very Slow)",
-      "type": "boolean",
-      "description": "If checked the crawler scrapes all images for all places. You can speed up crawling if you disable images. Crawling images is quite time and CU consuming.",
-      "default": false
+      "description": "Max number of reviews per place to scrape. If you fill 0 or nothing, no reviews will be scraped. For all reviews, just put 99999",
+      "prefill": 5,
+      "unit": "reviews per place"
     },
     "maxImages": {
-      "title": "Max Images",
+      "title": "Max Images (Very slow)",
       "type": "integer",
-      "description": "Max number images per place. If you fill 0 or nothing all images will be scraped.",
-      "prefill": 1
+      "description": "Max number of images per place to scrape. If you fill 0 or nothing, no images will be scraped. For all images, just put 99999",
+      "prefill": 1,
+      "unit": "images per place"
     },
     "exportPlaceUrls": {
-      "title": "Export Place Urls",
+      "title": "Export Place Urls (Skips place details)",
       "type": "boolean",
       "description": "Scraper will return only places urls without details.",
       "default": false

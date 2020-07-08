@@ -24,7 +24,7 @@ const { checkInPolygon } = require('./polygon');
  */
 const extractPlaceDetail = async (options) => {
     const {
-        page, request, searchString, includeReviews, includeImages, includeHistogram, includeOpeningHours,
+        page, request, searchString, includeHistogram, includeOpeningHours,
         includePeopleAlsoSearch, maxReviews, maxImages, additionalInfo, geo
     } = options;
     // Extract basic information
@@ -250,7 +250,7 @@ const extractPlaceDetail = async (options) => {
             await page.click('.widget-consent-dialog .widget-consent-button-later');
         }
         // Get all reviews
-        if (includeReviews) {
+        if (typeof maxReviews === 'number' && maxReviews > 0) {
             detail.reviews = [];
             await page.waitForSelector(reviewsButtonSel);
             await page.click(reviewsButtonSel);
@@ -283,46 +283,44 @@ const extractPlaceDetail = async (options) => {
 
             let reviewResponseBody = await reviewsResponse.buffer();
             const reviews = parseReviewFromResponseBody(reviewResponseBody);
-            if (maxReviews && reviews.length > maxReviews)
-                detail.reviews.push(...reviews.slice(0, maxReviews));
-            else {
-                detail.reviews.push(...reviews);
-                let reviewUrl = reviewsResponse.url();
-                // Replace !3e1 in URL with !3e2, it makes list sort by newest
-                reviewUrl = reviewUrl.replace(/\!3e\d/, '!3e2');
-                // Make sure that we star review from 0, setting !1i0
-                reviewUrl = reviewUrl.replace(/\!1i\d+/, '!1i0');
-                const increaseLimitInUrl = (url) => {
-                    const numberString = reviewUrl.match(/\!1i(\d+)/)[1];
-                    const number = parseInt(numberString)
-                    return url.replace(/\!1i\d+/, `!1i${number + 10}`);
-                };
 
-                while (true) {
-                    // Request in browser context to use proxy as in brows
-                    const responseBody = await page.evaluate(async (url) => {
-                        const response = await fetch(url);
-                        return await response.text();
-                    }, reviewUrl);
-                    const reviews = parseReviewFromResponseBody(responseBody);
-                    if (reviews.length === 0) break;
-                    if (maxReviews && (reviews.length + detail.reviews.length) > maxReviews) {
-                        detail.reviews.push(...reviews.slice(0, maxReviews - detail.reviews.length));
-                        break;
-                    } else
-                        detail.reviews.push(...reviews);
-                    reviewUrl = increaseLimitInUrl(reviewUrl);
+            detail.reviews.push(...reviews);
+            detail.reviews = detail.reviews.slice(0, maxReviews);
+            log.info(`Exracting reviews: ${detail.reviews.length}/${maxReviews} --- ${page.url()}`);
+            let reviewUrl = reviewsResponse.url();
+            // Replace !3e1 in URL with !3e2, it makes list sort by newest
+            reviewUrl = reviewUrl.replace(/\!3e\d/, '!3e2');
+            // Make sure that we star review from 0, setting !1i0
+            reviewUrl = reviewUrl.replace(/\!1i\d+/, '!1i0');
+            const increaseLimitInUrl = (url) => {
+                const numberString = reviewUrl.match(/\!1i(\d+)/)[1];
+                const number = parseInt(numberString)
+                return url.replace(/\!1i\d+/, `!1i${number + 10}`);
+            };
+
+            while (detail.reviews.length < maxReviews) {
+                // Request in browser context to use proxy as in brows
+                const responseBody = await page.evaluate(async (url) => {
+                    const response = await fetch(url);
+                    return await response.text();
+                }, reviewUrl);
+                const reviews = parseReviewFromResponseBody(responseBody);
+                if (reviews.length === 0) {
+                    break;
                 }
+                detail.reviews.push(...reviews);
+                detail.reviews = detail.reviews.slice(0, maxReviews);
+                log.info(`Exracting reviews: ${detail.reviews.length}/${maxReviews} --- ${page.url()}`);
+                reviewUrl = increaseLimitInUrl(reviewUrl);
             }
+            log.info(`Reviews extraction finished: ${detail.reviews.length} --- ${page.url()}`);
 
             await page.click('button[jsaction*=back]');
-        } else {
-            log.info(`Skipping reviews scraping for url: ${page.url()}`)
         }
     }
 
     // Extract place images
-    if (includeImages) {
+    if (typeof maxImages === 'number' && maxImages > 0) {
         await page.waitForSelector(PLACE_TITLE_SEL, { timeout: DEFAULT_TIMEOUT });
         const imagesButtonSel = '.section-hero-header-image-hero-container';
         const imagesButton = await page.$(imagesButtonSel);
@@ -332,27 +330,10 @@ const extractPlaceDetail = async (options) => {
             let lastImage = null;
             let pageBottom = 10000;
             let imageUrls = [];
-            if (maxImages) {
-                while (true) {
-                    await infiniteScroll(page, pageBottom, '.section-scrollbox.scrollable-y', 'images list', 1);
-                    imageUrls = await page.evaluate(() => {
-                        const urls = [];
-                        $('.gallery-image-high-res').each(function () {
-                            const urlMatch = $(this).attr('style').match(/url\("(.*)"\)/);
-                            if (!urlMatch) return;
-                            let imageUrl = urlMatch[1];
-                            if (imageUrl[0] === '/') imageUrl = `https:${imageUrl}`;
-                            urls.push(imageUrl);
-                        });
-                        return urls;
-                    });
-                    if (imageUrls.length >= maxImages || lastImage === imageUrls[imageUrls.length - 1]) break;
-                    lastImage = imageUrls[imageUrls.length - 1];
-                    pageBottom = pageBottom + 6000;
-                }
-                detail.imageUrls = imageUrls.slice(0, maxImages);
-            } else {
-                await infiniteScroll(page, 99999999999, '.section-scrollbox.scrollable-y', 'images list');
+
+            while (true) {
+                log.info(`Infinite scroll for images started, url: ${page.url()}`);
+                await infiniteScroll(page, pageBottom, '.section-scrollbox.scrollable-y', 'images', 1);
                 imageUrls = await page.evaluate(() => {
                     const urls = [];
                     $('.gallery-image-high-res').each(function () {
@@ -364,11 +345,16 @@ const extractPlaceDetail = async (options) => {
                     });
                     return urls;
                 });
-                detail.imageUrls = imageUrls;
+                if (imageUrls.length >= maxImages || lastImage === imageUrls[imageUrls.length - 1]) {
+                    log.info(`Infinite scroll for images finished, url: ${page.url()}`);
+                    break;
+                }
+                log.info(`Infinite scroll continuing for images, currently ${imageUrls.length}, url: ${page.url()}`);
+                lastImage = imageUrls[imageUrls.length - 1];
+                pageBottom = pageBottom + 6000;
             }
+            detail.imageUrls = imageUrls.slice(0, maxImages);
         }
-    } else {
-        log.info(`Skipping images scraping for url: ${page.url()}`)
     }
 
     return detail;
@@ -383,7 +369,7 @@ const saveScreenForDebug = async (reques, page) => {
 
 const setUpCrawler = (puppeteerPoolOptions, requestQueue, proxyConfiguration, input) => {
     const {
-        includeReviews = false, includeImages = false, includeHistogram = false, includeOpeningHours = false, includePeopleAlsoSearch = false,
+        includeHistogram = false, includeOpeningHours = false, includePeopleAlsoSearch = false,
         maxReviews, maxImages, exportPlaceUrls = false, forceEng = false, additionalInfo = false, maxCrawledPlaces,
     } = input;
     const crawlerOpts = {
@@ -400,7 +386,7 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, proxyConfiguration, in
         gotoFunction: async ({ request, page }) => {
             await page._client.send('Emulation.clearDeviceMetricsOverride');
             // This blocks images so we have to skip it
-            if (!input.includeImages) {
+            if (!input.maxImages) {
                 await blockRequests(page, {
                     urlPatterns: ['/maps/vt/', '/earth/BulkMetadata/', 'googleusercontent.com'],
                 });
@@ -432,8 +418,6 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, proxyConfiguration, in
                         page,
                         request,
                         searchString,
-                        includeReviews,
-                        includeImages,
                         includeHistogram,
                         includeOpeningHours,
                         includePeopleAlsoSearch,
