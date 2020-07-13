@@ -19,19 +19,19 @@
     "country": {
       "title": "Country",
       "type": "string",
-      "description": "Set country where search should be performed - 'USA'",
+      "description": "Set country where search should be performed - 'USA'. For more accurate search, set lat and lng.",
       "editor": "textfield"
     },
     "state": {
       "title": "State",
       "type": "string",
-      "description": "Set State where search should be performed - 'Massachusetts'",
+      "description": "Set State where search should be performed - 'Massachusetts'. For more accurate search, set lat and lng.",
       "editor": "textfield"
     },
     "city": {
       "title": "City",
       "type": "string",
-      "description": "Set City where search should be performed - 'Pittsfield",
+      "description": "Set City where search should be performed - 'Pittsfield .For more accurate search, set lat and lng.",
       "editor": "textfield"
     },
     "maxCrawledPlaces": {
@@ -93,19 +93,19 @@
     "lat": {
       "title": "Viewport point latitude",
       "type": "string",
-      "description": "Use it with combination with longitude and zoom to set up viewport to search on.",
+      "description": "Use it with combination with longitude and zoom to set up viewport to search on. Has preference over country/state/city.",
       "editor": "textfield"
     },
     "lng": {
       "title": "Viewport point longitude",
       "type": "string",
-      "description": "Use it with combination with latitude and zoom to set up viewport to search on.",
+      "description": "Use it with combination with latitude and zoom to set up viewport to search on. Has preference over country/state/city.",
       "editor": "textfield"
     },
     "zoom": {
       "title": "Viewport zoom level",
       "type": "integer",
-      "description": "Use it with combination with point longitude and latitude to set up viewport to search on. You have whole world on map with zoom level 1.",
+      "description": "Use it with combination with point longitude and latitude to set up viewport to search on. The higher number, the close you are to the point. You have whole world on map with zoom level 1.",
       "default": 12,
       "minimum": 1,
       "maximum": 20
@@ -125,7 +125,7 @@
     "forceEng": {
       "title": "Force English",
       "type": "boolean",
-      "description": "Force places to be in specific english",
+      "description": "Force place data to be displayed in English",
       "default": true
     }
   },

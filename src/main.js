@@ -31,7 +31,9 @@ Apify.main(async () => {
 
     const {
         startUrls, searchString, searchStringsArray, proxyConfig, lat, lng, regularTestRun,
-        walker, debug, country, state, city, zoom = 10
+        // walker is undocumented feature added by jakubdrobnik, we need to test it and document it
+        walker,
+        debug, country, state, city, zoom = 10
     } = input;
 
     if (debug) log.setLevel(log.LEVELS.DEBUG);
@@ -47,8 +49,10 @@ Apify.main(async () => {
         await Apify.setValue('GEO', geo);
     });
 
-    const startRequests = [];
+    // Base part of the URLs to make up the startRequests
     const startUrlSearches = [];
+
+    // preference for startUrlSearches is lat & lng > & state & city
     if (lat || lng) {
         if (!lat || !lng) throw new Error('You have to defined lat and lng!');
         startUrlSearches.push(`https://www.google.com/maps/@${lat},${lng},${zoom}z/search`);
@@ -64,6 +68,10 @@ Apify.main(async () => {
         startUrlSearches.push('https://www.google.com/maps/search/')
     }
 
+    // Requests that are used in the queue
+    const startRequests = [];
+
+    // Preference for startRequests is walker > startUrls > searchString || searchStringsArray
     if (walker && searchString) {
         const { zoom, step, bounds } = walker;
         const { northeast, southwest } = bounds;
