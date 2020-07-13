@@ -107,8 +107,8 @@
       "type": "integer",
       "description": "Use it with combination with point longitude and latitude to set up viewport to search on. The higher number, the close you are to the point. You have whole world on map with zoom level 1.",
       "default": 12,
-      "minimum": 1,
-      "maximum": 20
+      "minimum": 9,
+      "maximum": 17
     },
     "debug": {
       "title": "Debug log",

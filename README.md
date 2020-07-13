@@ -15,17 +15,25 @@ This scraper is under active development. Check [CHANGELOG.md](https://github.co
 - 2020-07 polygon search and bug fixes
 
 ## Usage
-
 If you want to run the actor on Apify platform, you need to have at least a few proxy IPs to avoid blocking from Google. You can use proxy IPs pool on Apify proxy trial or you can subscribe to one of [Apify subscription plan](https://apify.com/pricing).
 It is recommended to run the actor with at least 8GB memory. On Apify platform with 8GB memory you can get:
 - 100 google place details for 1-2 compute units
 - 100 google place details with images and reviews for 4-8 compute units - the usage really depends on how many images and reviews specific places have
 
-## Using polygons
-For determining polygons to exact search location are used [nominatim maps](https://nominatim.org/).
-Currently search is done for first found polygon for combination of input fields: `country`, `state`, `city`.
-After finding polygon in nominatim maps, start urls are prepared screen by screen to cover all area. Please be careful with zoom option in this case, as it changes number of steps and accuracy of search.
-Each place is also rechecked, whether it is located inside of desired location, as google often find places in nearby locations.
+## How the search works
+It works exactly if you would use Google Maps on your computer. It opens the https://www.google.com/maps/, relocates to the specified location and writes the search to the input. Then it presses the next page button until the reaches final page or `maxCrawledPlaces`. It enqueues all the places as separate pages and then scrapes them. If you are unsure about anything, just try this process in your browser, the scraper does exactly the same.
+
+### Google automatically expands the search location
+There is one feature of Google Maps that is sometimes not desirable. As you are going on the next page, there might not be enough places that you search for (e.g. restaurants in your city). Google will naturally zoom out and include places from broader area. It will happilly do this over a large area and might include places from far out that you are not interested in. There are 3 ways to solve this:
+
+- Limit `maxCrawledPlaces` - This is the simplest option but you usually don't know how many places there are so it is not that useful
+- Use `maxAutomaticZoomOut` parameter to stop searching once Google zooms out too far. Keep in mind that `zoom: 1` is whole world and `zoom: 21` is a tiny street. So usually you want `maxAutomaticZoomOut` to be between `0` and `5`.
+- Use `country`, `state`, `city` parameters.
+
+## Using country, state, city parameters
+You can use only `country` or `country` + `state` or `country` + `state` + `city`. The scraper uses [nominatim maps](https://nominatim.org/) to find a location polygon and then splits that into multiple searches that cover the whole area. You should play a bit with `zoom` number to find the ideal granularity of searches. Too small zoom will find only the most famous places over large area, too big zoom will lead to overlapping places and will consume huge number of CUs. We recommend number between 10 and 15. Each place is also rechecked, whether it is located inside of desired location, as google often find places in nearby locations.
+
+#### Warning: Don't use too big zoom (17+) with country, state, city parameters
 
 ## INPUT
 Follow guide on [actor detail page](https://www.apify.com/drobnikj/crawler-google-places) to see how it works.
@@ -50,9 +58,9 @@ On this input actor searches places on this start url: https://www.google.com/ma
 - `city` - City name for polygon localization
 - `maxReviews` - Maximum number of reviews per place
 - `maxImages` - Maximum number of images per place
-- `lat` - Use it with combination with longitude and zoom to set up viewport to search on.Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
-- `lng` - Use it with combination with latitude and zoom to set up viewport to search on.Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
-- `zoom` - Viewport zoom, e.g zoom: 10 -> https://www.google.com/maps/@50.0860729,14.4135326,10z vs zoom: 1 -> https://www.google.com/maps/@50.0860729,14.4135326,1z
+- `lat` - Use it with combination with longitude and zoom to set up viewport to search on. Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
+- `lng` - Use it with combination with latitude and zoom to set up viewport to search on. Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
+- `zoom` - Viewport zoom, e.g zoom: 17 in Google Maps URL -> https://www.google.com/maps/@50.0860729,14.4135326,17z vs zoom: 10 -> https://www.google.com/maps/@50.0860729,14.4135326,10z. `1` is whole world and `21` is tiny street. We recommend number between 10 and 17.
 - `maxCrawledPlaces` - Limit places you want to get from crawler
 - `debug` - Debug messages will be included in log.
 - `exportPlaceUrls` - Won't crawl through place pages, return links to places
