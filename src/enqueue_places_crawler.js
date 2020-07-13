@@ -3,7 +3,7 @@ const querystring = require('querystring');
 
 const { sleep, log } = Apify.utils;
 const { DEFAULT_TIMEOUT, LISTING_PAGINATION_KEY, PLACE_TITLE_SEL } = require('./consts');
-const { waitForGoogleMapLoader, parseSearchPlacesResponseBody } = require('./utils');
+const { waitForGoogleMapLoader, parseSearchPlacesResponseBody, parseZoomFromUrl } = require('./utils');
 
 /**
  * This handler waiting for response from xhr and enqueue places from the search response boddy.
@@ -53,7 +53,7 @@ const enqueuePlacesFromResponse = (requestQueue, searchString, maxPlacesPerCrawl
  * @param requestQueue
  * @param maxCrawledPlaces
  */
-const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxCrawledPlaces, request, exportPlaceUrls, geo) => {
+const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxCrawledPlaces, request, exportPlaceUrls, geo, maxAutomaticZoomOut) => {
     page.on('response', enqueuePlacesFromResponse(requestQueue, searchString, maxCrawledPlaces, exportPlaceUrls, geo));
     // Save state of listing pagination
     // NOTE: If pageFunction failed crawler skipped already scraped pagination
@@ -61,12 +61,15 @@ const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxCrawl
     const listingPagination = await Apify.getValue(listingStateKey) || {};
     // there is no searchString when startUrls are used
     if (searchString) await page.type('#searchboxinput', searchString);
+
+    // TODO: Do we really need these huge wait times?
     await sleep(5000);
     await page.click('#searchbox-searchbutton');
     await sleep(5000);
     await waitForGoogleMapLoader(page);
     try {
-        await page.waitForSelector(PLACE_TITLE_SEL);
+        // This might no longer work and I don't know why it is here. I reduced timeout to 5000 at least (LK)
+        await page.waitForSelector(PLACE_TITLE_SEL, { timeout: 5000 });
         // It there is place detail, it means there is just one detail and it was redirected here.
         // We do not need enqueue other places.
         log.debug(`Search string ${searchString} has just one place to scraper.`);
@@ -74,6 +77,8 @@ const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxCrawl
     } catch (e) {
         // It can happen if there is list of details.
     }
+
+    const startZoom = parseZoomFromUrl(page.url());
 
     // In case there is a list of details, it goes through details, limits by maxPlacesPerCrawl
     const nextButtonSelector = '[jsaction="pane.paginationSection.nextPage"]';
@@ -92,7 +97,27 @@ const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxCrawl
             return !!$(nextButtonSelector).attr('disabled');
         }, nextButtonSelector);
         const noResultsEl = await page.$('.section-no-result-title');
-        if (isNextPaginationDisabled || noResultsEl || (maxCrawledPlaces && maxCrawledPlaces <= to)) {
+
+        // If Google auto-zoomes too far, we might want to end the search
+        let finishBecauseAutoZoom = false;
+        if (typeof maxAutomaticZoomOut === 'number') {
+            const actualZoom = parseZoomFromUrl(page.url());
+            // console.log('ACTUAL ZOOM:', actualZoom, 'STARTED ZOOM:', startZoom);
+            const googleZoomedOut = startZoom - actualZoom;
+            if (googleZoomedOut > maxAutomaticZoomOut) {
+                finishBecauseAutoZoom = true;
+            }
+        }
+        if (isNextPaginationDisabled || noResultsEl || (maxCrawledPlaces && maxCrawledPlaces <= to) || finishBecauseAutoZoom) {
+            if (isNextPaginationDisabled) {
+                log.warning(`Finishing search because there are no more pages --- ${searchString}`);
+            } else if (noResultsEl) {
+                log.warning(`Finishing search because it reached an empty page --- ${searchString}`);
+            } else if (maxCrawledPlaces && maxCrawledPlaces <= to) {
+                log.warning(`Finishing search because we reached maxCrawledPlaces --- ${searchString}`);
+            } else if (finishBecauseAutoZoom) {
+                log.warning(`Finishing search because Google zoomed out further than maxAutomaticZoomOut. Current zoom: ${parseZoomFromUrl(page.url())} --- ${searchString}`);
+            }
             break;
         } else {
             // NOTE: puppeteer API click() didn't work :|

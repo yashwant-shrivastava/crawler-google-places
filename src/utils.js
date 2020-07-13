@@ -109,6 +109,11 @@ const scrollTo = (page, elementToScroll, scrollToHeight) => page.evaluate((eleme
     scrollable.scrollTop = scrollToHeight;
 }, elementToScroll, scrollToHeight);
 
+const parseZoomFromUrl = (url) => {
+    const zoomMatch = url.match(/@[0-9.-]+,[0-9.-]+,([0-9.]+)z/);
+    return zoomMatch ? Number(zoomMatch[1]) : null;
+}
+
 module.exports = {
     saveScreenshot,
     saveHTML,
@@ -116,4 +121,5 @@ module.exports = {
     parseSearchPlacesResponseBody,
     parseReviewFromResponseBody,
     scrollTo,
+    parseZoomFromUrl,
 };

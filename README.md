@@ -27,7 +27,7 @@ It works exactly if you would use Google Maps on your computer. It opens the htt
 There is one feature of Google Maps that is sometimes not desirable. As you are going on the next page, there might not be enough places that you search for (e.g. restaurants in your city). Google will naturally zoom out and include places from broader area. It will happilly do this over a large area and might include places from far out that you are not interested in. There are 3 ways to solve this:
 
 - Limit `maxCrawledPlaces` - This is the simplest option but you usually don't know how many places there are so it is not that useful
-- Use `maxAutomaticZoomOut` parameter to stop searching once Google zooms out too far. Keep in mind that `zoom: 1` is whole world and `zoom: 21` is a tiny street. So usually you want `maxAutomaticZoomOut` to be between `0` and `5`.
+- Use `maxAutomaticZoomOut` parameter to stop searching once Google zooms out too far. It count how far it zoomed out from the first page. Keep in mind that `zoom: 1` is whole world and `zoom: 21` is a tiny street. So usually you want `maxAutomaticZoomOut` to be between `0` and `5`.
 - Use `country`, `state`, `city` parameters.
 
 ## Using country, state, city parameters
@@ -61,6 +61,7 @@ On this input actor searches places on this start url: https://www.google.com/ma
 - `lat` - Use it with combination with longitude and zoom to set up viewport to search on. Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
 - `lng` - Use it with combination with latitude and zoom to set up viewport to search on. Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
 - `zoom` - Viewport zoom, e.g zoom: 17 in Google Maps URL -> https://www.google.com/maps/@50.0860729,14.4135326,17z vs zoom: 10 -> https://www.google.com/maps/@50.0860729,14.4135326,10z. `1` is whole world and `21` is tiny street. We recommend number between 10 and 17.
+- `maxAutomaticZoomOut` parameter to stop searching once Google zooms out too far. It count how far it zoomed out from the first page. Keep in mind that `zoom: 1` is whole world and `zoom: 21` is a tiny street. So usually you want `maxAutomaticZoomOut` to be between `0` and `5`.
 - `maxCrawledPlaces` - Limit places you want to get from crawler
 - `debug` - Debug messages will be included in log.
 - `exportPlaceUrls` - Won't crawl through place pages, return links to places

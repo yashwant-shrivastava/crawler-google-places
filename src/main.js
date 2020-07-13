@@ -29,6 +29,7 @@ Apify.main(async () => {
         input.maxImages = 0;
     }
 
+    // The rest of inputs are passed to the crawler as a whole
     const {
         startUrls, searchString, searchStringsArray, proxyConfig, lat, lng, regularTestRun,
         // walker is undocumented feature added by jakubdrobnik, we need to test it and document it
@@ -88,10 +89,10 @@ Apify.main(async () => {
                 });
             }
         }
-    } else if (startUrls) {
-        for (const url of startUrls) {
+    } else if (Array.isArray(startUrls) && startUrls.length > 0) {
+        for (const req of startUrls) {
             startRequests.push({
-                ...url,
+                ...req,
                 userData: { label: 'startUrl', searchString: null }
             });
         }

@@ -370,7 +370,7 @@ const saveScreenForDebug = async (reques, page) => {
 const setUpCrawler = (puppeteerPoolOptions, requestQueue, proxyConfiguration, input) => {
     const {
         includeHistogram = false, includeOpeningHours = false, includePeopleAlsoSearch = false,
-        maxReviews, maxImages, exportPlaceUrls = false, forceEng = false, additionalInfo = false, maxCrawledPlaces,
+        maxReviews, maxImages, exportPlaceUrls = false, forceEng = false, additionalInfo = false, maxCrawledPlaces, maxAutomaticZoomOut,
     } = input;
     const crawlerOpts = {
         requestQueue,
@@ -409,7 +409,7 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, proxyConfiguration, in
                 }
                 if (label === 'startUrl') {
                     log.info(`Start enqueuing places details for search: ${searchString}`);
-                    await enqueueAllPlaceDetails(page, searchString, requestQueue, maxCrawledPlaces, request, exportPlaceUrls, geo);
+                    await enqueueAllPlaceDetails(page, searchString, requestQueue, maxCrawledPlaces, request, exportPlaceUrls, geo, maxAutomaticZoomOut);
                     log.info('Enqueuing places finished.');
                 } else {
                     // Get data for place and save it to dataset
