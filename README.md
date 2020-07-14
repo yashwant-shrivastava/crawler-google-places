@@ -61,7 +61,7 @@ On this input actor searches places on this start url: https://www.google.com/ma
 - `lat` - Use it with combination with longitude and zoom to set up viewport to search on. Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
 - `lng` - Use it with combination with latitude and zoom to set up viewport to search on. Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
 - `zoom` - Viewport zoom, e.g zoom: 17 in Google Maps URL -> https://www.google.com/maps/@50.0860729,14.4135326,17z vs zoom: 10 -> https://www.google.com/maps/@50.0860729,14.4135326,10z. `1` is whole world and `21` is tiny street. We recommend number between 10 and 17.
-- `maxAutomaticZoomOut` parameter to stop searching once Google zooms out too far. It count how far it zoomed out from the first page. Keep in mind that `zoom: 1` is whole world and `zoom: 21` is a tiny street. So usually you want `maxAutomaticZoomOut` to be between `0` and `5`.
+- `maxAutomaticZoomOut` parameter to stop searching once Google zooms out too far. It count how far it zoomed out from the first page. Keep in mind that `zoom: 1` is whole world and `zoom: 21` is a tiny street. So usually you want `maxAutomaticZoomOut` to be between `0` and `5`. Also, keep in mind that Google zooms a bit differently in each run.
 - `maxCrawledPlaces` - Limit places you want to get from crawler
 - `debug` - Debug messages will be included in log.
 - `exportPlaceUrls` - Won't crawl through place pages, return links to places

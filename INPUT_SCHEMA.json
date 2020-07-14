@@ -113,7 +113,7 @@
     "maxAutomaticZoomOut": {
         "title": "Max automatic zoom out",
         "type": "integer",
-        "description": "parameter to stop searching once Google zooms out too far. It count how far it zoomed out from the first page. Keep in mind that `zoom: 1` is whole world and `zoom: 21` is a tiny street. So usually you want `maxAutomaticZoomOut` to be between `0` and `5`.",
+        "description": "Parameter to stop searching once Google zooms out too far. It counts how far it zoomed out compared to the first page. Keep in mind that `zoom: 1` is whole world and `zoom: 21` is a tiny street. So usually you want `maxAutomaticZoomOut` to be between `0` and `5`. Also, keep in mind that Google zooms a bit differently in each run.",
         "minimum": 0,
         "maximum": 10
     },
