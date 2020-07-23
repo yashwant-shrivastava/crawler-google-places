@@ -4,6 +4,7 @@ const querystring = require('querystring');
 const { sleep, log } = Apify.utils;
 const { DEFAULT_TIMEOUT, LISTING_PAGINATION_KEY, PLACE_TITLE_SEL } = require('./consts');
 const { waitForGoogleMapLoader, parseSearchPlacesResponseBody, parseZoomFromUrl } = require('./utils');
+const { checkInPolygon } = require('./polygon');
 
 /**
  * This handler waiting for response from xhr and enqueue places from the search response boddy.
@@ -12,7 +13,8 @@ const { waitForGoogleMapLoader, parseSearchPlacesResponseBody, parseZoomFromUrl 
  * @param maxPlacesPerCrawl
  * @return {Function}
  */
-const enqueuePlacesFromResponse = (requestQueue, searchString, maxPlacesPerCrawl, exportPlaceUrls, geo) => {
+const enqueuePlacesFromResponse = (options) => {
+    const { requestQueue, searchString, maxPlacesPerCrawl, exportPlaceUrls, geo, allPlaces, cachePlaces, stats } = options;
     return async (response) => {
         const url = response.url();
         if (url.startsWith('https://www.google.com/search')) {
@@ -31,13 +33,21 @@ const enqueuePlacesFromResponse = (requestQueue, searchString, maxPlacesPerCrawl
                         promise = Apify.pushData({
                             url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${place.placeId}`
                         })
-                    else
-                        promise = requestQueue.addRequest({
-                                url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${place.placeId}`,
-                                uniqueKey: place.placeId,
-                                userData: { label: 'detail', searchString, rank, geo },
-                            },
-                            { forefront: true });
+                    else {
+                        const location = allPlaces[place.placeId]
+                        if (!cachePlaces || !geo || !location || checkInPolygon(geo, location)) {
+                            promise = requestQueue.addRequest({
+                                    url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${place.placeId}`,
+                                    uniqueKey: place.placeId,
+                                    userData: { label: 'detail', searchString, rank, geo },
+                                },
+                                { forefront: true });
+                        } else {
+                            log.info(`Skip place: ${place.placeId}`);
+                            stats.outOfPolygonCached();
+                        }
+
+                    }
                     enqueuePromises.push(promise);
                 }
             });
@@ -53,8 +63,17 @@ const enqueuePlacesFromResponse = (requestQueue, searchString, maxPlacesPerCrawl
  * @param requestQueue
  * @param maxCrawledPlaces
  */
-const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxCrawledPlaces, request, exportPlaceUrls, geo, maxAutomaticZoomOut) => {
-    page.on('response', enqueuePlacesFromResponse(requestQueue, searchString, maxCrawledPlaces, exportPlaceUrls, geo));
+const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxCrawledPlaces, request, exportPlaceUrls, geo, maxAutomaticZoomOut, allPlaces, cachePlaces, stats) => {
+    page.on('response', enqueuePlacesFromResponse({
+        requestQueue,
+        searchString,
+        maxPlacesPerCrawl: maxCrawledPlaces,
+        exportPlaceUrls,
+        geo,
+        allPlaces,
+        cachePlaces,
+        stats
+    }));
     // Save state of listing pagination
     // NOTE: If pageFunction failed crawler skipped already scraped pagination
     const listingStateKey = `${LISTING_PAGINATION_KEY}-${request.id}`;

@@ -134,6 +134,12 @@
       "type": "boolean",
       "description": "Force place data to be displayed in English",
       "default": true
+    },
+    "cachePlaces": {
+      "title": "Cache Places",
+      "type": "boolean",
+      "description": "Cache places location between runs in named KeyVal. Check location in polygon before enqueuing place to requestQueue.",
+      "default": false
     }
   },
   "required": [

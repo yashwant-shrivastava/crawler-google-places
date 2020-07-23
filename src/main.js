@@ -5,8 +5,12 @@ const _ = require('lodash');
 const { log } = Apify.utils;
 const { getGeolocation, findPointsInPolygon } = require('./polygon');
 
+const { Stats } = require('./stats');
+const cachedPlacesName = 'Places-cached-locations';
+
 Apify.main(async () => {
     const input = await Apify.getValue('INPUT');
+    const stats = new Stats(300);
 
     // Small hack for backward compatibillity
     // Previously there was a checkbox includeImages and includeReviews. It had to be on.
@@ -34,7 +38,7 @@ Apify.main(async () => {
         startUrls, searchString, searchStringsArray, proxyConfig, lat, lng, regularTestRun,
         // walker is undocumented feature added by jakubdrobnik, we need to test it and document it
         walker,
-        debug, country, state, city, zoom = 10
+        debug, country, state, city, zoom = 10, cachePlaces = false
     } = input;
 
     if (debug) log.setLevel(log.LEVELS.DEBUG);
@@ -49,6 +53,20 @@ Apify.main(async () => {
     Apify.events.on('migrating', async () => {
         await Apify.setValue('GEO', geo);
     });
+
+    let allPlaces = {}
+    if (cachePlaces) {
+        log.debug('Load cached places');
+        const allPlacesStore = await Apify.openKeyValueStore(cachedPlacesName);
+        allPlaces = await allPlacesStore.getValue('places') || {};
+        log.debug(allPlaces)
+        Apify.events.on('migrating', async () => {
+            log.debug('Saving places before migration');
+            const reloadedPlaces = await allPlacesStore.getValue('places') || {};
+            const newPlaces = { ...allPlaces, ...reloadedPlaces };
+            await allPlacesStore.setValue('places', newPlaces);
+        });
+    }
 
     // Base part of the URLs to make up the startRequests
     const startUrlSearches = [];
@@ -125,6 +143,7 @@ Apify.main(async () => {
         }
     }
 
+    await stats.loadInfo();
     log.info('Start urls are:');
     console.dir(startRequests.map(r => r.url));
 
@@ -152,8 +171,18 @@ Apify.main(async () => {
     }
 
     // Create and run crawler
-    const crawler = placesCrawler.setUpCrawler(puppeteerPoolOptions, requestQueue, proxyConfiguration, input);
+    const crawler = placesCrawler.setUpCrawler(puppeteerPoolOptions, requestQueue, proxyConfiguration, input, stats, allPlaces);
+
     await crawler.run();
+    await stats.saveStats();
+
+    if (cachePlaces) {
+        log.debug('Saving places before migration');
+        const allPlacesStore = await Apify.openKeyValueStore(cachedPlacesName);
+        const reloadedPlaces = await allPlacesStore.getValue('places') || {};
+        const newPlaces = { ...allPlaces, ...reloadedPlaces };
+        await allPlacesStore.setValue('places', newPlaces);
+    }
 
     if (regularTestRun) {
         const { defaultDatasetId: datasetId } = Apify.getEnv();
