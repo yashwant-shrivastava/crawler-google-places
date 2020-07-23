@@ -17,6 +17,12 @@ const {
 } = require('./utils');
 const { checkInPolygon } = require('./polygon');
 
+const reviewSortOptions = {
+    mostRelevant: 25739,
+    newest: 25740,
+    highestRanking: 25741,
+    lowestRanking: 25742
+}
 
 /**
  * This is the worst part - parsing data from place detail
@@ -25,7 +31,7 @@ const { checkInPolygon } = require('./polygon');
 const extractPlaceDetail = async (options) => {
     const {
         page, request, searchString, includeHistogram, includeOpeningHours,
-        includePeopleAlsoSearch, maxReviews, maxImages, additionalInfo, geo, cachePlaces, allPlaces
+        includePeopleAlsoSearch, maxReviews, maxImages, additionalInfo, geo, cachePlaces, allPlaces, reviewsSort
     } = options;
     // Extract basic information
     await waitForGoogleMapLoader(page);
@@ -255,6 +261,17 @@ const extractPlaceDetail = async (options) => {
         if (await page.$('.widget-consent-dialog')) {
             await page.click('.widget-consent-dialog .widget-consent-button-later');
         }
+        //sort reviews
+        await page.waitForSelector('button[data-value="Sort"]');
+        await page.click('button[data-value="Sort"]');
+        const sortElement = `#hovercard ul li[vet='${reviewSortOptions[reviewsSort]}']`;
+        try {
+            await page.waitForSelector(sortElement);
+            await sleep(230);
+            await page.click(sortElement);
+        } catch (e) {
+            log.warning(`Cannot sort by: ${reviewsSort}`);
+        }
         // Get all reviews
         if (typeof maxReviews === 'number' && maxReviews > 0) {
             detail.reviews = [];
@@ -377,7 +394,7 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, proxyConfiguration, in
     const {
         includeHistogram = false, includeOpeningHours = false, includePeopleAlsoSearch = false,
         maxReviews, maxImages, exportPlaceUrls = false, forceEng = false, additionalInfo = false, maxCrawledPlaces,
-        maxAutomaticZoomOut, cachePlaces
+        maxAutomaticZoomOut, cachePlaces, reviewsSort = 'mostRelevant'
     } = input;
     const crawlerOpts = {
         requestQueue,
@@ -435,7 +452,8 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, proxyConfiguration, in
                         additionalInfo,
                         geo,
                         cachePlaces,
-                        allPlaces
+                        allPlaces,
+                        reviewsSort
                     });
                     if (placeDetail) {
                         await Apify.pushData(placeDetail);

@@ -46,7 +46,9 @@
       "title": "Proxy configuration",
       "type": "object",
       "description": "Use Apify Proxy, you need to have some proxy group to get results on Google.",
-      "prefill": { "useApifyProxy": true },
+      "prefill": {
+        "useApifyProxy": true
+      },
       "editor": "proxy"
     },
     "maxReviews": {
@@ -76,7 +78,6 @@
       "default": true,
       "sectionCaption": "Advanced",
       "sectionDescription": "These are more advanced settings for actor run."
-
     },
     "includeOpeningHours": {
       "title": "Include opening hours",
@@ -111,11 +112,11 @@
       "maximum": 17
     },
     "maxAutomaticZoomOut": {
-        "title": "Max automatic zoom out",
-        "type": "integer",
-        "description": "Parameter to stop searching once Google zooms out too far. It counts how far it zoomed out compared to the first page. Keep in mind that `zoom: 1` is whole world and `zoom: 21` is a tiny street. So usually you want `maxAutomaticZoomOut` to be between `0` and `5`. Also, keep in mind that Google zooms a bit differently in each run.",
-        "minimum": 0,
-        "maximum": 10
+      "title": "Max automatic zoom out",
+      "type": "integer",
+      "description": "Parameter to stop searching once Google zooms out too far. It counts how far it zoomed out compared to the first page. Keep in mind that `zoom: 1` is whole world and `zoom: 21` is a tiny street. So usually you want `maxAutomaticZoomOut` to be between `0` and `5`. Also, keep in mind that Google zooms a bit differently in each run.",
+      "minimum": 0,
+      "maximum": 10
     },
     "debug": {
       "title": "Debug log",
@@ -140,6 +141,25 @@
       "type": "boolean",
       "description": "Cache places location between runs in named KeyVal. Check location in polygon before enqueuing place to requestQueue.",
       "default": false
+    },
+    "reviewsSort": {
+      "title": "Sort reviews by",
+      "description": "Sorts reviews before scraping them.",
+      "type": "string",
+      "editor": "select",
+      "default": "mostRelevant",
+      "enum": [
+        "mostRelevant",
+        "newest",
+        "highestRanking",
+        "lowestRanking"
+      ],
+      "enumTitles": [
+        "Most relevant",
+        "Newest",
+        "Highest ranking",
+        "Lowest ranking"
+      ]
     }
   },
   "required": [
