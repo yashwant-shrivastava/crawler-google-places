@@ -17,6 +17,12 @@ const {
 } = require('./utils');
 const { checkInPolygon } = require('./polygon');
 
+const reviewSortOptions = {
+    mostRelevant: 25739,
+    newest: 25740,
+    highestRanking: 25741,
+    lowestRanking: 25742
+}
 
 /**
  * This is the worst part - parsing data from place detail
@@ -25,7 +31,7 @@ const { checkInPolygon } = require('./polygon');
 const extractPlaceDetail = async (options) => {
     const {
         page, request, searchString, includeHistogram, includeOpeningHours,
-        includePeopleAlsoSearch, maxReviews, maxImages, additionalInfo, geo
+        includePeopleAlsoSearch, maxReviews, maxImages, additionalInfo, geo, cachePlaces, allPlaces, reviewsSort
     } = options;
     // Extract basic information
     await waitForGoogleMapLoader(page);
@@ -83,8 +89,14 @@ const extractPlaceDetail = async (options) => {
     if (latMatch && lngMatch) {
         detail.location = { lat: parseFloat(latMatch), lng: parseFloat(lngMatch.replace('?hl=en')) };
     }
+
     // check if place is inside of polygon, if not return null
-    if (geo && detail.location && !checkInPolygon(geo, detail.location)) return null;
+    if (geo && detail.location && !checkInPolygon(geo, detail.location)) {
+        // cache place location to keyVal store
+        if (cachePlaces)
+            allPlaces[detail.placeId] = detail.location;
+        return null;
+    }
 
     // Include search string
     detail.searchString = searchString;
@@ -97,7 +109,7 @@ const extractPlaceDetail = async (options) => {
             return $('.section-popular-times-live-value').attr('aria-label')
         });
         const popularTimesLiveRawText = await page.evaluate(() => $('.section-popular-times-live-description').text().trim());
-        detail.popularTimesLiveText =  popularTimesLiveRawText;
+        detail.popularTimesLiveText = popularTimesLiveRawText;
         const popularTimesLivePercentMatch = popularTimesLiveRawValue ? popularTimesLiveRawValue.match(/(\d+)\s?%/) : null;
         detail.popularTimesLivePercent = popularTimesLivePercentMatch ? Number(popularTimesLivePercentMatch[1]) : null;
 
@@ -249,6 +261,17 @@ const extractPlaceDetail = async (options) => {
         if (await page.$('.widget-consent-dialog')) {
             await page.click('.widget-consent-dialog .widget-consent-button-later');
         }
+        //sort reviews
+        await page.waitForSelector('button[data-value="Sort"]');
+        await page.click('button[data-value="Sort"]');
+        const sortElement = `#hovercard ul li[vet='${reviewSortOptions[reviewsSort]}']`;
+        try {
+            await page.waitForSelector(sortElement);
+            await sleep(230);
+            await page.click(sortElement);
+        } catch (e) {
+            log.warning(`Cannot sort by: ${reviewsSort}`);
+        }
         // Get all reviews
         if (typeof maxReviews === 'number' && maxReviews > 0) {
             detail.reviews = [];
@@ -367,10 +390,11 @@ const saveScreenForDebug = async (reques, page) => {
     await saveScreenshot
 };
 
-const setUpCrawler = (puppeteerPoolOptions, requestQueue, proxyConfiguration, input) => {
+const setUpCrawler = (puppeteerPoolOptions, requestQueue, proxyConfiguration, input, stats, allPlaces) => {
     const {
         includeHistogram = false, includeOpeningHours = false, includePeopleAlsoSearch = false,
-        maxReviews, maxImages, exportPlaceUrls = false, forceEng = false, additionalInfo = false, maxCrawledPlaces, maxAutomaticZoomOut,
+        maxReviews, maxImages, exportPlaceUrls = false, forceEng = false, additionalInfo = false, maxCrawledPlaces,
+        maxAutomaticZoomOut, cachePlaces, reviewsSort = 'mostRelevant'
     } = input;
     const crawlerOpts = {
         requestQueue,
@@ -409,8 +433,10 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, proxyConfiguration, in
                 }
                 if (label === 'startUrl') {
                     log.info(`Start enqueuing places details for search: ${searchString}`);
-                    await enqueueAllPlaceDetails(page, searchString, requestQueue, maxCrawledPlaces, request, exportPlaceUrls, geo, maxAutomaticZoomOut);
+                    await enqueueAllPlaceDetails(page, searchString, requestQueue, maxCrawledPlaces, request,
+                        exportPlaceUrls, geo, maxAutomaticZoomOut, allPlaces, cachePlaces, stats);
                     log.info('Enqueuing places finished.');
+                    stats.maps()
                 } else {
                     // Get data for place and save it to dataset
                     log.info(`Extracting details from place url ${page.url()}`);
@@ -424,7 +450,10 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, proxyConfiguration, in
                         maxReviews,
                         maxImages,
                         additionalInfo,
-                        geo
+                        geo,
+                        cachePlaces,
+                        allPlaces,
+                        reviewsSort
                     });
                     if (placeDetail) {
                         await Apify.pushData(placeDetail);
@@ -438,9 +467,14 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, proxyConfiguration, in
                                 await autoscaledPool.abort();
                             }
                         }
+                        stats.places()
                         log.info(`Finished place url ${placeDetail.url}`);
-                    } else log.info(`Place outside of polygon, url: ${page.url()}`);
+                    } else {
+                        stats.outOfPolygon();
+                        log.info(`Place outside of polygon, url: ${page.url()}`);
+                    }
                 }
+                stats.ok()
             } catch (err) {
                 // This issue can happen, mostly because proxy IP was blocked by google
                 // Let's refresh IP using browser refresh.
@@ -459,6 +493,7 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, proxyConfiguration, in
         },
         handleFailedRequestFunction: async ({ request, error }) => {
             // This function is called when crawling of a request failed too many time
+            stats.failed()
             const defaultStore = await Apify.openKeyValueStore();
             await Apify.pushData({
                 '#url': request.url,

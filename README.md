@@ -12,6 +12,7 @@ But unlike the Google Maps Places API, the crawler can provide:
 
 ## Bugs, fixes, updates and changelog
 This scraper is under active development. Check [CHANGELOG.md](https://github.com/drobnikj/crawler-google-places/blob/master/CHANGELOG.md) for more detailed information
+- 2020-07-23 small features
 - 2020-07 polygon search and bug fixes
 
 ## Usage
@@ -66,6 +67,8 @@ On this input actor searches places on this start url: https://www.google.com/ma
 - `debug` - Debug messages will be included in log.
 - `exportPlaceUrls` - Won't crawl through place pages, return links to places
 - `forceEng` - Force localization to be in english, some fields are dependent on english and won't work in different language:
+- `cachePlaces` - Add caching locations between runs. `placeId: location` is stored in named keyVal. Can speed up regular runs using polygon search.  
+- `reviewsSort` - sort place reviews.
 
 You can exclude some attributes from results using input parameters. It can help to speed up crawling.
 - set `maxImages` to `0`
