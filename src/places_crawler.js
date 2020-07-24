@@ -18,10 +18,10 @@ const {
 const { checkInPolygon } = require('./polygon');
 
 const reviewSortOptions = {
-    mostRelevant: 25739,
-    newest: 25740,
-    highestRanking: 25741,
-    lowestRanking: 25742
+    mostRelevant: 0,
+    newest: 1,
+    highestRanking: 2,
+    lowestRanking: 3
 }
 
 /**
@@ -261,17 +261,6 @@ const extractPlaceDetail = async (options) => {
         if (await page.$('.widget-consent-dialog')) {
             await page.click('.widget-consent-dialog .widget-consent-button-later');
         }
-        //sort reviews
-        await page.waitForSelector('button[data-value="Sort"]');
-        await page.click('button[data-value="Sort"]');
-        const sortElement = `#hovercard ul li[vet='${reviewSortOptions[reviewsSort]}']`;
-        try {
-            await page.waitForSelector(sortElement);
-            await sleep(230);
-            await page.click(sortElement);
-        } catch (e) {
-            log.warning(`Cannot sort by: ${reviewsSort}`);
-        }
         // Get all reviews
         if (typeof maxReviews === 'number' && maxReviews > 0) {
             detail.reviews = [];
@@ -281,7 +270,10 @@ const extractPlaceDetail = async (options) => {
             const sortPromise1 = async () => {
                 try {
                     await page.click('[class*=dropdown-icon]');
-                    await page.keyboard.press('ArrowDown');
+                    await sleep(1000);
+                    for (let i = 0; i < reviewSortOptions[reviewsSort]; i = i + 1) {
+                        await page.keyboard.press('ArrowDown');
+                    }
                     await page.keyboard.press('Enter');
                 } catch (e) {
                     log.debug('Can not sort reviews with 1 options!');
@@ -290,7 +282,9 @@ const extractPlaceDetail = async (options) => {
             const sortPromise2 = async () => {
                 try {
                     await page.click('button[data-value="Sort"]');
-                    await page.keyboard.press('ArrowDown');
+                    for (let i = 0; i < reviewSortOptions[reviewsSort]; i = i + 1) {
+                        await page.keyboard.press('ArrowDown');
+                    }
                     await page.keyboard.press('Enter');
                 } catch (e) {
                     log.debug('Can not sort with 2 options!');
