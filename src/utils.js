@@ -83,6 +83,10 @@ const parseReviewFromResponseBody = (responseBody) => {
             text: reviewArray[3],
             publishAt: reviewArray[1],
             likesCount: reviewArray[15],
+            reviewId: reviewArray[10],
+            reviewUrl: reviewArray[18],
+            reviewerId: reviewArray[6],
+            reviewerUrl: reviewArray[0][0],
         };
         // On some places google shows reviews from other services like booking
         // There isn't stars but rating for this places reviews
