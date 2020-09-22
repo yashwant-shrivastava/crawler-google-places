@@ -1,10 +1,13 @@
-# 2020-07-23 small features
+## 2020-09-22
+- added few extra review fields (ID, URL)
+
+## 2020-07-23 small features
 ### New features
  - add option for caching place location
  - add option for sorting of reviews
- - add stats logging 
+ - add stats logging
 
-# 2020-07 polygon search and bug fixes
+## 2020-07 polygon search and bug fixes
 ### breaking change
  - reworked input search string
 
