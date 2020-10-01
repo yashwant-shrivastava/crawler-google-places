@@ -1,168 +1,212 @@
 {
-  "title": "Crawler for Google places",
-  "description": "This crawler search string on input on google maps and returns all information about found places.",
-  "type": "object",
-  "schemaVersion": 1,
-  "properties": {
-    "startUrls": {
-      "title": "Start URLs",
-      "type": "array",
-      "description": "List of urls with search results, that should be scraped.",
-      "editor": "requestListSources"
+    "title": "Crawler for Google places",
+    "description": "This crawler search string on input on google maps and returns all information about found places.",
+    "type": "object",
+    "schemaVersion": 1,
+    "properties": {
+        "startUrls": {
+            "title": "Start URLs",
+            "type": "array",
+            "description": "List of URLs with search results, that should be scraped.",
+            "editor": "requestListSources"
+        },
+        "searchStringsArray": {
+            "title": "Search Terms",
+            "type": "array",
+            "description": "Array of strings, that will be searched on Google maps. 'Pubs near Prague'. If you are setting specific location later, do not include it into search string",
+            "editor": "stringList"
+        },
+        "maxCrawledPlaces": {
+            "title": "Max crawled places",
+            "type": "integer",
+            "description": "Use to limit places you want to get from crawl one search. If you fill 0 or nothing all places will be scrape",
+            "prefill": 20,
+            "default": 20,
+            "minimum": 0
+        },
+        "proxyConfig": {
+            "title": "Proxy configuration",
+            "type": "object",
+            "description": "Use Apify Proxy, you need to have some proxy group to get results on Google.",
+            "prefill": {
+                "useApifyProxy": true
+            },
+            "editor": "proxy"
+        },
+        "maxReviews": {
+            "title": "Max reviews (Slow)",
+            "type": "integer",
+            "description": "Max number of reviews per place to scrape. If you fill 0 or nothing, no reviews will be scraped. For all reviews, just put 99999",
+            "prefill": 5,
+            "unit": "reviews per place",
+            "sectionCaption": "Output configuration",
+            "sectionDescription": "You can set what extra information you would like extracted."
+        },
+        "maxImages": {
+            "title": "Max Images (Very slow)",
+            "type": "integer",
+            "description": "Max number of images per place to scrape. If you fill 0 or nothing, no images will be scraped. For all images, just put 99999",
+            "prefill": 1,
+            "unit": "images per place"
+        },
+        "includeHistogram": {
+            "title": "Include popular times",
+            "type": "boolean",
+            "description": "If checked the crawler scrapes popular times for all places. You can speed up crawling if you disable this.",
+            "default": true
+        },
+        "includeOpeningHours": {
+            "title": "Include opening hours",
+            "type": "boolean",
+            "description": "If checked the crawler scrapes opening hours for all places. You can speed up crawling if you disable this.",
+            "default": false
+        },
+        "includePeopleAlsoSearch": {
+            "title": "Include people also search",
+            "type": "boolean",
+            "description": "If checked the crawler scrape \"people also search\" for all places. You can speed up crawling if you disable this.",
+            "default": false
+        },
+        "additionalInfo": {
+            "title": "Additional Place Info",
+            "type": "boolean",
+            "description": "Export additional info: Service Options, Highlights, Offerings,...",
+            "default": false
+        },
+        "reviewsSort": {
+            "title": "Sort reviews by",
+            "description": "Sorts reviews before scraping them.",
+            "type": "string",
+            "editor": "select",
+            "default": "mostRelevant",
+            "enum": [
+                "mostRelevant",
+                "newest",
+                "highestRanking",
+                "lowestRanking"
+            ],
+            "enumTitles": [
+                "Most relevant",
+                "Newest",
+                "Highest ranking",
+                "Lowest ranking"
+            ]
+        },
+        "exportPlaceUrls": {
+            "title": "Export Place Urls Only (Skips place details)",
+            "type": "boolean",
+            "description": "Scraper will return only places URLs without details.",
+            "default": false
+        },
+        "country": {
+            "title": "Country",
+            "type": "string",
+            "description": "Set a country where the search should be performed - e.g. 'USA'. For more accurate search, set lat and lng.",
+            "editor": "textfield",
+            "sectionCaption": "Localization",
+            "sectionDescription": "Here you can set where the places should be searched. Either use country (and optionally state or city) or latitude and longitude for more accuracy. Using lat/long + zoom is generally much faster because the scraper doesn't traverse the whole country/state/city."
+        },
+        "state": {
+            "title": "State",
+            "type": "string",
+            "description": "Set a state where the search should be performed - e.g. 'Massachusetts'. For more accurate search, set lat and lng.",
+            "editor": "textfield"
+        },
+        "city": {
+            "title": "City",
+            "type": "string",
+            "description": "Set a city where the search should be performed - e.g. 'Pittsfield .For more accurate search, set lat and lng.",
+            "editor": "textfield"
+        },
+        "lat": {
+            "title": "Viewport point latitude",
+            "type": "string",
+            "description": "Use it with combination with longitude and zoom to set up viewport to search on. Has preference over country/state/city.",
+            "editor": "textfield"
+        },
+        "lng": {
+            "title": "Viewport point longitude",
+            "type": "string",
+            "description": "Use it with combination with latitude and zoom to set up viewport to search on. Has preference over country/state/city.",
+            "editor": "textfield"
+        },
+        "zoom": {
+            "title": "Viewport zoom level",
+            "type": "integer",
+            "description": "Use it with combination with point longitude and latitude to set up viewport to search on. The higher number, the close you are to the point. You have the whole world on the map with zoom level 1.",
+            "default": 12,
+            "minimum": 9,
+            "maximum": 17
+        },
+        "maxAutomaticZoomOut": {
+            "title": "Max automatic zoom out",
+            "type": "integer",
+            "description": "Parameter to stop searching once Google zooms out too far. It counts how far it zoomed out compared to the first page. Keep in mind that `zoom: 1` is the whole world and `zoom: 21` is a tiny street. So usually you want `maxAutomaticZoomOut` to be between `0` and `5`. Also, keep in mind that Google zooms a bit differently in each run.",
+            "minimum": 0,
+            "maximum": 10
+        },
+        "maxConcurrency": {
+            "title": "Max concurrency",
+            "type": "integer",
+            "description": "Maximum number of pages that will be processed in parallel.",
+            "minimum": 0,
+            "maximum": 1000,
+            "default": 100,
+            "sectionCaption": "Browser and page settings",
+            "sectionDescription": "How the browsers will behave during the scraping process."
+        },
+        "maxPageRetries": {
+            "title": "Max page retries",
+            "type": "integer",
+            "description": "Maximum number of retries when page scraping fails.",
+            "minimum": 0,
+            "maximum": 1000,
+            "default": 6
+        },
+        "pageLoadTimeoutSec": {
+            "title": "Page load timeout seconds",
+            "type": "integer",
+            "description": "Max time that the page can be loading",
+            "minimum": 0,
+            "maximum": 1000,
+            "default": 60
+        },
+        "maxPagesPerBrowser": {
+            "title": "Max opened pages per browser",
+            "type": "integer",
+            "description": "How many pages can be opened at once for each browser. Having more pages in one browser is faster but can lead to increased blocking.",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 1
+        },
+        "useChrome": {
+            "title": "Use Chrome",
+            "type": "boolean",
+            "description": "Uses full Chrome browser instead of Chromium. Be careful, it is not stable on some versions!",
+            "default": false
+        },
+        "debug": {
+            "title": "Debug log",
+            "type": "boolean",
+            "description": "Debug messages will be included in the log.",
+            "default": false,
+            "sectionCaption": "Miscellaneous",
+            "sectionDescription": "Few additional settings that might be useful."
+        },
+        "forceEng": {
+            "title": "Force English",
+            "type": "boolean",
+            "description": "Force place data to be displayed in English",
+            "default": true
+        },
+        "cachePlaces": {
+            "title": "Cache Places",
+            "type": "boolean",
+            "description": "Cache places location between runs in named KeyVal. Check location in polygon before enqueuing place to requestQueue.",
+            "default": false
+        }
     },
-    "searchStringsArray": {
-      "title": "Search Terms",
-      "type": "array",
-      "description": "Array of strings, that will be searched on Google maps. 'Pubs near Prague'. If you are setting specific location later, do not include it into search string",
-      "editor": "stringList"
-    },
-    "country": {
-      "title": "Country",
-      "type": "string",
-      "description": "Set country where search should be performed - 'USA'. For more accurate search, set lat and lng.",
-      "editor": "textfield"
-    },
-    "state": {
-      "title": "State",
-      "type": "string",
-      "description": "Set State where search should be performed - 'Massachusetts'. For more accurate search, set lat and lng.",
-      "editor": "textfield"
-    },
-    "city": {
-      "title": "City",
-      "type": "string",
-      "description": "Set City where search should be performed - 'Pittsfield .For more accurate search, set lat and lng.",
-      "editor": "textfield"
-    },
-    "maxCrawledPlaces": {
-      "title": "Max crawled places",
-      "type": "integer",
-      "description": "Use to limit places you want to get from crawl one search. If you fill 0 or nothing all places will be scrape",
-      "prefill": 20,
-      "default": 20,
-      "minimum": 0
-    },
-    "proxyConfig": {
-      "title": "Proxy configuration",
-      "type": "object",
-      "description": "Use Apify Proxy, you need to have some proxy group to get results on Google.",
-      "prefill": {
-        "useApifyProxy": true
-      },
-      "editor": "proxy"
-    },
-    "maxReviews": {
-      "title": "Max reviews (Slow)",
-      "type": "integer",
-      "description": "Max number of reviews per place to scrape. If you fill 0 or nothing, no reviews will be scraped. For all reviews, just put 99999",
-      "prefill": 5,
-      "unit": "reviews per place"
-    },
-    "maxImages": {
-      "title": "Max Images (Very slow)",
-      "type": "integer",
-      "description": "Max number of images per place to scrape. If you fill 0 or nothing, no images will be scraped. For all images, just put 99999",
-      "prefill": 1,
-      "unit": "images per place"
-    },
-    "exportPlaceUrls": {
-      "title": "Export Place Urls (Skips place details)",
-      "type": "boolean",
-      "description": "Scraper will return only places urls without details.",
-      "default": false
-    },
-    "includeHistogram": {
-      "title": "Include popular times",
-      "type": "boolean",
-      "description": "If checked the crawler scrapes popular times for all places. You can speed up crawling if you disable this.",
-      "default": true,
-      "sectionCaption": "Advanced",
-      "sectionDescription": "These are more advanced settings for actor run."
-    },
-    "includeOpeningHours": {
-      "title": "Include opening hours",
-      "type": "boolean",
-      "description": "If checked the crawler scrapes opening hours for all places. You can speed up crawling if you disable this.",
-      "default": false
-    },
-    "includePeopleAlsoSearch": {
-      "title": "Include people also search [BETA]",
-      "type": "boolean",
-      "description": "If checked the crawler scrape \"people also search\" for all places. You can speed up crawling if you disable this.",
-      "default": false
-    },
-    "lat": {
-      "title": "Viewport point latitude",
-      "type": "string",
-      "description": "Use it with combination with longitude and zoom to set up viewport to search on. Has preference over country/state/city.",
-      "editor": "textfield"
-    },
-    "lng": {
-      "title": "Viewport point longitude",
-      "type": "string",
-      "description": "Use it with combination with latitude and zoom to set up viewport to search on. Has preference over country/state/city.",
-      "editor": "textfield"
-    },
-    "zoom": {
-      "title": "Viewport zoom level",
-      "type": "integer",
-      "description": "Use it with combination with point longitude and latitude to set up viewport to search on. The higher number, the close you are to the point. You have whole world on map with zoom level 1.",
-      "default": 12,
-      "minimum": 9,
-      "maximum": 17
-    },
-    "maxAutomaticZoomOut": {
-      "title": "Max automatic zoom out",
-      "type": "integer",
-      "description": "Parameter to stop searching once Google zooms out too far. It counts how far it zoomed out compared to the first page. Keep in mind that `zoom: 1` is whole world and `zoom: 21` is a tiny street. So usually you want `maxAutomaticZoomOut` to be between `0` and `5`. Also, keep in mind that Google zooms a bit differently in each run.",
-      "minimum": 0,
-      "maximum": 10
-    },
-    "debug": {
-      "title": "Debug log",
-      "type": "boolean",
-      "description": "Debug messages will be included in log.",
-      "default": false
-    },
-    "additionalInfo": {
-      "title": "Additional Info",
-      "type": "boolean",
-      "description": "Export additional info: Service Options, Highlights, Offerings,...",
-      "default": false
-    },
-    "forceEng": {
-      "title": "Force English",
-      "type": "boolean",
-      "description": "Force place data to be displayed in English",
-      "default": true
-    },
-    "cachePlaces": {
-      "title": "Cache Places",
-      "type": "boolean",
-      "description": "Cache places location between runs in named KeyVal. Check location in polygon before enqueuing place to requestQueue.",
-      "default": false
-    },
-    "reviewsSort": {
-      "title": "Sort reviews by",
-      "description": "Sorts reviews before scraping them.",
-      "type": "string",
-      "editor": "select",
-      "default": "mostRelevant",
-      "enum": [
-        "mostRelevant",
-        "newest",
-        "highestRanking",
-        "lowestRanking"
-      ],
-      "enumTitles": [
-        "Most relevant",
-        "Newest",
-        "Highest ranking",
-        "Lowest ranking"
-      ]
-    }
-  },
-  "required": [
-    "proxyConfig"
-  ]
+    "required": [
+        "proxyConfig"
+    ]
 }

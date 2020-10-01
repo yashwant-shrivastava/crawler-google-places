@@ -393,7 +393,7 @@ const setUpCrawler = (crawlerOptions, scrapingOptions, stats, allPlaces) => {
             }
             if (forceEng) request.url += '&hl=en';
             await page.setViewport({ width: 800, height: 800 });
-            await page.goto(request.url, { timeout: crawlerOptions.pageLoadTimeoutMs });
+            await page.goto(request.url, { timeout: crawlerOptions.pageLoadTimeoutSec * 1000 });
         },
         handlePageFunction: async ({ request, page, puppeteerPool, autoscaledPool }) => {
             const { label, searchString, geo } = request.userData;

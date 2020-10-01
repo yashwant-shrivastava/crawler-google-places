@@ -42,8 +42,7 @@ Apify.main(async () => {
         // Localization
         lat, lng, country, state, city, zoom = 10,
         // browser and request options
-        pageLoadTimeoutMs = 60000, useChrome = false, stealth = false, maxConcurrency, maxPagesPerBrowser = 1,
-        maxPageRetries = 6,
+        pageLoadTimeoutSec = 60, useChrome = false, maxConcurrency, maxPagesPerBrowser = 1, maxPageRetries = 6,
         // Misc
         proxyConfig, regularTestRun, debug,
         // walker is undocumented feature added by jakubdrobnik, we need to test it and document it
@@ -178,7 +177,6 @@ Apify.main(async () => {
         launchPuppeteerOptions: {
             headless: true,
             useChrome,
-            stealth,
         },
         maxOpenPagesPerInstance: maxPagesPerBrowser,
         // Not sure why this is here
@@ -193,7 +191,7 @@ Apify.main(async () => {
         puppeteerPoolOptions,
         maxConcurrency,
         // This is just passed to gotoFunction
-        pageLoadTimeoutMs,
+        pageLoadTimeoutSec,
         // long timeout, because of long infinite scroll
         handlePageTimeoutSecs: 30 * 60,
         maxRequestRetries: maxPageRetries,
