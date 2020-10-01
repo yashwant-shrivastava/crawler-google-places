@@ -81,9 +81,9 @@ You can force the scraper to access the places only from specific country locati
 ## Results
 The scraped data are stored in the dataset of each run. The data can be viewed or downloaded in many popular formats like JSON, CSV, Excel, XML, RSS and HTML.
 
-Example results item:
+Single place result looks like this:
 
-```text
+```jsonc
 {
   "title": "The PUB Praha 2",
   "totalScore": 4,
@@ -124,9 +124,9 @@ Example results item:
         "hour": 9,
         "occupancyPercent": 0
       }
-      ... (shortened)
+      // ... (shortened)
     ],
-    ... (shortened)
+    // ... (shortened)
   },
   "openingHours": [
     {
@@ -141,7 +141,7 @@ Example results item:
       "day": "Wednesday",
       "hours": "11AM–2AM"
     },
-    ... (shortened)
+    // ... (shortened)
   ],
   "peopleAlsoSearch": [],
   "reviewsCount": 698,
@@ -160,14 +160,14 @@ Example results item:
       "likesCount": null,
       "stars": 4
     },
-    ... (shortened)
+    // ... (shortened)
   ],
   "imageUrls": [
     "https://lh5.googleusercontent.com/p/AF1QipMQKrnbWNFed4bhBaMn_E1hf83ro3af1JT6BuPe=s508-k-no",
     "https://lh5.googleusercontent.com/p/AF1QipNVV1EkzaddM7UsE9bh0KgT5BFIRfvAwsRPVo0a=s516-k-no",
     "https://lh5.googleusercontent.com/p/AF1QipPDAjMIuulyFvHqTWCz_xeQhiDgretyMsHO6Rq_=s677-k-no",
     "https://lh5.googleusercontent.com/p/AF1QipOEsLwms2XreZ7_kzgH_As5SeTfS7jz32ctw5iY=s516-k-no",
-    ... (shortened)
+    // ... (shortened)
   ],
   "additionalInfo": {
     "Service options": [
@@ -246,9 +246,7 @@ Example results item:
         "LGBTQ-friendly": true
       }
     ]
-  },
-    ...
-  ]
+  }
 }
 ```
 
@@ -279,4 +277,4 @@ You can use only `country` or `country` + `state` or `country` + `state` + `city
 #### Warning: Don't use too big zoom (17+) with country, state, city parameters
 
 ## Changelog
-This scraper is under active development. We are implementing new features and fixing bugs. If you would like t osee a new feature, please submit an issue. Check [CHANGELOG.md](https://github.com/drobnikj/crawler-google-places/blob/master/CHANGELOG.md) for list of recent updates
+This scraper is under active development. We are implementing new features and fixing bugs. If you would like to see a new feature, please submit an issue. Check [CHANGELOG.md](https://github.com/drobnikj/crawler-google-places/blob/master/CHANGELOG.md) for list of recent updates
