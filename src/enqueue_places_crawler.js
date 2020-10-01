@@ -129,13 +129,13 @@ const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxCrawl
         }
         if (isNextPaginationDisabled || noResultsEl || (maxCrawledPlaces && maxCrawledPlaces <= to) || finishBecauseAutoZoom) {
             if (isNextPaginationDisabled) {
-                log.warning(`Finishing search because there are no more pages --- ${searchString}`);
+                log.warning(`Finishing search because there are no more pages --- ${searchString} - ${request.url}`);
             } else if (noResultsEl) {
-                log.warning(`Finishing search because it reached an empty page --- ${searchString}`);
+                log.warning(`Finishing search because it reached an empty page --- ${searchString} - ${request.url}`);
             } else if (maxCrawledPlaces && maxCrawledPlaces <= to) {
-                log.warning(`Finishing search because we reached maxCrawledPlaces --- ${searchString}`);
+                log.warning(`Finishing search because we reached maxCrawledPlaces --- ${searchString} - ${request.url}`);
             } else if (finishBecauseAutoZoom) {
-                log.warning(`Finishing search because Google zoomed out further than maxAutomaticZoomOut. Current zoom: ${parseZoomFromUrl(page.url())} --- ${searchString}`);
+                log.warning(`Finishing search because Google zoomed out further than maxAutomaticZoomOut. Current zoom: ${parseZoomFromUrl(page.url())} --- ${searchString} - ${request.url}`);
             }
             break;
         } else {
