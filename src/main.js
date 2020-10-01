@@ -1,12 +1,14 @@
+/* eslint-disable object-property-newline */
 const Apify = require('apify');
+
+const { getGeolocation, findPointsInPolygon } = require('./polygon');
 const placesCrawler = require('./places_crawler');
 const resultJsonSchema = require('./result_item_schema');
-const _ = require('lodash');
-const { log } = Apify.utils;
-const { getGeolocation, findPointsInPolygon } = require('./polygon');
-
 const { Stats } = require('./stats');
+
 const cachedPlacesName = 'Places-cached-locations';
+
+const { log } = Apify.utils;
 
 Apify.main(async () => {
     const input = await Apify.getValue('INPUT');
@@ -35,11 +37,29 @@ Apify.main(async () => {
 
     // The rest of inputs are passed to the crawler as a whole
     const {
-        startUrls, searchString, searchStringsArray, proxyConfig, lat, lng, regularTestRun,
+        // Search and Start URLs
+        startUrls, searchString, searchStringsArray,
+        // Localization
+        lat, lng, country, state, city, zoom = 10,
+        // browser and request options
+        pageLoadTimeoutMs = 60000, useChrome = false, stealth = false, maxConcurrency, maxPagesPerBrowser = 1,
+        maxPageRetries = 6,
+        // Misc
+        proxyConfig, regularTestRun, debug,
         // walker is undocumented feature added by jakubdrobnik, we need to test it and document it
         walker,
-        debug, country, state, city, zoom = 10, cachePlaces = false
+
+        // Scraping options
+        includeHistogram = false, includeOpeningHours = false, includePeopleAlsoSearch = false,
+        maxReviews, maxImages, exportPlaceUrls = false, forceEng = false, additionalInfo = false, maxCrawledPlaces,
+        maxAutomaticZoomOut, cachePlaces = false, reviewsSort = 'mostRelevant',
     } = input;
+
+    const scrapingOptions = {
+        includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
+        maxReviews, maxImages, exportPlaceUrls, forceEng, additionalInfo, maxCrawledPlaces,
+        maxAutomaticZoomOut, cachePlaces, reviewsSort,
+    };
 
     if (debug) log.setLevel(log.LEVELS.DEBUG);
     if (!searchString && !searchStringsArray && !startUrls) throw new Error('Attribute startUrls or searchString or searchStringsArray is missing in input.');
@@ -54,12 +74,12 @@ Apify.main(async () => {
         await Apify.setValue('GEO', geo);
     });
 
-    let allPlaces = {}
+    let allPlaces = {};
     if (cachePlaces) {
         log.debug('Load cached places');
         const allPlacesStore = await Apify.openKeyValueStore(cachedPlacesName);
         allPlaces = await allPlacesStore.getValue('places') || {};
-        log.debug(allPlaces)
+        log.debug(allPlaces);
         Apify.events.on('migrating', async () => {
             log.debug('Saving places before migration');
             const reloadedPlaces = await allPlacesStore.getValue('places') || {};
@@ -84,13 +104,14 @@ Apify.main(async () => {
             startUrlSearches.push(`https://www.google.com/maps/@${point.lat},${point.lon},${zoom}z/search`);
         }
     } else {
-        startUrlSearches.push('https://www.google.com/maps/search/')
+        startUrlSearches.push('https://www.google.com/maps/search/');
     }
 
     // Requests that are used in the queue
     const startRequests = [];
 
     // Preference for startRequests is walker > startUrls > searchString || searchStringsArray
+    // TODO: walker is not documented!!!
     if (walker && searchString) {
         const { zoom, step, bounds } = walker;
         const { northeast, southwest } = bounds;
@@ -99,8 +120,8 @@ Apify.main(async () => {
          * The hidden feature, with walker you can search business in specific square on map.
          */
         // Generate URLs to walk
-        for (let walkerLng = northeast.lng; walkerLng >= southwest.lng; walkerLng = walkerLng - step) {
-            for (let walkerLat = northeast.lat; walkerLat >= southwest.lat; walkerLat = walkerLat - step) {
+        for (let walkerLng = northeast.lng; walkerLng >= southwest.lng; walkerLng -= step) {
+            for (let walkerLat = northeast.lat; walkerLat >= southwest.lat; walkerLat -= step) {
                 startRequests.push({
                     url: `https://www.google.com/maps/@${walkerLat},${walkerLng},${zoom}z/search`,
                     userData: { label: 'startUrl', searchString },
@@ -111,7 +132,7 @@ Apify.main(async () => {
         for (const req of startUrls) {
             startRequests.push({
                 ...req,
-                userData: { label: 'startUrl', searchString: null }
+                userData: { label: 'startUrl', searchString: null },
             });
         }
     } else if (searchString || searchStringsArray) {
@@ -124,8 +145,8 @@ Apify.main(async () => {
              */
             if (search.includes('place_id:')) {
                 log.info(`Place ID found in search query. We will extract data from ${search}.`);
-                const cleanSearch = search.replace(/\s+/g, '')
-                const placeId = cleanSearch.match(/place_id\:(.*)/)[1];
+                const cleanSearch = search.replace(/\s+/g, '');
+                const placeId = cleanSearch.match(/place_id:(.*)/)[1];
                 startRequests.push({
                     url: `https://www.google.com/maps/search/?api=1&query=${cleanSearch}&query_place_id=${placeId}`,
                     uniqueKey: placeId,
@@ -136,7 +157,7 @@ Apify.main(async () => {
                     startRequests.push({
                         url: startUrlSearch,
                         uniqueKey: `${startUrlSearch}+${search}`,
-                        userData: { label: 'startUrl', searchString: search, geo }
+                        userData: { label: 'startUrl', searchString: search, geo },
                     });
                 }
             }
@@ -145,7 +166,7 @@ Apify.main(async () => {
 
     await stats.loadInfo();
     log.info('Start urls are:');
-    console.dir(startRequests.map(r => r.url));
+    console.dir(startRequests.map((r) => r.url));
 
     const requestQueue = await Apify.openRequestQueue();
 
@@ -156,22 +177,30 @@ Apify.main(async () => {
     const puppeteerPoolOptions = {
         launchPuppeteerOptions: {
             headless: true,
+            useChrome,
+            stealth,
         },
-        maxOpenPagesPerInstance: 1,
+        maxOpenPagesPerInstance: maxPagesPerBrowser,
+        // Not sure why this is here
+        retireInstanceAfterRequestCount: 100,
     };
 
-    let proxyConfiguration;
-    const hasCustomProxies = proxyConfig.proxyUrls && proxyConfig.proxyUrls.length > 0;
-    if (proxyConfig && (proxyConfig.useApifyProxy || hasCustomProxies)) {
-        proxyConfiguration = await Apify.createProxyConfiguration({
-            groups: proxyConfig.apifyProxyGroups,
-            countryCode: proxyConfig.apifyProxyCountry,
-            proxyUrls: proxyConfig.proxyUrls
-        });
-    }
+    const proxyConfiguration = await Apify.createProxyConfiguration(proxyConfig);
+
+    const crawlerOptions = {
+        requestQueue,
+        proxyConfiguration,
+        puppeteerPoolOptions,
+        maxConcurrency,
+        // This is just passed to gotoFunction
+        pageLoadTimeoutMs,
+        // long timeout, because of long infinite scroll
+        handlePageTimeoutSecs: 30 * 60,
+        maxRequestRetries: maxPageRetries,
+    };
 
     // Create and run crawler
-    const crawler = placesCrawler.setUpCrawler(puppeteerPoolOptions, requestQueue, proxyConfiguration, input, stats, allPlaces);
+    const crawler = placesCrawler.setUpCrawler(crawlerOptions, scrapingOptions, stats, allPlaces);
 
     await crawler.run();
     await stats.saveStats();

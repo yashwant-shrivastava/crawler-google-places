@@ -25,7 +25,7 @@
   "homepage": "https://github.com/drobnikj/crawler-google-places#readme",
   "dependencies": {
     "@turf/turf": "^5.1.6",
-    "apify": "^0.21.4",
+    "apify": "^0.21.5",
     "cldr-data": "^36.0.0",
     "globalize": "^1.4.2"
   },

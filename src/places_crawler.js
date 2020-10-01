@@ -1,3 +1,4 @@
+/* eslint-env jquery */
 const Apify = require('apify');
 const Globalize = require('globalize');
 
@@ -13,7 +14,7 @@ const { MAX_PAGE_RETRIES, DEFAULT_TIMEOUT, PLACE_TITLE_SEL } = require('./consts
 const { enqueueAllPlaceDetails } = require('./enqueue_places_crawler');
 const {
     saveHTML, saveScreenshot, waitForGoogleMapLoader,
-    parseReviewFromResponseBody, scrollTo
+    parseReviewFromResponseBody, scrollTo,
 } = require('./utils');
 const { checkInPolygon } = require('./polygon');
 
@@ -21,8 +22,8 @@ const reviewSortOptions = {
     mostRelevant: 0,
     newest: 1,
     highestRanking: 2,
-    lowestRanking: 3
-}
+    lowestRanking: 3,
+};
 
 /**
  * This is the worst part - parsing data from place detail
@@ -31,7 +32,7 @@ const reviewSortOptions = {
 const extractPlaceDetail = async (options) => {
     const {
         page, request, searchString, includeHistogram, includeOpeningHours,
-        includePeopleAlsoSearch, maxReviews, maxImages, additionalInfo, geo, cachePlaces, allPlaces, reviewsSort
+        includePeopleAlsoSearch, maxReviews, maxImages, additionalInfo, geo, cachePlaces, allPlaces, reviewsSort,
     } = options;
     // Extract basic information
     await waitForGoogleMapLoader(page);
@@ -50,10 +51,8 @@ const extractPlaceDetail = async (options) => {
         let temporarilyClosed = false;
         let permanentlyClosed = false;
         const altOpeningHoursText = $('[class*="section-info-hour-text"] [class*="section-info-text"]').text().trim();
-        if (altOpeningHoursText === 'Temporarily closed')
-            temporarilyClosed = true;
-        else if (altOpeningHoursText === 'Permanently closed')
-            permanentlyClosed = true;
+        if (altOpeningHoursText === 'Temporarily closed') temporarilyClosed = true;
+        else if (altOpeningHoursText === 'Permanently closed') permanentlyClosed = true;
 
         return {
             title: $(placeTitleSel).text().trim(),
@@ -85,7 +84,7 @@ const extractPlaceDetail = async (options) => {
     await page.waitForFunction(() => window.location.href.includes('/place/'));
     const url = page.url();
     detail.url = url;
-    const [fullMatch, latMatch, lngMatch] = url.match(/!3d(.*)!4d(.*)/);
+    const [_, latMatch, lngMatch] = url.match(/!3d(.*)!4d(.*)/);
     if (latMatch && lngMatch) {
         detail.location = { lat: parseFloat(latMatch), lng: parseFloat(lngMatch.replace('?hl=en')) };
     }
@@ -93,20 +92,18 @@ const extractPlaceDetail = async (options) => {
     // check if place is inside of polygon, if not return null
     if (geo && detail.location && !checkInPolygon(geo, detail.location)) {
         // cache place location to keyVal store
-        if (cachePlaces)
-            allPlaces[detail.placeId] = detail.location;
+        if (cachePlaces) allPlaces[detail.placeId] = detail.location;
         return null;
     }
 
     // Include search string
     detail.searchString = searchString;
 
-
     // Extract histogram for popular times
     if (includeHistogram) {
         // Include live popular times value
         const popularTimesLiveRawValue = await page.evaluate(() => {
-            return $('.section-popular-times-live-value').attr('aria-label')
+            return $('.section-popular-times-live-value').attr('aria-label');
         });
         const popularTimesLiveRawText = await page.evaluate(() => $('.section-popular-times-live-description').text().trim());
         detail.popularTimesLiveText = popularTimesLiveRawText;
@@ -128,8 +125,8 @@ const extractPlaceDetail = async (options) => {
                         if (graphStartFromHour) return;
                         const hourText = $(this).text().trim();
                         graphStartFromHour = hourText.includes('p')
-                            ? 12 + (parseInt(hourText) - labelIndex)
-                            : parseInt(hourText) - labelIndex;
+                            ? 12 + (parseInt(hourText, 10) - labelIndex)
+                            : parseInt(hourText, 10) - labelIndex;
                     });
                     // Finds values from y axis
                     $(this).find('.section-popular-times-bar').each(function (barIndex) {
@@ -138,7 +135,7 @@ const extractPlaceDetail = async (options) => {
                             const maybeHour = graphStartFromHour + barIndex;
                             graphs[day].push({
                                 hour: maybeHour > 24 ? maybeHour - 24 : maybeHour,
-                                occupancyPercent: parseInt(occupancyMatch[0]),
+                                occupancyPercent: parseInt(occupancyMatch[0], 10),
                             });
                         }
                     });
@@ -168,7 +165,7 @@ const extractPlaceDetail = async (options) => {
                         return { day, hours };
                     }
                     log.debug(`Not able to parse opening hours: ${line}`);
-                })
+                });
             }
         }
     }
@@ -185,7 +182,7 @@ const extractPlaceDetail = async (options) => {
                 return {
                     title: card.find('div[class$="title"]').text().trim(),
                     totalScore: card.find('span[class$="rating"]').text().trim(),
-                }
+                };
             }, i, cardSel);
             // For some reason, puppeteer click doesn't work here
             await Promise.all([
@@ -198,27 +195,27 @@ const extractPlaceDetail = async (options) => {
             detail.peopleAlsoSearch.push(searchResult);
             await Promise.all([
                 page.goBack({ waitUntil: ['domcontentloaded', 'networkidle2'] }),
-                waitForGoogleMapLoader(page)
+                waitForGoogleMapLoader(page),
             ]);
         }
     }
 
     // Extract additional info
     if (additionalInfo) {
-        log.debug('Scraping additional info.')
+        log.debug('Scraping additional info.');
         const button = await page.$('button.section-editorial');
         try {
             await button.click();
             await page.waitForSelector('.section-attribute-group', { timeout: 3000 });
             const sections = await page.evaluate(() => {
                 const result = {};
-                $('.section-attribute-group').each(function (i, section) {
+                $('.section-attribute-group').each((i, section) => {
                     const key = $(section).find('.section-attribute-group-title').text().trim();
-                    const values = []
-                    $(section).find('.section-attribute-group-container .section-attribute-group-item').each(function (i, sub) {
-                        const res = {}
+                    const values = [];
+                    $(section).find('.section-attribute-group-container .section-attribute-group-item').each((i, sub) => {
+                        const res = {};
                         const title = $(sub).text().trim();
-                        const val = $(sub).find(".section-attribute-group-item-icon.maps-sprite-place-attributes-done").length > 0;
+                        const val = $(sub).find('.section-attribute-group-item-icon.maps-sprite-place-attributes-done').length > 0;
                         res[title] = val;
                         values.push(res);
                     });
@@ -230,7 +227,7 @@ const extractPlaceDetail = async (options) => {
             const backButton = await page.$('button[aria-label*=Back]');
             await backButton.click();
         } catch (e) {
-            log.info(e + 'Additional info not parsed');
+            log.info(`${e}Additional info not parsed`);
         }
     }
 
@@ -238,7 +235,7 @@ const extractPlaceDetail = async (options) => {
     const reviewsButtonSel = 'button[jsaction="pane.reviewChart.moreReviews"]';
     if (detail.totalScore) {
         const { reviewsCountText, localization } = await page.evaluate((selector) => {
-            let numberReviewsText = $(selector).text().trim();
+            const numberReviewsText = $(selector).text().trim();
             // NOTE: Needs handle:
             // Recenze: 7
             // 1.609 reviews
@@ -247,7 +244,7 @@ const extractPlaceDetail = async (options) => {
             return {
                 reviewsCountText: number ? number[0] : null,
                 localization: navigator.language.slice(0, 2),
-            }
+            };
         }, reviewsButtonSel);
         let globalParser;
         try {
@@ -271,7 +268,7 @@ const extractPlaceDetail = async (options) => {
                 try {
                     await page.click('[class*=dropdown-icon]');
                     await sleep(1000);
-                    for (let i = 0; i < reviewSortOptions[reviewsSort]; i = i + 1) {
+                    for (let i = 0; i < reviewSortOptions[reviewsSort]; i += 1) {
                         await page.keyboard.press('ArrowDown');
                     }
                     await page.keyboard.press('Enter');
@@ -282,7 +279,7 @@ const extractPlaceDetail = async (options) => {
             const sortPromise2 = async () => {
                 try {
                     await page.click('button[data-value="Sort"]');
-                    for (let i = 0; i < reviewSortOptions[reviewsSort]; i = i + 1) {
+                    for (let i = 0; i < reviewSortOptions[reviewsSort]; i += 1) {
                         await page.keyboard.press('ArrowDown');
                     }
                     await page.keyboard.press('Enter');
@@ -295,10 +292,10 @@ const extractPlaceDetail = async (options) => {
                 sortPromise1(),
                 sortPromise2(),
                 scrollTo(page, '.section-scrollbox.scrollable-y', 10000),
-                page.waitForResponse(response => response.url().includes('preview/review/listentitiesreviews')),
+                page.waitForResponse((response) => response.url().includes('preview/review/listentitiesreviews')),
             ]);
 
-            let reviewResponseBody = await reviewsResponse.buffer();
+            const reviewResponseBody = await reviewsResponse.buffer();
             const reviews = parseReviewFromResponseBody(reviewResponseBody);
 
             detail.reviews.push(...reviews);
@@ -306,13 +303,13 @@ const extractPlaceDetail = async (options) => {
             log.info(`Exracting reviews: ${detail.reviews.length}/${maxReviews} --- ${page.url()}`);
             let reviewUrl = reviewsResponse.url();
             // Replace !3e1 in URL with !3e2, it makes list sort by newest
-            reviewUrl = reviewUrl.replace(/\!3e\d/, '!3e2');
+            reviewUrl = reviewUrl.replace(/!3e\d/, '!3e2');
             // Make sure that we star review from 0, setting !1i0
-            reviewUrl = reviewUrl.replace(/\!1i\d+/, '!1i0');
+            reviewUrl = reviewUrl.replace(/!1i\d+/, '!1i0');
             const increaseLimitInUrl = (url) => {
-                const numberString = reviewUrl.match(/\!1i(\d+)/)[1];
-                const number = parseInt(numberString)
-                return url.replace(/\!1i\d+/, `!1i${number + 10}`);
+                const numberString = reviewUrl.match(/!1i(\d+)/)[1];
+                const number = parseInt(numberString, 10);
+                return url.replace(/!1i\d+/, `!1i${number + 10}`);
             };
 
             while (detail.reviews.length < maxReviews) {
@@ -368,7 +365,7 @@ const extractPlaceDetail = async (options) => {
                 }
                 log.info(`Infinite scroll continuing for images, currently ${imageUrls.length}, url: ${page.url()}`);
                 lastImage = imageUrls[imageUrls.length - 1];
-                pageBottom = pageBottom + 6000;
+                pageBottom += 6000;
             }
             detail.imageUrls = imageUrls.slice(0, maxImages);
         }
@@ -377,41 +374,26 @@ const extractPlaceDetail = async (options) => {
     return detail;
 };
 
-/**
- * Save screen and HTML content to debug page
- */
-const saveScreenForDebug = async (reques, page) => {
-    await saveScreenshot
-};
-
-const setUpCrawler = (puppeteerPoolOptions, requestQueue, proxyConfiguration, input, stats, allPlaces) => {
+const setUpCrawler = (crawlerOptions, scrapingOptions, stats, allPlaces) => {
     const {
-        includeHistogram = false, includeOpeningHours = false, includePeopleAlsoSearch = false,
-        maxReviews, maxImages, exportPlaceUrls = false, forceEng = false, additionalInfo = false, maxCrawledPlaces,
-        maxAutomaticZoomOut, cachePlaces, reviewsSort = 'mostRelevant'
-    } = input;
-    const crawlerOpts = {
-        requestQueue,
-        proxyConfiguration,
-        maxRequestRetries: MAX_PAGE_RETRIES, // Sometimes page can failed because of blocking proxy IP by Google
-        retireInstanceAfterRequestCount: 100,
-        handlePageTimeoutSecs: 30 * 60, // long timeout, because of long infinite scroll
-        puppeteerPoolOptions,
-        maxConcurrency: Apify.isAtHome() ? undefined : 1,
-    };
+        includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
+        maxReviews, maxImages, exportPlaceUrls, forceEng, additionalInfo, maxCrawledPlaces,
+        maxAutomaticZoomOut, cachePlaces, reviewsSort,
+    } = scrapingOptions;
+    const { requestQueue } = crawlerOptions;
     return new Apify.PuppeteerCrawler({
-        ...crawlerOpts,
+        ...crawlerOptions,
         gotoFunction: async ({ request, page }) => {
             await page._client.send('Emulation.clearDeviceMetricsOverride');
             // This blocks images so we have to skip it
-            if (!input.maxImages) {
+            if (!maxImages) {
                 await blockRequests(page, {
                     urlPatterns: ['/maps/vt/', '/earth/BulkMetadata/', 'googleusercontent.com'],
                 });
             }
-            if (forceEng) request.url = request.url + `&hl=en`;
-            await page.setViewport({ width: 800, height: 800 })
-            await page.goto(request.url, { timeout: 60000 });
+            if (forceEng) request.url += '&hl=en';
+            await page.setViewport({ width: 800, height: 800 });
+            await page.goto(request.url, { timeout: crawlerOptions.pageLoadTimeoutMs });
         },
         handlePageFunction: async ({ request, page, puppeteerPool, autoscaledPool }) => {
             const { label, searchString, geo } = request.userData;
@@ -430,7 +412,7 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, proxyConfiguration, in
                     await enqueueAllPlaceDetails(page, searchString, requestQueue, maxCrawledPlaces, request,
                         exportPlaceUrls, geo, maxAutomaticZoomOut, allPlaces, cachePlaces, stats);
                     log.info('Enqueuing places finished.');
-                    stats.maps()
+                    stats.maps();
                 } else {
                     // Get data for place and save it to dataset
                     log.info(`Extracting details from place url ${page.url()}`);
@@ -447,7 +429,7 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, proxyConfiguration, in
                         geo,
                         cachePlaces,
                         allPlaces,
-                        reviewsSort
+                        reviewsSort,
                     });
                     if (placeDetail) {
                         await Apify.pushData(placeDetail);
@@ -456,19 +438,19 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, proxyConfiguration, in
                         // only number of places with correct geolocation
                         if (maxCrawledPlaces && maxCrawledPlaces !== 0) {
                             const dataset = await Apify.openDataset();
-                            const cleanItemCount = (await dataset.getInfo()).cleanItemCount;
+                            const { cleanItemCount } = await dataset.getInfo();
                             if (cleanItemCount >= maxCrawledPlaces) {
                                 await autoscaledPool.abort();
                             }
                         }
-                        stats.places()
+                        stats.places();
                         log.info(`Finished place url ${placeDetail.url}`);
                     } else {
                         stats.outOfPolygon();
                         log.info(`Place outside of polygon, url: ${page.url()}`);
                     }
                 }
-                stats.ok()
+                stats.ok();
             } catch (err) {
                 // This issue can happen, mostly because proxy IP was blocked by google
                 // Let's refresh IP using browser refresh.
@@ -477,7 +459,7 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, proxyConfiguration, in
                     await saveScreenshot(page, `${request.id}.png`);
                 }
                 await puppeteerPool.retire(page.browser());
-                if (request.retryCount < MAX_PAGE_RETRIES && log.getLevel() !== log.LEVELS.DEBUG) {
+                if (request.retryCount < crawlerOptions.maxRequestRetries && log.getLevel() !== log.LEVELS.DEBUG) {
                     // This fix to not show stack trace in log for retired requests, but we should handle this on SDK
                     const info = 'Stack trace was omitted for retires requests. Set up debug mode to see it.';
                     throw `${err.message} (${info})`;
@@ -487,7 +469,7 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, proxyConfiguration, in
         },
         handleFailedRequestFunction: async ({ request, error }) => {
             // This function is called when crawling of a request failed too many time
-            stats.failed()
+            stats.failed();
             const defaultStore = await Apify.openKeyValueStore();
             await Apify.pushData({
                 '#url': request.url,
@@ -497,9 +479,9 @@ const setUpCrawler = (puppeteerPoolOptions, requestQueue, proxyConfiguration, in
                 '#debugFiles': {
                     html: defaultStore.getPublicUrl(`${request.id}.html`),
                     screen: defaultStore.getPublicUrl(`${request.id}.png`),
-                }
+                },
             });
-            log.exception(error, `Page ${request.url} failed ${MAX_PAGE_RETRIES} times! It will not be retired. Check debug fields in dataset to find the issue.`)
+            log.exception(error, `Page ${request.url} failed ${request.retryCount + 1} times! It will not be retired. Check debug fields in dataset to find the issue.`);
         },
     });
 };
