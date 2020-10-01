@@ -47,7 +47,7 @@ On this input actor searches places on this start URL: https://www.google.com/ma
     - `includeOpeningHours` \<boolean\> If checked the crawler scrapes opening hours for all places. You can speed up crawling if you disable this. **Default: `false`**
     - `includePeopleAlsoSearch` \<boolean\> If checked the crawler scrape \"people also search\" for all places. You can speed up crawling if you disable this. **Default: `false`**
     - `additionalInfo` \<boolean\> Export additional info: Service Options, Highlights, Offerings,... **Default: `false`**
-    - `reviewsSort` \<string\> sort place reviews before extraction.
+    - `reviewsSort` \<string\> sort place reviews before extraction. **Default: `mostRelevant`**
     - `exportPlaceUrls` \<boolean\> Won't crawl through place pages, return links to places. **Default: `false`**
 - Localization (choose either countr/state/city or lat/long)
     - `country` \<string\> Country name for polygon localization
@@ -62,8 +62,8 @@ On this input actor searches places on this start URL: https://www.google.com/ma
     - `maxPageRetries` \<number\> Max page retries. **Default: `6`**
     - `pageLoadTimeoutSec` \<number\> Max time that the page can be loading. **Default: `60`**
     - `maxPagesPerBrowser` \<number\> How many pages can be opened at once for each browser. Having more pages in one browser is faster but can lead to increased blocking. **Default: `1`**
-    - `useChrome` \<boolean\> Uses full Chrome browser instead of Chromium. Be careful, it is not stable on some versions!
-- Miscellaneous **Default: `false`**
+    - `useChrome` \<boolean\> Uses full Chrome browser instead of Chromium. Be careful, it is not stable on some versions! **Default: `false`**
+- Miscellaneous
     - `debug` \<boolean\> Debug messages will be included in log. **Default: `false`**
     - `forceEng` \<boolean\> Force localization to be in english, some fields are dependent on english and won't work in different language: **Default: `true`**
     - `cachePlaces` \<boolean\> Add caching locations between runs. `placeId: location` is stored in named keyVal. Can speed up regular runs using polygon search. **Default: `false`**
