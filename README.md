@@ -46,35 +46,42 @@ Example input:
   "zoom": 10
 }
 ```
-On this input actor searches places on this start url: https://www.google.com/maps/search/pubs+near+prague/@50.0860729,14.4135326,10z
+On this input actor searches places on this start URL: https://www.google.com/maps/search/pubs+near+prague/@50.0860729,14.4135326,10z
 
-- `startUrls` - list of urls with search results to scrape places from.
-- `searchString` - String will be search on Google maps. It is possible fill [Google Place ID](https://developers.google.com/places/place-id) in format `place_id:ChIJp4JiUCNP0xQR1JaSjpW_Hms`. Do not include location in search string if you are using polygon localization (`country`, `state`, `city`).
-- `searchStringArray` - Array of strings, that will be searched on Google maps. Use if you need to search more different types of places at once.
-- `proxyConfig` - Apify proxy configuration, it is required to provide proxy.
-- `country` - Country name for polygon localization
-- `state` - State name for polygon localization
-- `city` - City name for polygon localization
-- `maxReviews` - Maximum number of reviews per place
-- `maxImages` - Maximum number of images per place
-- `lat` - Use it with combination with longitude and zoom to set up viewport to search on. Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
-- `lng` - Use it with combination with latitude and zoom to set up viewport to search on. Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
-- `zoom` - Viewport zoom, e.g zoom: 17 in Google Maps URL -> https://www.google.com/maps/@50.0860729,14.4135326,17z vs zoom: 10 -> https://www.google.com/maps/@50.0860729,14.4135326,10z. `1` is whole world and `21` is tiny street. We recommend number between 10 and 17.
-- `maxAutomaticZoomOut` parameter to stop searching once Google zooms out too far. It count how far it zoomed out from the first page. Keep in mind that `zoom: 1` is whole world and `zoom: 21` is a tiny street. So usually you want `maxAutomaticZoomOut` to be between `0` and `5`. Also, keep in mind that Google zooms a bit differently in each run.
-- `maxCrawledPlaces` - Limit places you want to get from crawler
-- `debug` - Debug messages will be included in log.
-- `exportPlaceUrls` - Won't crawl through place pages, return links to places
-- `forceEng` - Force localization to be in english, some fields are dependent on english and won't work in different language:
-- `cachePlaces` - Add caching locations between runs. `placeId: location` is stored in named keyVal. Can speed up regular runs using polygon search.
-- `reviewsSort` - sort place reviews.
-
-You can exclude some attributes from results using input parameters. It can help to speed up crawling.
-- set `maxImages` to `0`
-- set `maxReviews` to `0`
-- set `includeHistogram` to `false`
-- set`includeOpeningHours` to `false`
-- set`includePeopleAlsoSearch` to `false`
-- set `additionalInfo` - Service Options, Highlights, Offerings,.. to `false`
+- Search and URLs
+    - `startUrls` \<Array\<[Request](https://sdk.apify.com/docs/api/request#docsNav)\>\> A list of URLs. Can be search or place URLs.
+    - `searchString` \<string\> - String will be search on Google maps. It is possible fill [Google Place ID](https://developers.google.com/places/place-id) in format `place_id:ChIJp4JiUCNP0xQR1JaSjpW_Hms`. Do not include location in search string if you are using polygon localization (`country`, `state`, `city`).
+    - `searchStringArray` \<Array\<string\>\> Array of strings, that will be searched on Google maps. Use if you need to search more different types of places at once.
+- General settings
+    - `proxyConfig` \<ProxyConfiguration\> Apify proxy configuration, it is required to provide proxy when running on Apify platform.
+    - `maxCrawledPlaces` \<number\> Limit places you want to get from crawler
+- Output configuration
+    - `maxReviews` \<number\> Maximum number of reviews per place
+    - `maxImages` \<number\> Maximum number of images per place
+    - `includeHistogram` \<boolean\> If checked the crawler scrapes popular times for all places. You can speed up crawling if you disable this.
+    - `includeOpeningHours` \<boolean\> If checked the crawler scrapes opening hours for all places. You can speed up crawling if you disable this.
+    - `includePeopleAlsoSearch` \<boolean\> If checked the crawler scrape \"people also search\" for all places. You can speed up crawling if you disable this.
+    - `additionalInfo` \<boolean\> Export additional info: Service Options, Highlights, Offerings,...
+    - `reviewsSort` \<string\> sort place reviews before extraction.
+    - `exportPlaceUrls` \<boolean\> Won't crawl through place pages, return links to places
+- Localization
+    - `country` \<string\> Country name for polygon localization
+    - `state` \<string\> State name for polygon localization
+    - `city` \<string\> City name for polygon localization
+    - `lat` \<string\> Use it with combination with longitude and zoom to set up viewport to search on. Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
+    - `lng` \<string\> Use it with combination with latitude and zoom to set up viewport to search on. Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
+    - `zoom` \<number\> Viewport zoom, e.g zoom: 17 in Google Maps URL -> https://www.google.com/maps/@50.0860729,14.4135326,17z vs zoom: 10 -> https://www.google.com/maps/@50.0860729,14.4135326,10z. `1` is whole world and `21` is tiny street. We recommend number between 10 and 17.
+    - `maxAutomaticZoomOut` \<number\> A parameter to stop searching once Google zooms out too far. It count how far it zoomed out from the first page. Keep in mind that `zoom: 1` is whole world and `zoom: 21` is a tiny street. So usually you want `maxAutomaticZoomOut` to be between `0` and `5`. Also, keep in mind that Google zooms a bit differently in each run.
+- Browser and page settings
+    - `maxConcurrency` \<number\> Maximum number of pages that will be processed in parallel.
+    - `maxPageRetries` \<number\> Max page retries.
+    - `pageLoadTimeoutSec` \<number\> Max time that the page can be loading
+    - `maxPagesPerBrowser` \<number\> How many pages can be opened at once for each browser. Having more pages in one browser is faster but can lead to increased blocking.
+    - `useChrome` \<boolean\> Uses full Chrome browser instead of Chromium. Be careful, it is not stable on some versions!
+- Miscellaneous
+    - `debug` \<boolean\> Debug messages will be included in log.
+    - `forceEng` \<boolean\> Force localization to be in english, some fields are dependent on english and won't work in different language:
+    - `cachePlaces` \<boolean\> Add caching locations between runs. `placeId: location` is stored in named keyVal. Can speed up regular runs using polygon search.
 
 ### Country localization
 You can force the scraper to access the places only from specific country location. We recommend this to ensure the correct language in results. This works reliably only for US (most of our proxies are from US). Currently, this option is not available in the Editor input , you have switch to JSON input. After you switch, your configuration will remain the same so just update the `proxyconfig` field with `apifyProxyCountry` property to specify the country, example:
