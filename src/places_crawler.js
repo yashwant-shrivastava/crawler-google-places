@@ -164,7 +164,7 @@ const extractPlaceDetail = async (options) => {
                         hours = hours.split('.')[0];
                         return { day, hours };
                     }
-                    log.debug(`Not able to parse opening hours: ${line}`);
+                    log.debug(`[PLACE]: Not able to parse opening hours: ${line}`);
                 });
             }
         }
@@ -202,7 +202,7 @@ const extractPlaceDetail = async (options) => {
 
     // Extract additional info
     if (additionalInfo) {
-        log.debug('Scraping additional info.');
+        log.debug('[PLACE]: Scraping additional info.');
         const button = await page.$('button.section-editorial');
         try {
             await button.click();
@@ -227,7 +227,7 @@ const extractPlaceDetail = async (options) => {
             const backButton = await page.$('button[aria-label*=Back]');
             await backButton.click();
         } catch (e) {
-            log.info(`${e}Additional info not parsed`);
+            log.info(`[PLACE]: ${e}Additional info not parsed`);
         }
     }
 
@@ -250,7 +250,7 @@ const extractPlaceDetail = async (options) => {
         try {
             globalParser = Globalize(localization);
         } catch (e) {
-            throw new Error(`Can not find localization for ${localization}, try to use different proxy IP.`);
+            throw new Error(`[PLACE]: Can not find localization for ${localization}, try to use different proxy IP.`);
         }
         detail.totalScore = globalParser.numberParser({ round: 'floor' })(detail.totalScore);
         detail.reviewsCount = reviewsCountText ? globalParser.numberParser({ round: 'truncate' })(reviewsCountText) : null;
@@ -273,7 +273,7 @@ const extractPlaceDetail = async (options) => {
                     }
                     await page.keyboard.press('Enter');
                 } catch (e) {
-                    log.debug('Can not sort reviews with 1 options!');
+                    log.debug('[PLACE]: Can not sort reviews with 1 options!');
                 }
             };
             const sortPromise2 = async () => {
@@ -284,7 +284,7 @@ const extractPlaceDetail = async (options) => {
                     }
                     await page.keyboard.press('Enter');
                 } catch (e) {
-                    log.debug('Can not sort with 2 options!');
+                    log.debug('[PLACE]: Can not sort with 2 options!');
                 }
             };
             await sleep(5000);
@@ -300,7 +300,7 @@ const extractPlaceDetail = async (options) => {
 
             detail.reviews.push(...reviews);
             detail.reviews = detail.reviews.slice(0, maxReviews);
-            log.info(`Exracting reviews: ${detail.reviews.length}/${maxReviews} --- ${page.url()}`);
+            log.info(`[PLACE]: Exracting reviews: ${detail.reviews.length}/${maxReviews} --- ${page.url()}`);
             let reviewUrl = reviewsResponse.url();
             // Replace !3e1 in URL with !3e2, it makes list sort by newest
             reviewUrl = reviewUrl.replace(/!3e\d/, '!3e2');
@@ -324,10 +324,10 @@ const extractPlaceDetail = async (options) => {
                 }
                 detail.reviews.push(...reviews);
                 detail.reviews = detail.reviews.slice(0, maxReviews);
-                log.info(`Exracting reviews: ${detail.reviews.length}/${maxReviews} --- ${page.url()}`);
+                log.info(`[PLACE]: Exracting reviews: ${detail.reviews.length}/${maxReviews} --- ${page.url()}`);
                 reviewUrl = increaseLimitInUrl(reviewUrl);
             }
-            log.info(`Reviews extraction finished: ${detail.reviews.length} --- ${page.url()}`);
+            log.info(`[PLACE]: Reviews extraction finished: ${detail.reviews.length} --- ${page.url()}`);
 
             await page.click('button[jsaction*=back]');
         }
@@ -346,7 +346,7 @@ const extractPlaceDetail = async (options) => {
             let imageUrls = [];
 
             while (true) {
-                log.info(`Infinite scroll for images started, url: ${page.url()}`);
+                log.info(`[PLACE]: Infinite scroll for images started, url: ${page.url()}`);
                 await infiniteScroll(page, pageBottom, '.section-scrollbox.scrollable-y', 'images', 1);
                 imageUrls = await page.evaluate(() => {
                     const urls = [];
@@ -360,10 +360,10 @@ const extractPlaceDetail = async (options) => {
                     return urls;
                 });
                 if (imageUrls.length >= maxImages || lastImage === imageUrls[imageUrls.length - 1]) {
-                    log.info(`Infinite scroll for images finished, url: ${page.url()}`);
+                    log.info(`[PLACE]: Infinite scroll for images finished, url: ${page.url()}`);
                     break;
                 }
-                log.info(`Infinite scroll continuing for images, currently ${imageUrls.length}, url: ${page.url()}`);
+                log.info(`[PLACE]: Infinite scroll continuing for images, currently ${imageUrls.length}, url: ${page.url()}`);
                 lastImage = imageUrls[imageUrls.length - 1];
                 pageBottom += 6000;
             }
@@ -398,24 +398,24 @@ const setUpCrawler = (crawlerOptions, scrapingOptions, stats, allPlaces) => {
         handlePageFunction: async ({ request, page, puppeteerPool, autoscaledPool }) => {
             const { label, searchString, geo } = request.userData;
 
-            log.info(`Open ${request.url} with label: ${label}`);
             await injectJQuery(page);
+
+            const logLabel = label === 'startUrl' ? 'SEARCH' : 'PLACE';
 
             try {
                 // Check if Google shows captcha
                 if (await page.$('form#captcha-form')) {
-                    log.warning('******\nGoogle shows captcha. This browser will be retired.\n******');
-                    throw `Got CAPTCHA on page, retrying --- ${searchString || ''} ${request.url}`;
+                    throw `[${logLabel}]: Got CAPTCHA on page, retrying --- ${searchString || ''} ${request.url}`;
                 }
                 if (label === 'startUrl') {
-                    log.info(`Start enqueuing places details for search --- ${searchString || ''} ${request.url}`);
+                    log.info(`[${logLabel}]: Start enqueuing places details for search --- ${searchString || ''} ${request.url}`);
                     await enqueueAllPlaceDetails(page, searchString, requestQueue, maxCrawledPlaces, request,
                         exportPlaceUrls, geo, maxAutomaticZoomOut, allPlaces, cachePlaces, stats);
-                    log.info(`Enqueuing places finished for --- ${searchString || ''} ${request.url}`);
+                    log.info(`[${logLabel}]: Enqueuing places finished for --- ${searchString || ''} ${request.url}`);
                     stats.maps();
                 } else {
                     // Get data for place and save it to dataset
-                    log.info(`Extracting details from place url ${page.url()}`);
+                    log.info(`[${logLabel}]: Extracting details from place url ${page.url()}`);
                     const placeDetail = await extractPlaceDetail({
                         page,
                         request,
@@ -444,10 +444,10 @@ const setUpCrawler = (crawlerOptions, scrapingOptions, stats, allPlaces) => {
                             }
                         }
                         stats.places();
-                        log.info(`Finished place url ${placeDetail.url}`);
+                        log.info(`[${logLabel}]: Place scraped successfully --- ${placeDetail.url}`);
                     } else {
                         stats.outOfPolygon();
-                        log.info(`Place outside of polygon, url: ${page.url()}`);
+                        log.info(`[${logLabel}]: Place outside of polygon, url --- ${page.url()}`);
                     }
                 }
                 stats.ok();
@@ -462,7 +462,7 @@ const setUpCrawler = (crawlerOptions, scrapingOptions, stats, allPlaces) => {
                 if (request.retryCount < crawlerOptions.maxRequestRetries && log.getLevel() !== log.LEVELS.DEBUG) {
                     // This fix to not show stack trace in log for retired requests, but we should handle this on SDK
                     const info = 'Stack trace was omitted for retires requests. Set up debug mode to see it.';
-                    throw `${err.message} (${info})`;
+                    throw `[${logLabel}]: ${err.message} (${info})`;
                 }
                 throw err;
             }

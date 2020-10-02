@@ -14,7 +14,9 @@ exports.prepareSearchUrls = async ({ lat, lng, zoom, country, state, city }) => 
 
     // preference for startUrlSearches is lat & lng > & state & city
     if (lat || lng) {
-        if (!lat || !lng) throw new Error('You have to defined lat and lng!');
+        if (!lat || !lng) {
+            throw 'You have to defined both lat and lng!';
+        }
         startUrlSearches.push(`https://www.google.com/maps/@${lat},${lng},${zoom}z/search`);
     } else if (country || state || city) {
         // Takes from KV or crate new one

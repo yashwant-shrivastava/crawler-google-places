@@ -44,7 +44,7 @@ const enqueuePlacesFromResponse = (options) => {
                             },
                             { forefront: true });
                         } else {
-                            log.info(`Skip place: ${place.placeId}`);
+                            log.info(`[SEARCH]: Skip place: ${place.placeId}`);
                             stats.outOfPolygonCached();
                         }
                     }
@@ -91,7 +91,7 @@ const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxCrawl
         await page.waitForSelector(PLACE_TITLE_SEL, { timeout: 5000 });
         // It there is place detail, it means there is just one detail and it was redirected here.
         // We do not need enqueue other places.
-        log.debug(`Search string ${searchString} has just one place to scraper.`);
+        log.debug(`[SEARCH]: Search string ${searchString} has just one place to scraper.`);
         return;
     } catch (e) {
         // It can happen if there is list of details.
@@ -107,7 +107,7 @@ const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxCrawl
         const [fromString, toString] = paginationText.match(/\d+/g);
         const from = parseInt(fromString, 10);
         const to = parseInt(toString, 10);
-        log.debug(`Added links from pagination ${from} - ${to}`);
+        log.debug(`[SEARCH]: Added links from pagination ${from} - ${to}`);
         listingPagination.from = from;
         listingPagination.to = to;
         await Apify.setValue(listingStateKey, listingPagination);
@@ -129,13 +129,13 @@ const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxCrawl
         }
         if (isNextPaginationDisabled || noResultsEl || (maxCrawledPlaces && maxCrawledPlaces <= to) || finishBecauseAutoZoom) {
             if (isNextPaginationDisabled) {
-                log.warning(`Finishing search because there are no more pages --- ${searchString} - ${request.url}`);
+                log.warning(`[SEARCH]: Finishing search because there are no more pages --- ${searchString} - ${request.url}`);
             } else if (noResultsEl) {
-                log.warning(`Finishing search because it reached an empty page --- ${searchString} - ${request.url}`);
+                log.warning(`[SEARCH]: Finishing search because it reached an empty page --- ${searchString} - ${request.url}`);
             } else if (maxCrawledPlaces && maxCrawledPlaces <= to) {
-                log.warning(`Finishing search because we reached maxCrawledPlaces --- ${searchString} - ${request.url}`);
+                log.warning(`[SEARCH]: Finishing search because we reached maxCrawledPlaces --- ${searchString} - ${request.url}`);
             } else if (finishBecauseAutoZoom) {
-                log.warning(`Finishing search because Google zoomed out further than maxAutomaticZoomOut. Current zoom: ${parseZoomFromUrl(page.url())} --- ${searchString} - ${request.url}`);
+                log.warning(`[SEARCH]: Finishing search because Google zoomed out further than maxAutomaticZoomOut. Current zoom: ${parseZoomFromUrl(page.url())} --- ${searchString} - ${request.url}`);
             }
             break;
         } else {

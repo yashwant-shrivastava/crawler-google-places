@@ -27,7 +27,7 @@ exports.Stats = class Stats {
             statsArray.push(`${key}: ${value}`);
         }
 
-        log.info(`[STATS] ${statsArray.join(' | ')}`);
+        log.info(`[STATS]: ${statsArray.join(' | ')}`);
     }
 
     async loadInfo() {
@@ -42,7 +42,7 @@ exports.Stats = class Stats {
     async saveStats() {
         if (!this.isLoaded) throw new Error('Cannot save before loading old data!');
         await Apify.setValue('STATS', this.stats);
-        log.info('[STATS] Saved');
+        log.debug('[STATS]: Saved');
 
         await this.logInfo();
     }
