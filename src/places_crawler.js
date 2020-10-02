@@ -408,7 +408,7 @@ const setUpCrawler = (crawlerOptions, scrapingOptions, stats, allPlaces) => {
                     throw `Got CAPTCHA on page, retrying --- ${searchString || ''} ${request.url}`;
                 }
                 if (label === 'startUrl') {
-                    log.info(`Start enqueuing places details for search: ${searchString}`);
+                    log.info(`Start enqueuing places details for search --- ${searchString || ''} ${request.url}`);
                     await enqueueAllPlaceDetails(page, searchString, requestQueue, maxCrawledPlaces, request,
                         exportPlaceUrls, geo, maxAutomaticZoomOut, allPlaces, cachePlaces, stats);
                     log.info(`Enqueuing places finished for --- ${searchString || ''} ${request.url}`);
