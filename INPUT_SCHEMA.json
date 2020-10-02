@@ -24,14 +24,11 @@
             "default": 20,
             "minimum": 0
         },
-        "proxyConfig": {
-            "title": "Proxy configuration",
-            "type": "object",
-            "description": "Use Apify Proxy, you need to have some proxy group to get results on Google.",
-            "prefill": {
-                "useApifyProxy": true
-            },
-            "editor": "proxy"
+        "forceEng": {
+            "title": "Force English",
+            "type": "boolean",
+            "description": "Force place data to be displayed in English",
+            "default": true
         },
         "maxReviews": {
             "title": "Max reviews (Slow)",
@@ -145,15 +142,24 @@
             "minimum": 0,
             "maximum": 10
         },
+        "proxyConfig": {
+            "title": "Proxy configuration",
+            "type": "object",
+            "description": "Choose your proxy, you need to use Apify proxy or custom proxies.",
+            "prefill": {
+                "useApifyProxy": true
+            },
+            "editor": "proxy",
+            "sectionCaption": "Browser, page and proxy settings",
+            "sectionDescription": "How the browsers will behave during the scraping process."
+        },
         "maxConcurrency": {
             "title": "Max concurrency",
             "type": "integer",
             "description": "Maximum number of pages that will be processed in parallel.",
             "minimum": 0,
             "maximum": 1000,
-            "default": 100,
-            "sectionCaption": "Browser and page settings",
-            "sectionDescription": "How the browsers will behave during the scraping process."
+            "default": 100
         },
         "maxPageRetries": {
             "title": "Max page retries",
@@ -192,12 +198,6 @@
             "default": false,
             "sectionCaption": "Miscellaneous",
             "sectionDescription": "Few additional settings that might be useful."
-        },
-        "forceEng": {
-            "title": "Force English",
-            "type": "boolean",
-            "description": "Force place data to be displayed in English",
-            "default": true
         },
         "cachePlaces": {
             "title": "Cache Places",

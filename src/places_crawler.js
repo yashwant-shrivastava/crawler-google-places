@@ -10,7 +10,7 @@ Globalize.load(require('cldr-data').entireMainFor(...DEFAULT_CRAWLER_LOCALIZATIO
 const { sleep, log } = Apify.utils;
 const { injectJQuery, blockRequests } = Apify.utils.puppeteer;
 const infiniteScroll = require('./infinite_scroll');
-const { MAX_PAGE_RETRIES, DEFAULT_TIMEOUT, PLACE_TITLE_SEL } = require('./consts');
+const { DEFAULT_TIMEOUT, PLACE_TITLE_SEL } = require('./consts');
 const { enqueueAllPlaceDetails } = require('./enqueue_places_crawler');
 const {
     saveHTML, saveScreenshot, waitForGoogleMapLoader,
@@ -404,14 +404,14 @@ const setUpCrawler = (crawlerOptions, scrapingOptions, stats, allPlaces) => {
             try {
                 // Check if Google shows captcha
                 if (await page.$('form#captcha-form')) {
-                    console.log('******\nGoogle shows captcha. This browser will be retired.\n******');
-                    throw new Error('Needs to fill captcha!');
+                    log.warning('******\nGoogle shows captcha. This browser will be retired.\n******');
+                    throw `Got CAPTCHA on page, retrying --- ${searchString || ''} ${request.url}`;
                 }
                 if (label === 'startUrl') {
                     log.info(`Start enqueuing places details for search: ${searchString}`);
                     await enqueueAllPlaceDetails(page, searchString, requestQueue, maxCrawledPlaces, request,
                         exportPlaceUrls, geo, maxAutomaticZoomOut, allPlaces, cachePlaces, stats);
-                    log.info('Enqueuing places finished.');
+                    log.info(`Enqueuing places finished for --- ${searchString || ''} ${request.url}`);
                     stats.maps();
                 } else {
                     // Get data for place and save it to dataset

@@ -1,5 +1,6 @@
+/* eslint-env jquery */
 const Apify = require('apify');
-const { scrollTo } = require('./utils')
+const { scrollTo } = require('./utils');
 
 const { sleep, log } = Apify.utils;
 
@@ -63,7 +64,7 @@ module.exports = async (page, maxHeight, elementToScroll = 'body', scrollName, n
     });
 
     await page.waitForSelector(elementToScroll, { timeout: defaultElementTimeout });
-    let scrollInfo = await getPageScrollInfo(page, elementToScroll);
+    const scrollInfo = await getPageScrollInfo(page, elementToScroll);
 
     let previousReviewsCount = 0;
     // NOTE: In can there are too many reviews like 5K plus. The infinite scroll stops working, but the loader is still there.

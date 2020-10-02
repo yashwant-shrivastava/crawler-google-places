@@ -1,6 +1,6 @@
 const Apify = require('apify');
 const turf = require('@turf/turf');
-//const moment = require('moment');
+// const moment = require('moment');
 
 const { log } = Apify.utils;
 const TURF_UNIT = 'kilometers';
@@ -9,14 +9,14 @@ const GEO_TYPES = {
     MULTI_POLYGON: 'MultiPolygon',
     POLYGON: 'Polygon',
     POINT: 'Point',
-    LINE_STRING: 'LineString'
+    LINE_STRING: 'LineString',
 };
 
 const FEATURE_COLLECTION = 'FeatureCollection';
 const FEATURE = 'Feature';
 
 function checkInPolygon(geo, location) {
-    const point = turf.point([location.lng, location.lat])
+    const point = turf.point([location.lng, location.lat]);
     let included = false;
     const polygons = getPolygons(geo.geojson);
     for (const polygon of polygons) {
@@ -39,7 +39,7 @@ function getPolygons(geoJson, distanceKilometers = 5) {
     // We got only the point for city, lets create a circle...
     if (type === GEO_TYPES.POINT) {
         const options = { units: TURF_UNIT };
-        return [turf.circle(coordinates, distanceKilometers, options)]
+        return [turf.circle(coordinates, distanceKilometers, options)];
     }
 
     // Line (road or street) - find midpoint and length and create circle
@@ -69,8 +69,8 @@ async function getGeolocation(options) {
     // TODO when get more results? Currently only first match is returned!
     const res = await Apify.utils.requestAsBrowser({
         url: encodeURI(`https://nominatim.openstreetmap.org/search?country=${countryString}&state=${stateString}&city=${cityString}&format=json&polygon_geojson=1&limit=1&polygon_threshold=0.005`),
-        headers: { referer: "http://google.com" }
-    })
+        headers: { referer: 'http://google.com' },
+    });
     const body = JSON.parse(res.body);
     if (res.body) return body[0];
     return {};
@@ -128,12 +128,12 @@ async function findPointsInPolygon(location, zoom, points) {
                 pointGrid = turf.pointGrid(bbox, distance, options);
 
                 if (pointGrid.features && pointGrid.features.length > 0) break;
-                distanceKilometers = distanceKilometers - 1;
+                distanceKilometers -= 1;
             }
             pointGrid.features.forEach((feature) => {
                 const [lon, lat] = feature.geometry.coordinates;
                 points.push({ lon, lat });
-                //points.push(feature); // http://geojson.io is nice tool to check found points on map
+                // points.push(feature); // http://geojson.io is nice tool to check found points on map
             });
         });
     } catch (e) {

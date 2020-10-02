@@ -116,7 +116,7 @@ const scrollTo = (page, elementToScroll, scrollToHeight) => page.evaluate((eleme
 const parseZoomFromUrl = (url) => {
     const zoomMatch = url.match(/@[0-9.-]+,[0-9.-]+,([0-9.]+)z/);
     return zoomMatch ? Number(zoomMatch[1]) : null;
-}
+};
 
 module.exports = {
     saveScreenshot,

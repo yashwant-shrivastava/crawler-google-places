@@ -1,3 +1,4 @@
+/* eslint-env jquery */
 const Apify = require('apify');
 const querystring = require('querystring');
 
@@ -20,7 +21,7 @@ const enqueuePlacesFromResponse = (options) => {
         if (url.startsWith('https://www.google.com/search')) {
             // Parse page number from request url
             const queryParams = querystring.parse(url.split('?')[1]);
-            const pageNumber = parseInt(queryParams.ech);
+            const pageNumber = parseInt(queryParams.ech, 10);
             // Parse place ids from response body
             const responseBody = await response.buffer();
             const places = parseSearchPlacesResponseBody(responseBody);
@@ -29,24 +30,23 @@ const enqueuePlacesFromResponse = (options) => {
                 const rank = ((pageNumber - 1) * 20) + (index + 1);
                 if (!maxPlacesPerCrawl || rank <= maxPlacesPerCrawl) {
                     let promise;
-                    if (exportPlaceUrls)
+                    if (exportPlaceUrls) {
                         promise = Apify.pushData({
-                            url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${place.placeId}`
-                        })
-                    else {
-                        const location = allPlaces[place.placeId]
+                            url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${place.placeId}`,
+                        });
+                    } else {
+                        const location = allPlaces[place.placeId];
                         if (!cachePlaces || !geo || !location || checkInPolygon(geo, location)) {
                             promise = requestQueue.addRequest({
-                                    url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${place.placeId}`,
-                                    uniqueKey: place.placeId,
-                                    userData: { label: 'detail', searchString, rank, geo },
-                                },
-                                { forefront: true });
+                                url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${place.placeId}`,
+                                uniqueKey: place.placeId,
+                                userData: { label: 'detail', searchString, rank, geo },
+                            },
+                            { forefront: true });
                         } else {
                             log.info(`Skip place: ${place.placeId}`);
                             stats.outOfPolygonCached();
                         }
-
                     }
                     enqueuePromises.push(promise);
                 }
@@ -72,7 +72,7 @@ const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxCrawl
         geo,
         allPlaces,
         cachePlaces,
-        stats
+        stats,
     }));
     // Save state of listing pagination
     // NOTE: If pageFunction failed crawler skipped already scraped pagination
@@ -105,8 +105,8 @@ const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxCrawl
         await page.waitForSelector(nextButtonSelector, { timeout: DEFAULT_TIMEOUT });
         const paginationText = await page.$eval('.n7lv7yjyC35__root', (el) => el.innerText);
         const [fromString, toString] = paginationText.match(/\d+/g);
-        const from = parseInt(fromString);
-        const to = parseInt(toString);
+        const from = parseInt(fromString, 10);
+        const to = parseInt(toString, 10);
         log.debug(`Added links from pagination ${from} - ${to}`);
         listingPagination.from = from;
         listingPagination.to = to;

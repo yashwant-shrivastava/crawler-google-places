@@ -1,10 +1,12 @@
 /* eslint-disable object-property-newline */
 const Apify = require('apify');
 
-const { getGeolocation, findPointsInPolygon } = require('./polygon');
 const placesCrawler = require('./places_crawler');
 const resultJsonSchema = require('./result_item_schema');
 const { Stats } = require('./stats');
+const { prepareSearchUrls } = require('./search');
+const { createStartRequestsWithWalker } = require('./walker');
+const makeInputBackwardsCompatible = require('./backwards-compatible-input');
 
 const cachedPlacesName = 'Places-cached-locations';
 
@@ -14,26 +16,7 @@ Apify.main(async () => {
     const input = await Apify.getValue('INPUT');
     const stats = new Stats(300);
 
-    // Small hack for backward compatibillity
-    // Previously there was a checkbox includeImages and includeReviews. It had to be on.
-    // maxImages and maxReviews 0 or empty scraped all
-    // Right now, it works like you woudl expect, 0 or empty means no images, for all images just set 99999
-    // If includeReviews/includeImages is not present, we process regularly
-    if (input.includeReviews === true && !input.maxReviews) {
-        input.maxReviews = 999999;
-    }
-
-    if (input.includeReviews === false) {
-        input.maxReviews = 0;
-    }
-
-    if (input.includeImages === true && !input.maxImages) {
-        input.maxImages = 999999;
-    }
-
-    if (input.includeImages === false) {
-        input.maxImages = 0;
-    }
+    makeInputBackwardsCompatible(input);
 
     // The rest of inputs are passed to the crawler as a whole
     const {
@@ -60,18 +43,19 @@ Apify.main(async () => {
         maxAutomaticZoomOut, cachePlaces, reviewsSort,
     };
 
-    if (debug) log.setLevel(log.LEVELS.DEBUG);
-    if (!searchString && !searchStringsArray && !startUrls) throw new Error('Attribute startUrls or searchString or searchStringsArray is missing in input.');
-    if (proxyConfig && proxyConfig.apifyProxyGroups
-        && (proxyConfig.apifyProxyGroups.includes('GOOGLESERP') || proxyConfig.apifyProxyGroups.includes('GOOGLE_SERP'))) {
-        throw new Error('It is not possible to crawl google places with GOOGLE SERP proxy group. Please use a different one and rerun crawler.');
+    if (debug) {
+        log.setLevel(log.LEVELS.DEBUG);
     }
-
-    // save geolocation to keyval
-    let geo = await Apify.getValue('GEO');
-    Apify.events.on('migrating', async () => {
-        await Apify.setValue('GEO', geo);
-    });
+    if (!searchString && !searchStringsArray && !startUrls) {
+        throw 'You have to provide startUrls or searchString or searchStringsArray in input!';
+    }
+    if (Apify.isAtHome() && (!proxyConfig || !(proxyConfig.useApifyProxy || proxyConfig.proxyUrls))) {
+        throw 'You have to use Apify proxy or custom proxies when running on Apify platform!';
+    }
+    if (proxyConfig.apifyProxyGroups
+        && (proxyConfig.apifyProxyGroups.includes('GOOGLESERP') || proxyConfig.apifyProxyGroups.includes('GOOGLE_SERP'))) {
+        throw 'It is not possible to crawl google places with GOOGLE SERP proxy group. Please use a different one and rerun  the crawler!';
+    }
 
     let allPlaces = {};
     if (cachePlaces) {
@@ -87,47 +71,14 @@ Apify.main(async () => {
         });
     }
 
-    // Base part of the URLs to make up the startRequests
-    const startUrlSearches = [];
-
-    // preference for startUrlSearches is lat & lng > & state & city
-    if (lat || lng) {
-        if (!lat || !lng) throw new Error('You have to defined lat and lng!');
-        startUrlSearches.push(`https://www.google.com/maps/@${lat},${lng},${zoom}z/search`);
-    } else if (country || state || city) {
-        geo = geo || await getGeolocation({ country, state, city });
-
-        let points = [];
-        points = await findPointsInPolygon(geo, zoom, points);
-        for (const point of points) {
-            startUrlSearches.push(`https://www.google.com/maps/@${point.lat},${point.lon},${zoom}z/search`);
-        }
-    } else {
-        startUrlSearches.push('https://www.google.com/maps/search/');
-    }
-
     // Requests that are used in the queue
     const startRequests = [];
 
-    // Preference for startRequests is walker > startUrls > searchString || searchStringsArray
-    // TODO: walker is not documented!!!
-    if (walker && searchString) {
-        const { zoom, step, bounds } = walker;
-        const { northeast, southwest } = bounds;
-        log.info(`Using walker mode, generating pieces of map to walk with step ${step}, zoom ${step} and bounds ${JSON.stringify(bounds)}.`);
-        /**
-         * The hidden feature, with walker you can search business in specific square on map.
-         */
-        // Generate URLs to walk
-        for (let walkerLng = northeast.lng; walkerLng >= southwest.lng; walkerLng -= step) {
-            for (let walkerLat = northeast.lat; walkerLat >= southwest.lat; walkerLat -= step) {
-                startRequests.push({
-                    url: `https://www.google.com/maps/@${walkerLat},${walkerLng},${zoom}z/search`,
-                    userData: { label: 'startUrl', searchString },
-                });
-            }
+    // Start URLs have higher preference than search
+    if (Array.isArray(startUrls) && startUrls.length > 0) {
+        if (searchString || searchStringsArray) {
+            log.warning('Using Start URLs disables search. You can use either search or Start URLs.');
         }
-    } else if (Array.isArray(startUrls) && startUrls.length > 0) {
         for (const req of startUrls) {
             startRequests.push({
                 ...req,
@@ -135,23 +86,33 @@ Apify.main(async () => {
             });
         }
     } else if (searchString || searchStringsArray) {
-        if (searchStringsArray && !Array.isArray(searchStringsArray)) throw new Error('Attribute searchStringsArray has to be an array.');
+        if (searchStringsArray && !Array.isArray(searchStringsArray)) {
+            throw 'searchStringsArray has to be an array!';
+        }
         const searches = searchStringsArray || [searchString];
         for (const search of searches) {
-            /**
-             * User can use place_id:<Google place ID> as search query
-             * TODO: Move place id to separate fields, once we have dependent fields. Than user can fill placeId or search query.
-             */
-            if (search.includes('place_id:')) {
+            // TODO: walker is not documented!!! We should figure out if it is useful at all
+            if (walker) {
+                const walkerGeneratedRequests = createStartRequestsWithWalker({ walker, searchString });
+                for (const req of walkerGeneratedRequests) {
+                    startRequests.push(req);
+                }
+            } else if (search.includes('place_id:')) {
+                /**
+                 * User can use place_id:<Google place ID> as search query
+                 * TODO: Move place id to separate fields, once we have dependent fields. Than user can fill placeId or search query.
+                 */
                 log.info(`Place ID found in search query. We will extract data from ${search}.`);
                 const cleanSearch = search.replace(/\s+/g, '');
                 const placeId = cleanSearch.match(/place_id:(.*)/)[1];
                 startRequests.push({
                     url: `https://www.google.com/maps/search/?api=1&query=${cleanSearch}&query_place_id=${placeId}`,
                     uniqueKey: placeId,
-                    userData: { label: 'detail', searchString },
+                    userData: { label: 'detail', searchString: search },
                 });
             } else {
+                // This call is async because it persists a state into KV
+                const { startUrlSearches, geo } = await prepareSearchUrls({ lat, lng, zoom, country, state, city });
                 for (const startUrlSearch of startUrlSearches) {
                     startRequests.push({
                         url: startUrlSearch,
@@ -218,10 +179,10 @@ Apify.main(async () => {
             options: {
                 minOutputtedPages: 5,
                 jsonSchema: resultJsonSchema,
-                notifyTo: 'jakub.drobnik@apify.com',
+                notifyTo: 'lukas@apify.com',
             },
         });
     }
 
-    log.info('Done!');
+    log.info('Scraping finished!');
 });
