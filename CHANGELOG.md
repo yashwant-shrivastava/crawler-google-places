@@ -1,6 +1,7 @@
 ## 2020-10-01
 - added several browser options to input - `maxConcurrency`, `maxPageRetries`, `pageLoadTimeoutSec`, `maxPagesPerBrowser`, `useChrome`
 - rewamped input schema and readme
+- Added `reviewerNumberOfReviews` and `isLocalGuide` to reviews
 
 ## 2020-09-22
 - added few extra review fields (ID, URL)
