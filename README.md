@@ -39,8 +39,8 @@ On this input actor searches places on this start URL: https://www.google.com/ma
     - `searchStringArray` \<Array\<string\>\> Array of strings, that will be searched on Google maps. Use if you need to search more different types of places at once.
 - General settings
     - `proxyConfig` \<ProxyConfiguration\> Apify proxy configuration, it is required to provide proxy when running on Apify platform. **Default: `{ useApifyProxy: true }`**
-    - `maxCrawledPlaces` \<number\> Limit places you want to get from crawler
-- Output configuration **Default: `20`**
+    - `maxCrawledPlaces` \<number\> Limit places you want to get from crawler **Default: `20`**
+- Output configuration
     - `maxReviews` \<number\> Maximum number of reviews per place. **Default: `0`**
     - `maxImages` \<number\> Maximum number of images per place. **Default: `0`**
     - `includeHistogram` \<boolean\> If checked the crawler scrapes popular times for all places. You can speed up crawling if you disable this. **Default: `false`**
@@ -89,7 +89,7 @@ Single place result looks like this:
   "totalScore": 4,
   "categoryName": "Restaurant",
   "address": "Hálkova 6, 120 00 Nové Město, Czechia",
-  "locatedIn": Azalea Square,
+  "locatedIn": "Azalea Square",
   "plusCode": "3CGH+F8 New Town, Prague, Czechia",
   "website": "thepub.cz",
   "phone": "+420222940414",
