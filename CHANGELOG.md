@@ -1,3 +1,6 @@
+## 2020-10-15
+- The default setup now uses `maxImages: 0` and `maxReviews: 0` to improve efficiency
+
 ## 2020-10-01
 - added several browser options to input - `maxConcurrency`, `maxPageRetries`, `pageLoadTimeoutSec`, `maxPagesPerBrowser`, `useChrome`
 - rewamped input schema and readme

@@ -34,16 +34,16 @@
             "title": "Max reviews (Slow)",
             "type": "integer",
             "description": "Max number of reviews per place to scrape. If you fill 0 or nothing, no reviews will be scraped. For all reviews, just put 99999",
-            "prefill": 5,
+            "prefill": 0,
             "unit": "reviews per place",
             "sectionCaption": "Output configuration",
-            "sectionDescription": "You can set what extra information you would like extracted."
+            "sectionDescription": "You can set what extra information you would like extracted. For maximum efficiency, the default setup doesn't include reviews or images. If you need these, just increase the maximum count for these."
         },
         "maxImages": {
             "title": "Max Images (Very slow)",
             "type": "integer",
             "description": "Max number of images per place to scrape. If you fill 0 or nothing, no images will be scraped. For all images, just put 99999",
-            "prefill": 1,
+            "prefill": 0,
             "unit": "images per place"
         },
         "includeHistogram": {

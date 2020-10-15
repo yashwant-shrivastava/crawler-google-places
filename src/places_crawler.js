@@ -334,6 +334,7 @@ const extractPlaceDetail = async (options) => {
     }
 
     // Extract place images
+    // TODO: maxImages 1 should not need to go into the scrolling mode
     if (typeof maxImages === 'number' && maxImages > 0) {
         await page.waitForSelector(PLACE_TITLE_SEL, { timeout: DEFAULT_TIMEOUT });
         const imagesButtonSel = '.section-hero-header-image-hero-container';
