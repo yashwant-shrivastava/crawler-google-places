@@ -358,6 +358,12 @@
             "description": "Cache places location between runs in named KeyVal. Check location in polygon before enqueuing place to requestQueue.",
             "default": false
         },
+        "useStealth": {
+            "title": "Use stealth",
+            "type": "boolean",
+            "description": "Enable using stealth if you're not using Chrome",
+            "default": false
+        },
         "forceEng": {
             "title": "Force English",
             "type": "boolean",

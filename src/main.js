@@ -27,7 +27,7 @@ Apify.main(async () => {
         // browser and request options
         pageLoadTimeoutSec = 60, useChrome = false, maxConcurrency, maxPagesPerBrowser = 1, maxPageRetries = 6,
         // Misc
-        proxyConfig, regularTestRun, debug, language = 'en',
+        proxyConfig, regularTestRun, debug, language = 'en', useStealth,
         // walker is undocumented feature added by jakubdrobnik, we need to test it and document it
         walker,
 
@@ -83,7 +83,7 @@ Apify.main(async () => {
         let req;
         while (req = await rlist.fetchNextRequest()) { // eslint-disable-line no-cond-assign
             if (!req.url
-                || !/www\.google\.com\/maps\/(@|search|place)\//.test(req.url)
+                || !/www\.google\.com\/maps\/(search|place)\//.test(req.url) // allows only search and place urls
             ) {
                 log.warning(`\n------\nURL ${req.url} isn't a valid startUrl\n------`);
                 continue; // eslint-disable-line no-continue
@@ -147,21 +147,11 @@ Apify.main(async () => {
      * @type {Apify.PuppeteerPoolOptions}}
      */
     const puppeteerPoolOptions = {
-        launchPuppeteerOptions: {
-            headless: !useChrome,
-            useChrome,
-            args: [
-                // this is needed to access cross-domain iframes
-                '--disable-web-security',
-                '--disable-features=IsolateOrigins,site-per-process',
-            ],
-        },
+        useIncognitoPages: true,
         maxOpenPagesPerInstance: maxPagesPerBrowser,
-        // Not sure why this is here
-        retireInstanceAfterRequestCount: 100,
     };
 
-    const proxyConfiguration = await Apify.createProxyConfiguration({ ...proxyConfig });
+    const proxyConfiguration = await Apify.createProxyConfiguration(proxyConfig);
 
     /**
      * @type {Apify.PuppeteerCrawlerOptions}
@@ -171,6 +161,33 @@ Apify.main(async () => {
         proxyConfiguration,
         puppeteerPoolOptions,
         maxConcurrency,
+        launchPuppeteerFunction: (options) => {
+            return Apify.launchPuppeteer({
+                ...options,
+                headless: !useChrome,
+                useChrome,
+                args: [
+                    ...(options.args ? options.args : {}),
+                    // this is needed to access cross-domain iframes
+                    '--disable-web-security',
+                    '--disable-features=IsolateOrigins,site-per-process',
+                    `--lang=${language}`, // force language at browser level
+                ],
+                stealth: useStealth,
+                stealthOptions: {
+                    addLanguage: false,
+                    addPlugins: false,
+                    emulateConsoleDebug: false,
+                    emulateWebGL: false,
+                    hideWebDriver: true,
+                    emulateWindowFrame: false,
+                    hackPermissions: false,
+                    mockChrome: false,
+                    mockDeviceMemory: false,
+                    mockChromeInIframe: false,
+                },
+            });
+        },
         useSessionPool: true,
         // This is just passed to gotoFunction
         pageLoadTimeoutSec,
