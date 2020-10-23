@@ -27,7 +27,7 @@ Apify.main(async () => {
         // browser and request options
         pageLoadTimeoutSec = 60, useChrome = false, maxConcurrency, maxPagesPerBrowser = 1, maxPageRetries = 6,
         // Misc
-        proxyConfig, regularTestRun, debug,
+        proxyConfig, regularTestRun, debug, language = 'en',
         // walker is undocumented feature added by jakubdrobnik, we need to test it and document it
         walker,
 
@@ -40,7 +40,7 @@ Apify.main(async () => {
     const scrapingOptions = {
         includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
         maxReviews, maxImages, exportPlaceUrls, forceEng, additionalInfo, maxCrawledPlaces,
-        maxAutomaticZoomOut, cachePlaces, reviewsSort,
+        maxAutomaticZoomOut, cachePlaces, reviewsSort, language,
     };
 
     if (debug) {
@@ -62,7 +62,7 @@ Apify.main(async () => {
         log.debug('Load cached places');
         const allPlacesStore = await Apify.openKeyValueStore(cachedPlacesName);
         allPlaces = await allPlacesStore.getValue('places') || {};
-        log.debug(allPlaces);
+        log.debug('allPlaces', allPlaces);
         Apify.events.on('migrating', async () => {
             log.debug('Saving places before migration');
             const reloadedPlaces = await allPlacesStore.getValue('places') || {};
@@ -77,9 +77,18 @@ Apify.main(async () => {
     // Start URLs have higher preference than search
     if (Array.isArray(startUrls) && startUrls.length > 0) {
         if (searchString || searchStringsArray) {
-            log.warning('Using Start URLs disables search. You can use either search or Start URLs.');
+            log.warning('\n\n------\nUsing Start URLs disables search. You can use either search or Start URLs.\n------\n');
         }
-        for (const req of startUrls) {
+        const rlist = await Apify.openRequestList('STARTURLS', startUrls);
+        let req;
+        while (req = await rlist.fetchNextRequest()) { // eslint-disable-line no-cond-assign
+            if (!req.url
+                || !/www\.google\.com\/maps\/(@|search|place)\//.test(req.url)
+            ) {
+                log.warning(`\n------\nURL ${req.url} isn't a valid startUrl\n------`);
+                continue; // eslint-disable-line no-continue
+            }
+
             startRequests.push({
                 ...req,
                 userData: { label: 'startUrl', searchString: null },
@@ -134,29 +143,44 @@ Apify.main(async () => {
         await requestQueue.addRequest(request);
     }
 
+    /**
+     * @type {Apify.PuppeteerPoolOptions}}
+     */
     const puppeteerPoolOptions = {
         launchPuppeteerOptions: {
-            headless: true,
+            headless: !useChrome,
             useChrome,
+            args: [
+                // this is needed to access cross-domain iframes
+                '--disable-web-security',
+                '--disable-features=IsolateOrigins,site-per-process',
+            ],
         },
         maxOpenPagesPerInstance: maxPagesPerBrowser,
         // Not sure why this is here
         retireInstanceAfterRequestCount: 100,
     };
 
-    const proxyConfiguration = await Apify.createProxyConfiguration(proxyConfig);
+    const proxyConfiguration = await Apify.createProxyConfiguration({ ...proxyConfig });
 
+    /**
+     * @type {Apify.PuppeteerCrawlerOptions}
+     */
     const crawlerOptions = {
         requestQueue,
         proxyConfiguration,
         puppeteerPoolOptions,
         maxConcurrency,
+        useSessionPool: true,
         // This is just passed to gotoFunction
         pageLoadTimeoutSec,
         // long timeout, because of long infinite scroll
         handlePageTimeoutSecs: 30 * 60,
         maxRequestRetries: maxPageRetries,
     };
+
+    // workaround for the maxCrawledPlaces when using multiple queries/startUrls
+    scrapingOptions.multiplier = startRequests.length || 1;
 
     // Create and run crawler
     const crawler = placesCrawler.setUpCrawler(crawlerOptions, scrapingOptions, stats, allPlaces);

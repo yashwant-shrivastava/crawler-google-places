@@ -1,6 +1,9 @@
 /* eslint-env jquery */
 const Apify = require('apify');
 const querystring = require('querystring');
+const Puppeteer = require('puppeteer');
+
+const { Stats } = require('./stats'); // eslint-disable-line no-unused-vars
 
 const { sleep, log } = Apify.utils;
 const { DEFAULT_TIMEOUT, LISTING_PAGINATION_KEY, PLACE_TITLE_SEL } = require('./consts');
@@ -9,10 +12,17 @@ const { checkInPolygon } = require('./polygon');
 
 /**
  * This handler waiting for response from xhr and enqueue places from the search response boddy.
- * @param requestQueue
- * @param searchString
- * @param maxPlacesPerCrawl
- * @return {Function}
+ * @param {{
+ *   requestQueue: Apify.RequestQueue,
+ *   searchString: string,
+ *   maxPlacesPerCrawl: number,
+ *   exportPlaceUrls: boolean,
+ *   geo: object,
+ *   allPlaces: {[index: string]:  any},
+ *   cachePlaces: boolean,
+ *   stats: Stats,
+ * }} options
+ * @return {(response: Puppeteer.Response) => Promise<void>}
  */
 const enqueuePlacesFromResponse = (options) => {
     const { requestQueue, searchString, maxPlacesPerCrawl, exportPlaceUrls, geo, allPlaces, cachePlaces, stats } = options;
@@ -58,12 +68,33 @@ const enqueuePlacesFromResponse = (options) => {
 
 /**
  * Method adds places from listing to queue
- * @param page
- * @param searchString
- * @param requestQueue
- * @param maxCrawledPlaces
+ * @param {{
+ *  page: Puppeteer.Page,
+ *  searchString: string,
+ *  requestQueue: Apify.RequestQueue,
+ *  maxCrawledPlaces: number,
+ *  request: Apify.Request,
+ *  exportPlaceUrls: boolean,
+ *  geo: any,
+ *  maxAutomaticZoomOut: number,
+ *  allPlaces: {[index: string]: any},
+ *  cachePlaces: boolean,
+ *  stats: Stats,
+ * }} options
  */
-const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxCrawledPlaces, request, exportPlaceUrls, geo, maxAutomaticZoomOut, allPlaces, cachePlaces, stats) => {
+const enqueueAllPlaceDetails = async ({
+    page,
+    searchString,
+    requestQueue,
+    maxCrawledPlaces,
+    request,
+    exportPlaceUrls,
+    geo,
+    maxAutomaticZoomOut,
+    allPlaces,
+    cachePlaces,
+    stats,
+}) => {
     page.on('response', enqueuePlacesFromResponse({
         requestQueue,
         searchString,
@@ -81,7 +112,6 @@ const enqueueAllPlaceDetails = async (page, searchString, requestQueue, maxCrawl
     // there is no searchString when startUrls are used
     if (searchString) await page.type('#searchboxinput', searchString);
 
-    // TODO: Do we really need these huge wait times?
     await sleep(5000);
     await page.click('#searchbox-searchbutton');
     await sleep(5000);
