@@ -36,6 +36,7 @@ With this input, the actor searches places at this start URL: https://www.google
     - `startUrls` \<Array\<[Request](https://sdk.apify.com/docs/api/request#docsNav)\>\> A list of URLs. Can be search or place URLs.
     - `searchString` \<string\> - String will be search on Google maps. It is possible fill [Google Place ID](https://developers.google.com/places/place-id) in format `place_id:ChIJp4JiUCNP0xQR1JaSjpW_Hms`. Do not include location in search string if you are using polygon localization (`country`, `state`, `city`).
     - `searchStringArray` \<Array\<string\>\> Array of strings, that will be searched on Google maps. Use if you need to search more different types of places at once.
+    - `language` \<string\> Sets the language for the interface. Can also affect the returned reviews language. **Default: `en`**
 - General settings
     - `proxyConfig` \<ProxyConfiguration\> Apify proxy configuration - required to provide proxy when running on the Apify platform. **Default: `{ useApifyProxy: true }`**
     - `maxCrawledPlaces` \<number\> Limit the number of places you want to get from the crawler **Default: `20`**
@@ -64,7 +65,6 @@ With this input, the actor searches places at this start URL: https://www.google
     - `useChrome` \<boolean\> Uses full Chrome browser instead of Chromium. Be careful, it is not stable on some versions! **Default: `false`**
 - Miscellaneous
     - `debug` \<boolean\> Debug messages will be included in log. **Default: `false`**
-    - `forceEng` \<boolean\> Force localization to be in English, some fields are dependent on English and won't work in different languages: **Default: `true`**
     - `cachePlaces` \<boolean\> Add caching locations between runs. `placeId: location` is stored in a named key-value store. Can speed up regular runs using polygon search. **Default: `false`**
 
 ### Country localization

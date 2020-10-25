@@ -363,12 +363,6 @@
             "type": "boolean",
             "description": "Enable using stealth if you're not using Chrome",
             "default": false
-        },
-        "forceEng": {
-            "title": "Force English",
-            "type": "boolean",
-            "description": "Force place data to be displayed in English",
-            "default": true
         }
     },
     "required": ["proxyConfig"]

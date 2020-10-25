@@ -33,7 +33,7 @@ Apify.main(async () => {
 
         // Scraping options
         includeHistogram = false, includeOpeningHours = false, includePeopleAlsoSearch = false,
-        maxReviews, maxImages, exportPlaceUrls = false, forceEng = false, additionalInfo = false, maxCrawledPlaces,
+        maxReviews, maxImages, exportPlaceUrls = false, additionalInfo = false, maxCrawledPlaces,
         maxAutomaticZoomOut, cachePlaces = false, reviewsSort = 'mostRelevant',
     } = input;
 
