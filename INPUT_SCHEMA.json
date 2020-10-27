@@ -28,6 +28,7 @@
             "title": "Language",
             "description": "Force showing results in a predefined language",
             "enum": [
+                "en",
                 "af",
                 "az",
                 "id",
@@ -103,6 +104,7 @@
                 "zh-TW"
             ],
             "enumTitles": [
+                "English",
                 "‪Afrikaans‬",
                 "‪azərbaycan‬",
                 "‪BahasaIndonesia‬",
