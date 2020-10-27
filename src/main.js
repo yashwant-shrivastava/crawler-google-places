@@ -39,7 +39,7 @@ Apify.main(async () => {
 
     const scrapingOptions = {
         includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
-        maxReviews, maxImages, exportPlaceUrls, forceEng, additionalInfo, maxCrawledPlaces,
+        maxReviews, maxImages, exportPlaceUrls, additionalInfo, maxCrawledPlaces,
         maxAutomaticZoomOut, cachePlaces, reviewsSort, language,
     };
 

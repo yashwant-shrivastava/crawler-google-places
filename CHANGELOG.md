@@ -1,3 +1,6 @@
+## 2020-10-27
+- Removed `forceEng` input in favor of `language`
+
 ## 2020-10-15
 - The default setup now uses `maxImages: 0` and `maxReviews: 0` to improve efficiency
 

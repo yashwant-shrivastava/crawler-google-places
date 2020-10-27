@@ -412,7 +412,7 @@ const extractPlaceDetail = async (options) => {
 const setUpCrawler = (crawlerOptions, scrapingOptions, stats, allPlaces) => {
     const {
         includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
-        maxReviews, maxImages, exportPlaceUrls, forceEng, additionalInfo, maxCrawledPlaces,
+        maxReviews, maxImages, exportPlaceUrls, additionalInfo, maxCrawledPlaces,
         maxAutomaticZoomOut, cachePlaces, reviewsSort, language, multiplier,
     } = scrapingOptions;
     const { requestQueue } = crawlerOptions;
@@ -428,9 +428,7 @@ const setUpCrawler = (crawlerOptions, scrapingOptions, stats, allPlaces) => {
             }
             const mapUrl = new URL(request.url);
 
-            if (forceEng) {
-                mapUrl.searchParams.set('hl', 'en');
-            } else if (language) {
+            if (language) {
                 mapUrl.searchParams.set('hl', language);
             }
 
