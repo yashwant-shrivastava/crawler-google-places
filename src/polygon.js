@@ -80,7 +80,7 @@ async function getGeolocation(options) {
  * Calculates distance meters per pixel for zoom and latitude.
  */
 function distanceByZoom(lat, zoom) {
-    return 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);
+    return 156543.03392 * (Math.cos((lat * Math.PI) / 180) / (2 ** zoom));
 }
 
 /**
@@ -91,6 +91,8 @@ function distanceByZoom(lat, zoom) {
  * @returns {Promise<*[]|*>} Array of points
  */
 async function findPointsInPolygon(location, zoom, points) {
+    if (!location || !location.geojson) return [];
+
     const { geojson } = location;
     const { coordinates, type } = geojson;
     if (!coordinates && ![FEATURE_COLLECTION, FEATURE].includes(type)) return [];
@@ -113,12 +115,12 @@ async function findPointsInPolygon(location, zoom, points) {
         polygons.forEach((polygon) => {
             const bbox = turf.bbox(polygon);
             // distance in meters per pixel * viewport / 1000 meters
-            let distanceKilometers = distanceByZoom(bbox[3], zoom) * 800 / 1000;
+            let distanceKilometers = distanceByZoom(bbox[3], zoom) * (800 / 1000);
             // Creates grid of points inside given polygon
             let pointGrid;
             // point grid can be empty for to large distance.
             while (distanceKilometers > 0) {
-                log.debug(distanceKilometers);
+                log.debug('distanceKilometers', { distanceKilometers });
                 // Use lower distance for points
                 const distance = geojson.type === GEO_TYPES.POINT ? distanceKilometers / 2 : distanceKilometers;
                 const options = {
@@ -137,7 +139,7 @@ async function findPointsInPolygon(location, zoom, points) {
             });
         });
     } catch (e) {
-        log.exception(e, 'Failed to create point grid');
+        log.exception(e, 'Failed to create point grid', { location, zoom });
     }
     return points;
 }

@@ -1,6 +1,7 @@
 /* eslint-env jquery */
 const Apify = require('apify');
 const Globalize = require('globalize');
+const Puppeteer = require('puppeteer'); // eslint-disable-line no-unused-vars
 
 const DEFAULT_CRAWLER_LOCALIZATION = ['en', 'cs'];
 
@@ -27,16 +28,39 @@ const reviewSortOptions = {
 
 /**
  * This is the worst part - parsing data from place detail
- * @param page
+ * @param {{
+ *  page: Puppeteer.Page,
+ *  request: Apify.Request,
+ *  searchString: string,
+ *  includeHistogram: boolean,
+ *  includeOpeningHours: boolean,
+ *  includePeopleAlsoSearch: boolean,
+ *  maxReviews: number,
+ *  maxImages: number,
+ *  additionalInfo: boolean,
+ *  geo: any,
+ *  cachePlaces: boolean,
+ *  allPlaces: {[index: string]: any},
+ *  reviewsSort: string,
+ *  session: Apify.Session,
+ * }} options
  */
 const extractPlaceDetail = async (options) => {
     const {
         page, request, searchString, includeHistogram, includeOpeningHours,
         includePeopleAlsoSearch, maxReviews, maxImages, additionalInfo, geo, cachePlaces, allPlaces, reviewsSort,
+        session,
     } = options;
     // Extract basic information
     await waitForGoogleMapLoader(page);
-    await page.waitForSelector(PLACE_TITLE_SEL, { timeout: DEFAULT_TIMEOUT });
+
+    try {
+        await page.waitForSelector(PLACE_TITLE_SEL, { timeout: DEFAULT_TIMEOUT });
+    } catch (e) {
+        session.markBad();
+        throw 'The page didn\'t load fast enough, this will be retried';
+    }
+
     const detail = await page.evaluate((placeTitleSel) => {
         const address = $('[data-section-id="ad"] .section-info-line').text().trim();
         const addressAlt = $("button[data-tooltip*='address']").text().trim();
@@ -56,6 +80,7 @@ const extractPlaceDetail = async (options) => {
 
         return {
             title: $(placeTitleSel).text().trim(),
+            subTitle: $('section-hero-header-title-subtitle').first().text().trim() || null,
             totalScore: $('span.section-star-display').eq(0).text().trim(),
             categoryName: $('[jsaction="pane.rating.category"]').text().trim(),
             address: address || addressAlt || addressAlt2 || null,
@@ -84,9 +109,9 @@ const extractPlaceDetail = async (options) => {
     await page.waitForFunction(() => window.location.href.includes('/place/'));
     const url = page.url();
     detail.url = url;
-    const [_, latMatch, lngMatch] = url.match(/!3d(.*)!4d(.*)/);
+    const [_, latMatch, lngMatch] = url.match(/!3d([0-9\-.]+)!4d([0-9\-.]+)/);
     if (latMatch && lngMatch) {
-        detail.location = { lat: parseFloat(latMatch), lng: parseFloat(lngMatch.replace('?hl=en')) };
+        detail.location = { lat: parseFloat(latMatch), lng: parseFloat(lngMatch) };
     }
 
     // check if place is inside of polygon, if not return null
@@ -254,10 +279,19 @@ const extractPlaceDetail = async (options) => {
         }
         detail.totalScore = globalParser.numberParser({ round: 'floor' })(detail.totalScore);
         detail.reviewsCount = reviewsCountText ? globalParser.numberParser({ round: 'truncate' })(reviewsCountText) : null;
-        // If we find consent dialog, close it!
-        if (await page.$('.widget-consent-dialog')) {
-            await page.click('.widget-consent-dialog .widget-consent-button-later');
-        }
+
+        // click the consent iframe, working with arrays so it never fails.
+        // also if there's anything wrong with Same-Origin, just delete the modal contents
+        await page.$$eval('#consent-bump iframe', async (frames) => {
+            try {
+                frames.forEach((frame) => {
+                    [...frame.contentDocument.querySelectorAll('#introAgreeButton')].forEach((s) => s.click());
+                });
+            } catch (e) {
+                document.querySelectorAll('#consent-bump > *').forEach((el) => el.remove());
+            }
+        });
+
         // Get all reviews
         if (typeof maxReviews === 'number' && maxReviews > 0) {
             detail.reviews = [];
@@ -379,7 +413,7 @@ const setUpCrawler = (crawlerOptions, scrapingOptions, stats, allPlaces) => {
     const {
         includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
         maxReviews, maxImages, exportPlaceUrls, forceEng, additionalInfo, maxCrawledPlaces,
-        maxAutomaticZoomOut, cachePlaces, reviewsSort,
+        maxAutomaticZoomOut, cachePlaces, reviewsSort, language, multiplier,
     } = scrapingOptions;
     const { requestQueue } = crawlerOptions;
     return new Apify.PuppeteerCrawler({
@@ -392,11 +426,22 @@ const setUpCrawler = (crawlerOptions, scrapingOptions, stats, allPlaces) => {
                     urlPatterns: ['/maps/vt/', '/earth/BulkMetadata/', 'googleusercontent.com'],
                 });
             }
-            if (forceEng) request.url += '&hl=en';
+            const mapUrl = new URL(request.url);
+
+            if (forceEng) {
+                mapUrl.searchParams.set('hl', 'en');
+            } else if (language) {
+                mapUrl.searchParams.set('hl', language);
+            }
+
+            request.url = mapUrl.toString();
+
             await page.setViewport({ width: 800, height: 800 });
-            await page.goto(request.url, { timeout: crawlerOptions.pageLoadTimeoutSec * 1000 });
+            const result = await page.goto(request.url, { timeout: crawlerOptions.pageLoadTimeoutSec * 1000 });
+
+            return result;
         },
-        handlePageFunction: async ({ request, page, puppeteerPool, autoscaledPool }) => {
+        handlePageFunction: async ({ request, page, puppeteerPool, session, autoscaledPool }) => {
             const { label, searchString, geo } = request.userData;
 
             await injectJQuery(page);
@@ -410,8 +455,19 @@ const setUpCrawler = (crawlerOptions, scrapingOptions, stats, allPlaces) => {
                 }
                 if (label === 'startUrl') {
                     log.info(`[${logLabel}]: Start enqueuing places details for search --- ${searchString || ''} ${request.url}`);
-                    await enqueueAllPlaceDetails(page, searchString, requestQueue, maxCrawledPlaces, request,
-                        exportPlaceUrls, geo, maxAutomaticZoomOut, allPlaces, cachePlaces, stats);
+                    await enqueueAllPlaceDetails({
+                        page,
+                        searchString,
+                        requestQueue,
+                        maxCrawledPlaces,
+                        request,
+                        exportPlaceUrls,
+                        geo,
+                        maxAutomaticZoomOut,
+                        allPlaces,
+                        cachePlaces,
+                        stats,
+                    });
                     log.info(`[${logLabel}]: Enqueuing places finished for --- ${searchString || ''} ${request.url}`);
                     stats.maps();
                 } else {
@@ -431,6 +487,7 @@ const setUpCrawler = (crawlerOptions, scrapingOptions, stats, allPlaces) => {
                         cachePlaces,
                         allPlaces,
                         reviewsSort,
+                        session,
                     });
                     if (placeDetail) {
                         await Apify.pushData(placeDetail);
@@ -440,7 +497,7 @@ const setUpCrawler = (crawlerOptions, scrapingOptions, stats, allPlaces) => {
                         if (maxCrawledPlaces && maxCrawledPlaces !== 0) {
                             const dataset = await Apify.openDataset();
                             const { cleanItemCount } = await dataset.getInfo();
-                            if (cleanItemCount >= maxCrawledPlaces) {
+                            if (cleanItemCount >= maxCrawledPlaces * multiplier) {
                                 await autoscaledPool.abort();
                             }
                         }

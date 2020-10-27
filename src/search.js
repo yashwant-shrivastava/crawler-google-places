@@ -24,6 +24,9 @@ exports.prepareSearchUrls = async ({ lat, lng, zoom, country, state, city }) => 
 
         let points = [];
         points = await findPointsInPolygon(geo, zoom, points);
+        if (!points) {
+            throw new Error(`No city found for those coordinates: ${JSON.stringify(geo)} / ${zoom}`);
+        }
         for (const point of points) {
             startUrlSearches.push(`https://www.google.com/maps/@${point.lat},${point.lon},${zoom}z/search`);
         }

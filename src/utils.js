@@ -1,4 +1,5 @@
 const Apify = require('apify');
+const Puppeteer = require('puppeteer'); // eslint-disable-line no-unused-vars
 const { DEFAULT_TIMEOUT } = require('./consts');
 
 /**
@@ -25,16 +26,16 @@ const saveHTML = async (page, key = 'OUTPUT') => {
 
 /**
  * Wait until google map loader disappear
- * @param page
+ * @param {Puppeteer.Page} page
  * @return {Promise<void>}
  */
 const waitForGoogleMapLoader = async (page) => {
     if (await page.$('#searchbox')) {
-        await page.waitFor(() => !document.querySelector('#searchbox')
+        await page.waitForFunction(() => !document.querySelector('#searchbox')
             .classList.contains('loading'), { timeout: DEFAULT_TIMEOUT });
     }
     // 2019-05-19: New progress bar
-    await page.waitFor(() => !document.querySelector('.loading-pane-section-loading'), { timeout: DEFAULT_TIMEOUT });
+    await page.waitForFunction(() => !document.querySelector('.loading-pane-section-loading'), { timeout: DEFAULT_TIMEOUT });
 };
 
 const stringifyGoogleXrhResponse = (googleResponseString) => {
