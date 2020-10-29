@@ -15,7 +15,8 @@ const { checkInPolygon } = require('./polygon');
 const { log } = Apify.utils;
 const { injectJQuery, blockRequests } = Apify.utils.puppeteer;
 
-const DEFAULT_CRAWLER_LOCALIZATION = ['en', 'cs'];
+// TODO: Figure out what this is doing
+const DEFAULT_CRAWLER_LOCALIZATION = ['en', 'cs', 'es'];
 
 Globalize.load(require('cldr-data').entireSupplemental());
 Globalize.load(require('cldr-data').entireMainFor(...DEFAULT_CRAWLER_LOCALIZATION));
