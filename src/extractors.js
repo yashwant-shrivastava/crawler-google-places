@@ -354,7 +354,6 @@ module.exports.extractImages = async ({ page, maxImages }) => {
 
     let resultImageUrls;
 
-    await page.waitForSelector(PLACE_TITLE_SEL, { timeout: DEFAULT_TIMEOUT });
     const mainImageSel = '.section-hero-header-image-hero-container';
     const mainImage = await page.$(mainImageSel);
     if (mainImage) {

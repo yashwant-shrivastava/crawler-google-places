@@ -24,7 +24,7 @@ When running the Google Maps Scraper, you need to provide input to configure wha
 Example input:
 ```json
 {
-  "searchString": "pubs near prague",
+  "searchStringsArray": ["pubs near prague"],
   "lat": "50.0860729",
   "lng": "14.4135326",
   "zoom": 10
@@ -34,8 +34,7 @@ With this input, the actor searches places at this start URL: https://www.google
 
 - Search and URLs
     - `startUrls` \<Array\<[Request](https://sdk.apify.com/docs/api/request#docsNav)\>\> A list of URLs. Can be search or place URLs.
-    - `searchString` \<string\> - String will be search on Google maps. It is possible fill [Google Place ID](https://developers.google.com/places/place-id) in format `place_id:ChIJp4JiUCNP0xQR1JaSjpW_Hms`. Do not include location in search string if you are using polygon localization (`country`, `state`, `city`).
-    - `searchStringArray` \<Array\<string\>\> Array of strings, that will be searched on Google maps. Use if you need to search more different types of places at once.
+    - `searchStringsArray` \<Array\<string\>\> Array of strings, that will be searched on Google maps. It is also possible to fill [Google Place ID](https://developers.google.com/places/place-id) in format `place_id:ChIJp4JiUCNP0xQR1JaSjpW_Hms`
     - `language` \<string\> Sets the language for the interface. Can also affect the returned reviews language. **Default: `en`**
 - General settings
     - `proxyConfig` \<ProxyConfiguration\> Apify proxy configuration - required to provide proxy when running on the Apify platform. **Default: `{ useApifyProxy: true }`**

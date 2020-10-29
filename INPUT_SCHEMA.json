@@ -13,7 +13,7 @@
         "searchStringsArray": {
             "title": "Search Terms",
             "type": "array",
-            "description": "Array of strings, that will be searched on Google maps. 'Pubs near Prague'. If you are setting specific location later, do not include it into search string",
+            "description": "Array of strings, that will be searched on Google maps. 'Pubs near Prague'. If you are setting a specific location later, do not include it into the search string",
             "editor": "stringList"
         },
         "maxCrawledPlaces": {
@@ -195,10 +195,10 @@
             "sectionDescription": "You can set what extra information you would like extracted. For maximum efficiency, the default setup doesn't include reviews or images. If you need these, just increase the maximum count for these."
         },
         "maxImages": {
-            "title": "Max Images (Very slow)",
+            "title": "Max Images (Slow for more than 1)",
             "type": "integer",
             "description": "Max number of images per place to scrape. If you fill 0 or nothing, no images will be scraped. For all images, just put 99999",
-            "prefill": 0,
+            "prefill": 1,
             "unit": "images per place"
         },
         "includeHistogram": {

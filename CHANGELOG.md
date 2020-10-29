@@ -1,3 +1,8 @@
+## 2020-10-29
+- Better input validation and deprecation logs
+- Changed default for `maxImages` to `1` as it doesn't require scrolling for the main image
+- `imageUrls` are returned with the highest resolution
+
 ## 2020-10-27
 - Removed `forceEng` input in favor of `language`
 
