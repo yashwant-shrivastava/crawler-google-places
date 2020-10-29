@@ -353,8 +353,6 @@ module.exports.extractImages = async ({ page, maxImages }) => {
         return undefined;
     }
 
-    log.warning('Image scraping started');
-
     let resultImageUrls;
 
     const mainImageSel = '.section-hero-header-image-hero-container';

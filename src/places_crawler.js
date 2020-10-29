@@ -144,7 +144,7 @@ const setUpCrawler = (crawlerOptions, scrapingOptions, stats, allPlaces) => {
 
             const logLabel = label === 'startUrl' ? 'SEARCH' : 'PLACE';
 
-            // Handle consent screen
+            // Handle consent screen, this wait is ok because we wait for selector later anyway
             await page.waitForTimeout(5000);
             if (request.userData.waitingForConsent !== undefined) {
                 await waiter(() => request.userData.waitingForConsent === false);
