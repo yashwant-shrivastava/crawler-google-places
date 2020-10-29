@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* eslint-disable object-property-newline */
 const Apify = require('apify');
 
@@ -6,7 +7,7 @@ const resultJsonSchema = require('./result_item_schema');
 const { Stats } = require('./stats');
 const { prepareSearchUrls } = require('./search');
 const { createStartRequestsWithWalker } = require('./walker');
-const makeInputBackwardsCompatible = require('./backwards-compatible-input');
+const { makeInputBackwardsCompatible, validateInput } = require('./input-validation');
 
 const cachedPlacesName = 'Places-cached-locations';
 
@@ -17,11 +18,11 @@ Apify.main(async () => {
     const stats = new Stats(300);
 
     makeInputBackwardsCompatible(input);
+    validateInput(input);
 
-    // The rest of inputs are passed to the crawler as a whole
     const {
         // Search and Start URLs
-        startUrls, searchString, searchStringsArray,
+        startUrls, searchStringsArray,
         // Localization
         lat, lng, country, state, city, zoom = 10,
         // browser and request options
@@ -46,16 +47,6 @@ Apify.main(async () => {
     if (debug) {
         log.setLevel(log.LEVELS.DEBUG);
     }
-    if (!searchString && !searchStringsArray && !startUrls) {
-        throw 'You have to provide startUrls or searchString or searchStringsArray in input!';
-    }
-    if (Apify.isAtHome() && (!proxyConfig || !(proxyConfig.useApifyProxy || proxyConfig.proxyUrls))) {
-        throw 'You have to use Apify proxy or custom proxies when running on Apify platform!';
-    }
-    if (proxyConfig.apifyProxyGroups
-        && (proxyConfig.apifyProxyGroups.includes('GOOGLESERP') || proxyConfig.apifyProxyGroups.includes('GOOGLE_SERP'))) {
-        throw 'It is not possible to crawl google places with GOOGLE SERP proxy group. Please use a different one and rerun  the crawler!';
-    }
 
     let allPlaces = {};
     if (cachePlaces) {
@@ -65,7 +56,8 @@ Apify.main(async () => {
         log.debug('allPlaces', allPlaces);
         Apify.events.on('migrating', async () => {
             log.debug('Saving places before migration');
-            const reloadedPlaces = await allPlacesStore.getValue('places') || {};
+            const reloadedPlaces = (await allPlacesStore.getValue('places')) || {};
+            // @ts-ignore
             const newPlaces = { ...allPlaces, ...reloadedPlaces };
             await allPlacesStore.setValue('places', newPlaces);
         });
@@ -76,7 +68,7 @@ Apify.main(async () => {
 
     // Start URLs have higher preference than search
     if (Array.isArray(startUrls) && startUrls.length > 0) {
-        if (searchString || searchStringsArray) {
+        if (searchStringsArray) {
             log.warning('\n\n------\nUsing Start URLs disables search. You can use either search or Start URLs.\n------\n');
         }
         const rlist = await Apify.openRequestList('STARTURLS', startUrls);
@@ -94,30 +86,26 @@ Apify.main(async () => {
                 userData: { label: 'startUrl', searchString: null },
             });
         }
-    } else if (searchString || searchStringsArray) {
-        if (searchStringsArray && !Array.isArray(searchStringsArray)) {
-            throw 'searchStringsArray has to be an array!';
-        }
-        const searches = searchStringsArray || [searchString];
-        for (const search of searches) {
+    } else if (searchStringsArray) {
+        for (const searchString of searchStringsArray) {
             // TODO: walker is not documented!!! We should figure out if it is useful at all
             if (walker) {
                 const walkerGeneratedRequests = createStartRequestsWithWalker({ walker, searchString });
                 for (const req of walkerGeneratedRequests) {
                     startRequests.push(req);
                 }
-            } else if (search.includes('place_id:')) {
+            } else if (searchString.includes('place_id:')) {
                 /**
                  * User can use place_id:<Google place ID> as search query
                  * TODO: Move place id to separate fields, once we have dependent fields. Than user can fill placeId or search query.
                  */
-                log.info(`Place ID found in search query. We will extract data from ${search}.`);
-                const cleanSearch = search.replace(/\s+/g, '');
+                log.info(`Place ID found in search query. We will extract data from ${searchString}.`);
+                const cleanSearch = searchString.replace(/\s+/g, '');
                 const placeId = cleanSearch.match(/place_id:(.*)/)[1];
                 startRequests.push({
                     url: `https://www.google.com/maps/search/?api=1&query=${cleanSearch}&query_place_id=${placeId}`,
                     uniqueKey: placeId,
-                    userData: { label: 'detail', searchString: search },
+                    userData: { label: 'detail', searchString },
                 });
             } else {
                 // This call is async because it persists a state into KV
@@ -125,8 +113,8 @@ Apify.main(async () => {
                 for (const startUrlSearch of startUrlSearches) {
                     startRequests.push({
                         url: startUrlSearch,
-                        uniqueKey: `${startUrlSearch}+${search}`,
-                        userData: { label: 'startUrl', searchString: search, geo },
+                        uniqueKey: `${startUrlSearch}+${searchString}`,
+                        userData: { label: 'startUrl', searchString, geo },
                     });
                 }
             }
@@ -158,15 +146,18 @@ Apify.main(async () => {
      */
     const crawlerOptions = {
         requestQueue,
+        // @ts-ignore
         proxyConfiguration,
         puppeteerPoolOptions,
         maxConcurrency,
         launchPuppeteerFunction: (options) => {
             return Apify.launchPuppeteer({
                 ...options,
+                // @ts-ignore
                 headless: !useChrome,
                 useChrome,
                 args: [
+                    // @ts-ignore
                     ...(options.args ? options.args : {}),
                     // this is needed to access cross-domain iframes
                     '--disable-web-security',
@@ -197,6 +188,7 @@ Apify.main(async () => {
     };
 
     // workaround for the maxCrawledPlaces when using multiple queries/startUrls
+    // @ts-ignore
     scrapingOptions.multiplier = startRequests.length || 1;
 
     // Create and run crawler
@@ -209,6 +201,7 @@ Apify.main(async () => {
         log.debug('Saving places before migration');
         const allPlacesStore = await Apify.openKeyValueStore(cachedPlacesName);
         const reloadedPlaces = await allPlacesStore.getValue('places') || {};
+        // @ts-ignore
         const newPlaces = { ...allPlaces, ...reloadedPlaces };
         await allPlacesStore.setValue('places', newPlaces);
     }
