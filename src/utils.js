@@ -2,6 +2,8 @@ const Apify = require('apify');
 const Puppeteer = require('puppeteer'); // eslint-disable-line no-unused-vars
 const { DEFAULT_TIMEOUT } = require('./consts');
 
+const { log } = Apify.utils;
+
 /**
  * Store screen from puppeteer page to Apify key-value store
  * @param page - Instance of puppeteer Page class https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#class-page
@@ -139,6 +141,57 @@ const enlargeImageUrls = (imageUrls) => {
     })
 }
 
+/**
+ * Waits until a predicate (funcion that returns bool) returns true
+ *
+ * ```
+ * let eventFired = false;
+ * await waiter(() => eventFired, { timeout: 120000, pollInterval: 1000 })
+ * // Something happening elsewhere that will set eventFired to true
+ * ```
+ *
+ * @param {function} predicate
+ * @param {object} options
+ * @param {number} options.timeout=120000
+ * @param {number} options.pollInterval=1000
+ * @param {string} options.timeoutErrorMeesage
+ * @param {string} options.successMessage
+ */
+const waiter = async (predicate, options = {}) => {
+    const { timeout = 120000, pollInterval = 1000, timeoutErrorMeesage, successMessage } = options;
+    const start = Date.now();
+    while (true) {
+        if (await predicate()) {
+            if (successMessage) {
+                log.info(successMessage);
+            }
+            return;
+        }
+        const waitingFor = Date.now() - start;
+        if (waitingFor > timeout) {
+            throw new Error(timeoutErrorMeesage || `Timeout reached when waiting for predicate for ${waitingFor} ms`);
+        }
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+    }
+};
+
+const waitAndHandleConsentFrame = async (page, url) => {
+    const predicate = async () => {
+        for (const frame of page.mainFrame().childFrames()) {
+            if (frame.url().includes('consent.google.com')) {
+                await frame.click('#introAgreeButton');
+                return true;
+            }
+        }
+    }
+    await waiter(predicate, {
+        timeout: 60000,
+        pollInterval: 500,
+        timeoutErrorMeesage: `Waiting for consent screen frame timeouted after 60000ms on URL: ${url}`,
+        successMessage: `Aproved consent screen on URL: ${url}`,
+    })
+}
+
 module.exports = {
     saveScreenshot,
     saveHTML,
@@ -148,4 +201,6 @@ module.exports = {
     scrollTo,
     parseZoomFromUrl,
     enlargeImageUrls,
+    waiter,
+    waitAndHandleConsentFrame,
 };

@@ -8,7 +8,7 @@ const { extractPageData, extractPopularTimes, extractOpeningHours, extractPeople
 const { DEFAULT_TIMEOUT, PLACE_TITLE_SEL } = require('./consts');
 const { enqueueAllPlaceDetails } = require('./enqueue_places_crawler');
 const {
-    saveHTML, saveScreenshot, waitForGoogleMapLoader,
+    saveHTML, saveScreenshot, waitForGoogleMapLoader, waitAndHandleConsentFrame, waiter,
 } = require('./utils');
 const { checkInPolygon } = require('./polygon');
 
@@ -122,6 +122,17 @@ const setUpCrawler = (crawlerOptions, scrapingOptions, stats, allPlaces) => {
             request.url = mapUrl.toString();
 
             await page.setViewport({ width: 800, height: 800 });
+
+            // Handle consent screen, it takes time before the iframe loads so we need to update userData
+            // and block handlePageFunction from continuing until we click on that
+            page.on('response', async (res) => {
+                if (res.url().includes('consent.google.com/intro')) {
+                    request.userData.waitingForConsent = true;
+                    await page.waitForTimeout(5000);
+                    await waitAndHandleConsentFrame(page, request.url);
+                    request.userData.waitingForConsent = false;
+                }
+            })
             const result = await page.goto(request.url, { timeout: crawlerOptions.pageLoadTimeoutSec * 1000 });
 
             return result;
@@ -132,6 +143,12 @@ const setUpCrawler = (crawlerOptions, scrapingOptions, stats, allPlaces) => {
             await injectJQuery(page);
 
             const logLabel = label === 'startUrl' ? 'SEARCH' : 'PLACE';
+
+            // Handle consent screen
+            await page.waitForTimeout(5000);
+            if (request.userData.waitingForConsent !== undefined) {
+                await waiter(() => request.userData.waitingForConsent === false);
+            }
 
             try {
                 // Check if Google shows captcha

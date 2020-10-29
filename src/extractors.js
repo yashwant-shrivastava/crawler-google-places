@@ -253,6 +253,7 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
 
         // click the consent iframe, working with arrays so it never fails.
         // also if there's anything wrong with Same-Origin, just delete the modal contents
+        // TODO: Why is this isolated in reviews?
         await page.$$eval('#consent-bump iframe', async (frames) => {
             try {
                 frames.forEach((frame) => {
@@ -348,50 +349,51 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
  }} options
  */
 module.exports.extractImages = async ({ page, maxImages }) => {
-    if (maxImages === 0) {
+    if (!maxImages || maxImages === 0) {
         return undefined;
     }
+
+    log.warning('Image scraping started');
 
     let resultImageUrls;
 
     const mainImageSel = '.section-hero-header-image-hero-container';
-    const mainImage = await page.$(mainImageSel);
-    if (mainImage) {
-        if (maxImages === 1) {
-            const imageUrl = await mainImage.$eval('img', (el) => el.src);
-            resultImageUrls = [imageUrl];
-        }
-        if (maxImages > 1) {
-            await sleep(2000);
-            await mainImage.click();
-            let lastImage = null;
-            let pageBottom = 10000;
-            let imageUrls = [];
+    const mainImage = await page.waitForSelector(mainImageSel);
 
-            while (true) {
-                log.info(`[PLACE]: Infinite scroll for images started, url: ${page.url()}`);
-                await infiniteScroll(page, pageBottom, '.section-scrollbox.scrollable-y', 'images', 1);
-                imageUrls = await page.evaluate(() => {
-                    const urls = [];
-                    $('.gallery-image-high-res').each(function () {
-                        const urlMatch = $(this).attr('style').match(/url\("(.*)"\)/);
-                        if (!urlMatch) return;
-                        let imageUrl = urlMatch[1];
-                        if (imageUrl[0] === '/') imageUrl = `https:${imageUrl}`;
-                        urls.push(imageUrl);
-                    });
-                    return urls;
+    if (maxImages === 1) {
+        const imageUrl = await mainImage.$eval('img', (el) => el.src);
+        resultImageUrls = [imageUrl];
+    }
+    if (maxImages > 1) {
+        await sleep(2000);
+        await mainImage.click();
+        let lastImage = null;
+        let pageBottom = 10000;
+        let imageUrls = [];
+
+        while (true) {
+            log.info(`[PLACE]: Infinite scroll for images started, url: ${page.url()}`);
+            await infiniteScroll(page, pageBottom, '.section-scrollbox.scrollable-y', 'images', 1);
+            imageUrls = await page.evaluate(() => {
+                const urls = [];
+                $('.gallery-image-high-res').each(function () {
+                    const urlMatch = $(this).attr('style').match(/url\("(.*)"\)/);
+                    if (!urlMatch) return;
+                    let imageUrl = urlMatch[1];
+                    if (imageUrl[0] === '/') imageUrl = `https:${imageUrl}`;
+                    urls.push(imageUrl);
                 });
-                if (imageUrls.length >= maxImages || lastImage === imageUrls[imageUrls.length - 1]) {
-                    log.info(`[PLACE]: Infinite scroll for images finished, url: ${page.url()}`);
-                    break;
-                }
-                log.info(`[PLACE]: Infinite scroll continuing for images, currently ${imageUrls.length}, url: ${page.url()}`);
-                lastImage = imageUrls[imageUrls.length - 1];
-                pageBottom += 6000;
+                return urls;
+            });
+            if (imageUrls.length >= maxImages || lastImage === imageUrls[imageUrls.length - 1]) {
+                log.info(`[PLACE]: Infinite scroll for images finished, url: ${page.url()}`);
+                break;
             }
-            resultImageUrls = imageUrls.slice(0, maxImages);
+            log.info(`[PLACE]: Infinite scroll continuing for images, currently ${imageUrls.length}, url: ${page.url()}`);
+            lastImage = imageUrls[imageUrls.length - 1];
+            pageBottom += 6000;
         }
+        resultImageUrls = imageUrls.slice(0, maxImages);
     }
 
     return enlargeImageUrls(resultImageUrls);
