@@ -210,7 +210,7 @@ const setUpCrawler = (crawlerOptions, scrapingOptions, stats, allPlaces) => {
                         log.info(`[${logLabel}]: Place scraped successfully --- ${placeDetail.url}`);
                     } else {
                         stats.outOfPolygon();
-                        log.info(`[${logLabel}]: Place is outside of required location (polygon), skipping... url --- ${page.url()}`);
+                        log.warning(`[${logLabel}]: Place is outside of required location (polygon), skipping... url --- ${page.url()}`);
                     }
                 }
                 stats.ok();
