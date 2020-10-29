@@ -66,6 +66,17 @@ const extractPlaceDetail = async (options) => {
     const latMatch = locationMatch ? locationMatch[1] : null;
     const lngMatch = locationMatch ? locationMatch[2] : null;
 
+    const location = latMatch && lngMatch ? { lat: parseFloat(latMatch), lng: parseFloat(lngMatch) } : null
+
+    // check if place is inside of polygon, if not return null
+    if (geo && location && !checkInPolygon(geo, location)) {
+        // cache place location to keyVal store
+        if (cachePlaces) {
+            allPlaces[request.uniqueKey] = location;
+        }
+        return null;
+    }
+
     // Add info from listing page
     const { userData } = request;
 
@@ -76,7 +87,7 @@ const extractPlaceDetail = async (options) => {
         placeId: request.uniqueKey,
         url,
         searchString,
-        location: latMatch && lngMatch ? { lat: parseFloat(latMatch), lng: parseFloat(lngMatch) } : null,
+        location,
         ...includeHistogram ? await extractPopularTimes({ page }) : {},
         openingHours: includeOpeningHours ? await extractOpeningHours({ page }) : undefined,
         peopleAlsoSearch: includePeopleAlsoSearch ? await extractPeopleAlsoSearch({ page }) : undefined,
@@ -84,14 +95,6 @@ const extractPlaceDetail = async (options) => {
         ...await extractReviews({ page, totalScore: pageData.totalScore, maxReviews, reviewsSort }),
         imageUrls: await extractImages({ page, maxImages })
     };
-
-
-    // check if place is inside of polygon, if not return null
-    if (geo && detail.location && !checkInPolygon(geo, detail.location)) {
-        // cache place location to keyVal store
-        if (cachePlaces) allPlaces[detail.placeId] = detail.location;
-        return null;
-    }
 
     return detail;
 };
@@ -207,7 +210,7 @@ const setUpCrawler = (crawlerOptions, scrapingOptions, stats, allPlaces) => {
                         log.info(`[${logLabel}]: Place scraped successfully --- ${placeDetail.url}`);
                     } else {
                         stats.outOfPolygon();
-                        log.info(`[${logLabel}]: Place outside of polygon, url --- ${page.url()}`);
+                        log.info(`[${logLabel}]: Place is outside of required location (polygon), skipping... url --- ${page.url()}`);
                     }
                 }
                 stats.ok();
