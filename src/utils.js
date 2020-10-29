@@ -121,6 +121,24 @@ const parseZoomFromUrl = (url) => {
     return zoomMatch ? Number(zoomMatch[1]) : null;
 };
 
+const enlargeImageUrls = (imageUrls) => {
+    // w1920-h1080
+    const FULL_RESOLUTION = {
+        width: 1920,
+        height: 1080,
+    };
+    return imageUrls.map((imageUrl) => {
+        const sizeMatch = imageUrl.match(/=s\d+/)
+        const widthHeightMatch = imageUrl.match(/=w\d+-h\d+/);
+        if (sizeMatch) {
+            return imageUrl.replace(sizeMatch[0], `=s${FULL_RESOLUTION.width}`);
+        } else if (widthHeightMatch) {
+            return imageUrl.replace(widthHeightMatch[0], `=w${FULL_RESOLUTION.width}-h${FULL_RESOLUTION.height}`);
+        }
+        return imageUrl;
+    })
+}
+
 module.exports = {
     saveScreenshot,
     saveHTML,
@@ -129,4 +147,5 @@ module.exports = {
     parseReviewFromResponseBody,
     scrollTo,
     parseZoomFromUrl,
+    enlargeImageUrls,
 };
