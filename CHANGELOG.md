@@ -1,4 +1,5 @@
 ## 2020-10-29
+- Fixed handling of Google consent screen
 - Better input validation and deprecation logs
 - Changed default for `maxImages` to `1` as it doesn't require scrolling for the main image
 - `imageUrls` are returned with the highest resolution
