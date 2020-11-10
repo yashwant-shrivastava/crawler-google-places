@@ -5,7 +5,7 @@
 - [Results](#results)
 - [Usage on Apify platform and locally](#usage-on-apify-platform-and-locally)
 - [How the search works](#how-the-search-works)
-- [Using country, state, city parameters](#using-country,-state,-city-parameters)
+- [Using country, state and city parameters](#using-country-state-city-parameterss)
 - [Changelog](#changelog)
 
 ## Features
