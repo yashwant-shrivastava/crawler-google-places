@@ -5,7 +5,7 @@
 - [Results](#results)
 - [Usage on Apify platform and locally](#usage-on-apify-platform-and-locally)
 - [How the search works](#how-the-search-works)
-- [Using country, state and city parameters](#using-country-state-city-parameterss)
+- [Using country, state and city parameters](#using-country-state-and-city-parameters)
 - [Changelog](#changelog)
 
 ## Features
@@ -269,7 +269,7 @@ There is one feature of Google Maps that is sometimes not desirable. As you prog
 - Use the `maxAutomaticZoomOut` parameter to stop searching once Google zooms out too far. It counts how far it zoomed out from the first page. Keep in mind that `zoom: 1` is the whole world and `zoom: 21` is a tiny street. So you usually want `maxAutomaticZoomOut` to be between `0` and `5`.
 - Use `country`, `state`, `city` parameters.
 
-## Using country, state, city parameters
+## Using country, state and city parameters
 You can only use `country` or `country` + `state` or `country` + `state` + `city`. The scraper uses [nominatim maps](https://nominatim.org/) to find a location polygon and then splits that into multiple searches that cover the whole area. You should play around with the `zoom` number to find the ideal granularity for searches. Too small a zoom level will find only the most famous places over a large area, too big a zoom level will lead to overlapping places and will consume a huge number of CUs. We recommend a number between 10 and 15.
 
 #### Warning: Don't use too big zoom level (17+) with country, state, city parameters
