@@ -60,6 +60,8 @@ function getPolygons(geoJson, distanceKilometers = 5) {
     return coordinates.map((coords) => turf.polygon(coords));
 }
 
+// Sadly, even some bigger cities (Bremer­haven) are not found by the API
+// Maybe we need to find a fallback
 async function getGeolocation(options) {
     const { city, state, country } = options;
     const cityString = (city || '').trim().replace(/\s+/g, '+');
@@ -72,8 +74,13 @@ async function getGeolocation(options) {
         headers: { referer: 'http://google.com' },
     });
     const body = JSON.parse(res.body);
-    if (res.body) return body[0];
-    return {};
+    const data = body[0];
+    if (!data) {
+        log.warning(`[Geolocation]: Location not found! Try different format or contact support@apify.com.`);
+        return {};
+    }
+    log.info(`[Geolocation]: Location found: ${data.display_name}, lat: ${data.lat}, long: ${data.lon}`);
+    return data;
 }
 
 /**
