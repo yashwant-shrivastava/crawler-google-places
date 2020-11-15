@@ -255,8 +255,8 @@
             "type": "string",
             "description": "Set a country where the search should be performed - e.g. 'USA'. For more accurate search, set lat and lng.",
             "editor": "textfield",
-            "sectionCaption": "Localization",
-            "sectionDescription": "Here you can set where the places should be searched. Either use country (and optionally state or city) or latitude and longitude for more accuracy. Using lat/long + zoom is generally much faster because the scraper doesn't traverse the whole country/state/city."
+            "sectionCaption": "Geolocation",
+            "sectionDescription": "Here you can set where the places should be searched. Either use country (and optionally state, city or postal code) or latitude and longitude for more accuracy. Using lat/long + zoom is generally much faster because the scraper doesn't traverse the whole country/state/city."
         },
         "state": {
             "title": "State",
@@ -267,7 +267,13 @@
         "city": {
             "title": "City",
             "type": "string",
-            "description": "Set a city where the search should be performed - e.g. 'Pittsfield .For more accurate search, set lat and lng.",
+            "description": "Set a city where the search should be performed - e.g. 'Pittsfield'. For more accurate search, set lat and lng.",
+            "editor": "textfield"
+        },
+        "postalCode": {
+            "title": "Postal code",
+            "type": "string",
+            "description": "Set a postal code where the search should be performed - e.g. 10001. For more accurate search, set lat and lng.",
             "editor": "textfield"
         },
         "lat": {

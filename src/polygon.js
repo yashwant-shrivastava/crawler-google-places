@@ -1,6 +1,5 @@
 const Apify = require('apify');
 const turf = require('@turf/turf');
-// const moment = require('moment');
 
 const { log } = Apify.utils;
 const TURF_UNIT = 'kilometers';
@@ -14,6 +13,20 @@ const GEO_TYPES = {
 
 const FEATURE_COLLECTION = 'FeatureCollection';
 const FEATURE = 'Feature';
+
+function coordinatesFromBoundingBox(boundingbox) {
+    const numberBBox = boundingbox.map(Number);
+    // Format for their bounding box is [lat, lat, long, long]
+    // Format of their coordinate points in [long, lat]
+    // First and last position must be the same and it has to be nested like this
+    return [[
+        [numberBBox[2], numberBBox[0]],
+        [numberBBox[2], numberBBox[1]],
+        [numberBBox[3], numberBBox[0]],
+        [numberBBox[3], numberBBox[1]],
+        [numberBBox[2], numberBBox[0]],
+    ]]
+}
 
 function checkInPolygon(geo, location) {
     const point = turf.point([location.lng, location.lat]);
@@ -63,20 +76,21 @@ function getPolygons(geoJson, distanceKilometers = 5) {
 // Sadly, even some bigger cities (Bremer­haven) are not found by the API
 // Maybe we need to find a fallback
 async function getGeolocation(options) {
-    const { city, state, country } = options;
+    const { city, state, country, postalCode } = options;
     const cityString = (city || '').trim().replace(/\s+/g, '+');
     const stateString = (state || '').trim().replace(/\s+/g, '+');
     const countryString = (country || '').trim().replace(/\s+/g, '+');
+    const postalCodeString = (postalCode || '').trim().replace(/\s+/g, '+');
 
     // TODO when get more results? Currently only first match is returned!
     const res = await Apify.utils.requestAsBrowser({
-        url: encodeURI(`https://nominatim.openstreetmap.org/search?country=${countryString}&state=${stateString}&city=${cityString}&format=json&polygon_geojson=1&limit=1&polygon_threshold=0.005`),
+        url: encodeURI(`https://nominatim.openstreetmap.org/search?country=${countryString}&state=${stateString}&city=${cityString}&postalcode=${postalCodeString}&format=json&polygon_geojson=1&limit=1&polygon_threshold=0.005`),
         headers: { referer: 'http://google.com' },
     });
     const body = JSON.parse(res.body);
     const data = body[0];
     if (!data) {
-        throw new Error(`[Geolocation]: Location not found! Try different format or contact support@apify.com.`);
+        throw new Error(`[Geolocation]: Location not found! Try other geolocation options or contact support@apify.com.`);
     }
     log.info(`[Geolocation]: Location found: ${data.display_name}, lat: ${data.lat}, long: ${data.lon}`);
     return data;
@@ -93,16 +107,28 @@ function distanceByZoom(lat, zoom) {
  *  Prepare centre points grid for search
  * @param location - GeoJSON
  * @param zoom
- * @param points
  * @returns {Promise<*[]|*>} Array of points
  */
-async function findPointsInPolygon(location, zoom, points) {
-    if (!location || !location.geojson) return [];
+async function findPointsInPolygon(location, zoom) {
+    let { geojson, boundingbox } = location;
 
-    const { geojson } = location;
+    // If there are no coordinates, we will construct them from bounding box
+    if (!geojson) {
+        if (!boundingbox) {
+            throw new Error(`[Geolocation]: Could not find any coordinates or bounding box for ${location.display_name}`);
+        }
+        geojson = {
+            coordinates: coordinatesFromBoundingBox(boundingbox),
+            type: GEO_TYPES.POLYGON,
+        }
+        // We fake this so it can be passed to places
+        location.geojson = geojson;
+    }
+
     const { coordinates, type } = geojson;
     if (!coordinates && ![FEATURE_COLLECTION, FEATURE].includes(type)) return [];
 
+    const points = [];
     // If we have a point add it to result
     if (type === GEO_TYPES.POINT) {
         const [lon, lat] = coordinates;
@@ -118,6 +144,7 @@ async function findPointsInPolygon(location, zoom, points) {
     }
     try {
         const polygons = getPolygons(geojson, 5);
+
         polygons.forEach((polygon) => {
             const bbox = turf.bbox(polygon);
             // distance in meters per pixel * viewport / 1000 meters

@@ -2,7 +2,7 @@ const Apify = require('apify');
 
 const { getGeolocation, findPointsInPolygon } = require('./polygon');
 
-exports.prepareSearchUrls = async ({ lat, lng, zoom, country, state, city }) => {
+exports.prepareSearchUrls = async ({ lat, lng, zoom, country, state, city, postalCode }) => {
     // Base part of the URLs to make up the startRequests
     const startUrlSearches = [];
 
@@ -18,15 +18,11 @@ exports.prepareSearchUrls = async ({ lat, lng, zoom, country, state, city }) => 
             throw 'You have to defined both lat and lng!';
         }
         startUrlSearches.push(`https://www.google.com/maps/@${lat},${lng},${zoom}z/search`);
-    } else if (country || state || city) {
+    } else if (country || state || city || postalCode) {
         // Takes from KV or crate new one
-        geo = geo || await getGeolocation({ country, state, city });
+        geo = geo || await getGeolocation({ country, state, city, postalCode });
 
-        let points = [];
-        points = await findPointsInPolygon(geo, zoom, points);
-        if (!points) {
-            throw new Error(`No city found for those coordinates: ${JSON.stringify(geo)} / ${zoom}`);
-        }
+        const points = await findPointsInPolygon(geo, zoom);
         for (const point of points) {
             startUrlSearches.push(`https://www.google.com/maps/@${point.lat},${point.lon},${zoom}z/search`);
         }
