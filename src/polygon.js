@@ -76,8 +76,7 @@ async function getGeolocation(options) {
     const body = JSON.parse(res.body);
     const data = body[0];
     if (!data) {
-        log.warning(`[Geolocation]: Location not found! Try different format or contact support@apify.com.`);
-        return {};
+        throw new Error(`[Geolocation]: Location not found! Try different format or contact support@apify.com.`);
     }
     log.info(`[Geolocation]: Location found: ${data.display_name}, lat: ${data.lat}, long: ${data.lon}`);
     return data;
