@@ -261,7 +261,7 @@
         "state": {
             "title": "State",
             "type": "string",
-            "description": "Set a state where the search should be performed - e.g. 'Massachusetts'. For more accurate search, set lat and lng.",
+            "description": "Set a state where the search should be performed - e.g. 'Massachusetts', 'England', 'Berlin', etc... For more accurate search, set lat and lng.",
             "editor": "textfield"
         },
         "city": {
