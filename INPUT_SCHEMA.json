@@ -273,7 +273,7 @@
         "postalCode": {
             "title": "Postal code",
             "type": "string",
-            "description": "Set a postal code where the search should be performed - e.g. 10001. For more accurate search, set lat and lng.",
+            "description": "Set a postal code where the search should be performed - e.g. 10001. Select a country as well to ensure correct postal code is used. For more accurate search, set lat and lng.",
             "editor": "textfield"
         },
         "lat": {
