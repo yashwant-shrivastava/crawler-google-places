@@ -63,78 +63,88 @@ Apify.main(async () => {
         });
     }
 
-    // Requests that are used in the queue
-    const startRequests = [];
-
-    // Start URLs have higher preference than search
-    if (Array.isArray(startUrls) && startUrls.length > 0) {
-        if (searchStringsArray) {
-            log.warning('\n\n------\nUsing Start URLs disables search. You can use either search or Start URLs.\n------\n');
-        }
-        const rlist = await Apify.openRequestList('STARTURLS', startUrls);
-        let req;
-        while (req = await rlist.fetchNextRequest()) { // eslint-disable-line no-cond-assign
-            if (!req.url) {
-                log.warning(`There is no valid URL for this request:`);
-                console.dir(req);
-            } else if (req.url.startsWith('https://www.google.com/search')) {
-                log.warning('ATTENTION! URLs starting with "https://www.google.com/search" are not supported! Please transform your URL to start with "https://www.google.com/maps"');
-                log.warning(`Happened for provided URL: ${req.url}`);
-            } else if (!/www\.google\.com\/maps\/(search|place)\//.test(req.url) ) {
-                // allows only search and place urls
-                log.warning('ATTENTION! URL you provided is not recognized as a valid Google Maps URL. Please use URLs with /maps/search or /maps/place or contact support@apify.com to add a new format');
-                log.warning(`Happened for provided URL: ${req.url}`);
-            } else {
-                // The URL is correct
-                startRequests.push({
-                    ...req,
-                    userData: { label: 'startUrl', searchString: null },
-                });
-            }
-        }
-    } else if (searchStringsArray) {
-        for (const searchString of searchStringsArray) {
-            // TODO: walker is not documented!!! We should figure out if it is useful at all
-            if (walker) {
-                const walkerGeneratedRequests = createStartRequestsWithWalker({ walker, searchString });
-                for (const req of walkerGeneratedRequests) {
-                    startRequests.push(req);
-                }
-            } else if (searchString.includes('place_id:')) {
-                /**
-                 * User can use place_id:<Google place ID> as search query
-                 * TODO: Move place id to separate fields, once we have dependent fields. Than user can fill placeId or search query.
-                 */
-                log.info(`Place ID found in search query. We will extract data from ${searchString}.`);
-                const cleanSearch = searchString.replace(/\s+/g, '');
-                const placeId = cleanSearch.match(/place_id:(.*)/)[1];
-                startRequests.push({
-                    url: `https://www.google.com/maps/search/?api=1&query=${cleanSearch}&query_place_id=${placeId}`,
-                    uniqueKey: placeId,
-                    userData: { label: 'detail', searchString },
-                });
-            } else {
-                // This call is async because it persists a state into KV
-                const { startUrlSearches, geo } = await prepareSearchUrls({ lat, lng, zoom, country, state, city, postalCode });
-                for (const startUrlSearch of startUrlSearches) {
-                    startRequests.push({
-                        url: startUrlSearch,
-                        uniqueKey: `${startUrlSearch}+${searchString}`,
-                        userData: { label: 'startUrl', searchString, geo },
-                    });
-                }
-            }
-        }
-    }
-
-    await stats.loadInfo();
-    log.info('Start urls are:');
-    console.dir(startRequests.map((r) => r.url));
+    // Requests that are used in the queue, we persist them to skip this step after migration
+    const startRequests = (await Apify.getValue('START-REQUESTS')) || [];
 
     const requestQueue = await Apify.openRequestQueue();
 
-    for (const request of startRequests) {
-        await requestQueue.addRequest(request);
+    if (startRequests.length === 0) {
+        // Start URLs have higher preference than search
+        if (Array.isArray(startUrls) && startUrls.length > 0) {
+            if (searchStringsArray) {
+                log.warning('\n\n------\nUsing Start URLs disables search. You can use either search or Start URLs.\n------\n');
+            }
+            const rlist = await Apify.openRequestList('STARTURLS', startUrls);
+            let req;
+            while (req = await rlist.fetchNextRequest()) { // eslint-disable-line no-cond-assign
+                if (!req.url) {
+                    log.warning(`There is no valid URL for this request:`);
+                    console.dir(req);
+                } else if (req.url.startsWith('https://www.google.com/search')) {
+                    log.warning('ATTENTION! URLs starting with "https://www.google.com/search" are not supported! Please transform your URL to start with "https://www.google.com/maps"');
+                    log.warning(`Happened for provided URL: ${req.url}`);
+                } else if (!/www\.google\.com\/maps\/(search|place)\//.test(req.url) ) {
+                    // allows only search and place urls
+                    log.warning('ATTENTION! URL you provided is not recognized as a valid Google Maps URL. Please use URLs with /maps/search or /maps/place or contact support@apify.com to add a new format');
+                    log.warning(`Happened for provided URL: ${req.url}`);
+                } else {
+                    // The URL is correct
+                    startRequests.push({
+                        ...req,
+                        userData: { label: 'startUrl', searchString: null },
+                    });
+                }
+            }
+        } else if (searchStringsArray) {
+            for (const searchString of searchStringsArray) {
+                // TODO: walker is not documented!!! We should figure out if it is useful at all
+                if (walker) {
+                    const walkerGeneratedRequests = createStartRequestsWithWalker({ walker, searchString });
+                    for (const req of walkerGeneratedRequests) {
+                        startRequests.push(req);
+                    }
+                } else if (searchString.includes('place_id:')) {
+                    /**
+                     * User can use place_id:<Google place ID> as search query
+                     * TODO: Move place id to separate fields, once we have dependent fields. Than user can fill placeId or search query.
+                     */
+                    log.info(`Place ID found in search query. We will extract data from ${searchString}.`);
+                    const cleanSearch = searchString.replace(/\s+/g, '');
+                    const placeId = cleanSearch.match(/place_id:(.*)/)[1];
+                    startRequests.push({
+                        url: `https://www.google.com/maps/search/?api=1&query=${cleanSearch}&query_place_id=${placeId}`,
+                        uniqueKey: placeId,
+                        userData: { label: 'detail', searchString },
+                    });
+                } else {
+                    // This call is async because it persists a state into KV
+                    const { startUrlSearches, geo } = await prepareSearchUrls({ lat, lng, zoom, country, state, city, postalCode });
+                    for (const startUrlSearch of startUrlSearches) {
+                        startRequests.push({
+                            url: startUrlSearch,
+                            uniqueKey: `${startUrlSearch}+${searchString}`,
+                            userData: { label: 'startUrl', searchString, geo },
+                        });
+                    }
+                }
+            }
+        }
+
+        await stats.loadInfo();
+        log.info(`Prepared ${startRequests.length} Start URLs (showing max 10):`);
+        console.dir(startRequests.map((r) => r.url).slice(0, 10));
+
+        for (const request of startRequests) {
+            await requestQueue.addRequest(request);
+        }
+
+        await Apify.setValue('START-REQUESTS', startRequests);
+        const apifyPlatformKVLink = `link: https://api.apify.com/v2/key-value-stores/${Apify.getEnv().defaultKeyValueStoreId}/records/START-REQUESTS?disableRedirect=true`;
+        const localLink = `local disk: apify_storage/key_value_stores/default/START-REQUESTS.json`;
+        const link = Apify.getEnv().isAtHome ? apifyPlatformKVLink : localLink;
+        log.info(`Full list of Start URLs is available on ${link}`);
+    } else {
+        log.warning(`Actor was restarted, skipping search step because it was already done...`);
     }
 
     /**
