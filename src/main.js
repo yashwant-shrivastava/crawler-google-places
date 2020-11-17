@@ -23,8 +23,8 @@ Apify.main(async () => {
     const {
         // Search and Start URLs
         startUrls, searchStringsArray,
-        // Localization
-        lat, lng, country, state, city, zoom = 10,
+        // Geolocation
+        lat, lng, country, state, city, postalCode, zoom = 10,
         // browser and request options
         pageLoadTimeoutSec = 60, useChrome = false, maxConcurrency, maxPagesPerBrowser = 1, maxPageRetries = 6,
         // Misc
@@ -115,7 +115,7 @@ Apify.main(async () => {
                 });
             } else {
                 // This call is async because it persists a state into KV
-                const { startUrlSearches, geo } = await prepareSearchUrls({ lat, lng, zoom, country, state, city });
+                const { startUrlSearches, geo } = await prepareSearchUrls({ lat, lng, zoom, country, state, city, postalCode });
                 for (const startUrlSearch of startUrlSearches) {
                     startRequests.push({
                         url: startUrlSearch,

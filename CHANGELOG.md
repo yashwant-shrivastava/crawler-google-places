@@ -1,3 +1,7 @@
+## 2020-11-16
+- Added postal code geolocation to input
+- Improved errors when location is not found
+
 ## 2020-10-29
 - Fixed handling of Google consent screen
 - Better input validation and deprecation logs

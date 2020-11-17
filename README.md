@@ -52,6 +52,7 @@ With this input, the actor searches places at this start URL: https://www.google
     - `country` \<string\> Country name for polygon localization
     - `state` \<string\> State name for polygon localization
     - `city` \<string\> City name for polygon localization
+    - `postalCode` \<string\> Set a postal code where the search should be performed - e.g. 10001. Select a country as well to ensure the correct postal code is used. For a more accurate search, set `lat` and `lng`.
     - `lat` \<string\> Use with combination with longitude and zoom to set up viewport to search on. Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
     - `lng` \<string\> Use with combination with latitude and zoom to set up viewport to search on. Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
     - `zoom` \<number\> Viewport zoom, e.g zoom: 17 in Google Maps URL -> https://www.google.com/maps/@50.0860729,14.4135326,17z vs zoom: 10 -> https://www.google.com/maps/@50.0860729,14.4135326,10z. `1` is the whole world and `21` is a tiny street. We recommend a number between 10 and 17. **Default: `12`**
