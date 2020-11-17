@@ -50,7 +50,7 @@ const enqueuePlacesFromResponse = (options) => {
                             promise = requestQueue.addRequest({
                                 url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${place.placeId}`,
                                 uniqueKey: place.placeId,
-                                userData: { label: 'detail', searchString, rank, geo },
+                                userData: { label: 'detail', searchString, rank },
                             },
                             { forefront: true });
                         } else {

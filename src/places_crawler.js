@@ -69,7 +69,7 @@ const extractPlaceDetail = async (options) => {
 
     const location = latMatch && lngMatch ? { lat: parseFloat(latMatch), lng: parseFloat(lngMatch) } : null
 
-    // check if place is inside of polygon, if not return null
+    // check if place is inside of polygon, if not return null, geo non-null only for country/state/city/postal
     if (geo && location && !checkInPolygon(geo, location)) {
         // cache place location to keyVal store
         if (cachePlaces) {
@@ -104,7 +104,7 @@ const setUpCrawler = (crawlerOptions, scrapingOptions, stats, allPlaces) => {
     const {
         includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
         maxReviews, maxImages, exportPlaceUrls, additionalInfo, maxCrawledPlaces,
-        maxAutomaticZoomOut, cachePlaces, reviewsSort, language, multiplier,
+        maxAutomaticZoomOut, cachePlaces, reviewsSort, language, multiplier, geo,
     } = scrapingOptions;
     const { requestQueue } = crawlerOptions;
     return new Apify.PuppeteerCrawler({
@@ -142,7 +142,7 @@ const setUpCrawler = (crawlerOptions, scrapingOptions, stats, allPlaces) => {
             return result;
         },
         handlePageFunction: async ({ request, page, puppeteerPool, session, autoscaledPool }) => {
-            const { label, searchString, geo } = request.userData;
+            const { label, searchString } = request.userData;
 
             await injectJQuery(page);
 

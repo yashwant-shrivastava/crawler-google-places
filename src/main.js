@@ -38,12 +38,6 @@ Apify.main(async () => {
         maxAutomaticZoomOut, cachePlaces = false, reviewsSort = 'mostRelevant',
     } = input;
 
-    const scrapingOptions = {
-        includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
-        maxReviews, maxImages, exportPlaceUrls, additionalInfo, maxCrawledPlaces,
-        maxAutomaticZoomOut, cachePlaces, reviewsSort, language,
-    };
-
     if (debug) {
         log.setLevel(log.LEVELS.DEBUG);
     }
@@ -67,6 +61,16 @@ Apify.main(async () => {
     const startRequests = (await Apify.getValue('START-REQUESTS')) || [];
 
     const requestQueue = await Apify.openRequestQueue();
+
+    // We declare geolocation as top level variable so it is constructed only once in memory,
+    // persisted and then used to check all requests
+    let geo;
+    let startUrlSearches;
+    // We crate geolocation only for search. not for Start URLs
+    if (!Array.isArray(startUrls) || startUrls.length === 0) {
+        // This call is async because it persists geolocation into KV
+        ({ startUrlSearches, geo } = await prepareSearchUrls({ lat, lng, zoom, country, state, city, postalCode }));
+    }
 
     if (startRequests.length === 0) {
         // Start URLs have higher preference than search
@@ -117,13 +121,12 @@ Apify.main(async () => {
                         userData: { label: 'detail', searchString },
                     });
                 } else {
-                    // This call is async because it persists a state into KV
-                    const { startUrlSearches, geo } = await prepareSearchUrls({ lat, lng, zoom, country, state, city, postalCode });
+                    // For each search, we use the geolocated URLs
                     for (const startUrlSearch of startUrlSearches) {
                         startRequests.push({
                             url: startUrlSearch,
                             uniqueKey: `${startUrlSearch}+${searchString}`,
-                            userData: { label: 'startUrl', searchString, geo },
+                            userData: { label: 'startUrl', searchString },
                         });
                     }
                 }
@@ -203,9 +206,14 @@ Apify.main(async () => {
         maxRequestRetries: maxPageRetries,
     };
 
-    // workaround for the maxCrawledPlaces when using multiple queries/startUrls
-    // @ts-ignore
-    scrapingOptions.multiplier = startRequests.length || 1;
+
+    const scrapingOptions = {
+        includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
+        maxReviews, maxImages, exportPlaceUrls, additionalInfo, maxCrawledPlaces,
+        maxAutomaticZoomOut, cachePlaces, reviewsSort, language,
+        multiplier: startRequests.length || 1, // workaround for the maxCrawledPlaces when using multiple queries/startUrls
+        geo,
+    };
 
     // Create and run crawler
     const crawler = placesCrawler.setUpCrawler(crawlerOptions, scrapingOptions, stats, allPlaces);
