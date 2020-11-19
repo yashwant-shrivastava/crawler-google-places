@@ -89,6 +89,7 @@ const extractPlaceDetail = async (options) => {
         url,
         searchString,
         location,
+        scrapedAt: new Date().toISOString(),
         ...includeHistogram ? await extractPopularTimes({ page }) : {},
         openingHours: includeOpeningHours ? await extractOpeningHours({ page }) : undefined,
         peopleAlsoSearch: includePeopleAlsoSearch ? await extractPeopleAlsoSearch({ page }) : undefined,
