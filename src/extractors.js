@@ -374,9 +374,14 @@ module.exports.extractImages = async ({ page, maxImages }) => {
         let pageBottom = 10000;
         let imageUrls = [];
 
+        log.info(`[PLACE]: Infinite scroll for images started, url: ${page.url()}`);
+
         while (true) {
-            log.info(`[PLACE]: Infinite scroll for images started, url: ${page.url()}`);
-            await infiniteScroll(page, pageBottom, '.section-scrollbox.scrollable-y', 'images', 1);
+            // TODO: Debug infiniteScroll properly, it can get stuck in there sometimes, for now just adding a race
+            await Promise.race([
+                infiniteScroll(page, pageBottom, '.section-scrollbox.scrollable-y', 'images', 1),
+                Apify.utils.sleep(20000),
+            ]);
             imageUrls = await page.evaluate(() => {
                 const urls = [];
                 $('.gallery-image-high-res').each(function () {
