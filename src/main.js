@@ -28,7 +28,7 @@ Apify.main(async () => {
         // browser and request options
         pageLoadTimeoutSec = 60, useChrome = false, maxConcurrency, maxPagesPerBrowser = 1, maxPageRetries = 6,
         // Misc
-        proxyConfig, regularTestRun, debug, language = 'en', useStealth,
+        proxyConfig, regularTestRun, debug, language = 'en', useStealth, headless = true,
         // walker is undocumented feature added by jakubdrobnik, we need to test it and document it
         walker,
 
@@ -173,7 +173,7 @@ Apify.main(async () => {
             return Apify.launchPuppeteer({
                 ...options,
                 // @ts-ignore
-                headless: !useChrome,
+                headless,
                 useChrome,
                 args: [
                     // @ts-ignore

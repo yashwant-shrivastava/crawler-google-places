@@ -335,7 +335,12 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
             }
             log.info(`[PLACE]: Reviews extraction finished: ${result.reviews.length} --- ${page.url()}`);
 
-            await page.click('button[jsaction*=back]');
+            await page.waitForTimeout(500);
+            const backButton = await page.$('button[jsaction*=back]');
+            if (!backButton) {
+                throw new Error(`Back button for reviews is not present`);
+            }
+            await backButton.click();
         }
     }
     return result;
