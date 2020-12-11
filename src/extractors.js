@@ -265,7 +265,7 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
         });
 
         // TODO: Scrape default reviews (will allow us to extract 10 reviews by default without additional clicking)
-        if (typeof maxReviews === 'number' && maxReviews > 0) {
+        if (result.reviewsCount && typeof maxReviews === 'number' && maxReviews > 0) {
             result.reviews = [];
             await page.waitForSelector(reviewsButtonSel);
             await page.click(reviewsButtonSel);
