@@ -28,10 +28,9 @@ Globalize.load(require('cldr-data').entireMainFor(...DEFAULT_CRAWLER_LOCALIZATIO
  *  stats: Stats,
  *  errorSnapshotter: ErrorSnapshotter,
  *  pageContext: Apify.PuppeteerHandlePageInputs,
- *  allPlaces: {[index: string]: any},
  * }} options
  */
-const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, crawlerOptions, stats, errorSnapshotter, allPlaces }) => {
+const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, crawlerOptions, stats, errorSnapshotter }) => {
     const { request, page, puppeteerPool, session, autoscaledPool } = pageContext;
     const { maxCrawledPlaces, multiplier } = scrapingOptions;
     const { requestQueue } = crawlerOptions;
@@ -64,7 +63,6 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, crawle
                     searchString,
                     requestQueue,
                     request,
-                    allPlaces,
                     stats,
                     scrapingOptions,
                 }),
@@ -80,7 +78,6 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, crawle
                 page,
                 request,
                 searchString,
-                allPlaces,
                 // @ts-ignore
                 session,
                 scrapingOptions,
@@ -115,13 +112,11 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, crawle
  *  scrapingOptions: typedefs.ScrapingOptions,
  *  stats: Stats,
  *  errorSnapshotter: ErrorSnapshotter,
- *  allPlaces: {[index: string]: any},
  * }} options
  */
-const setUpCrawler = ({ crawlerOptions, scrapingOptions, stats, errorSnapshotter, allPlaces }) => {
+const setUpCrawler = ({ crawlerOptions, scrapingOptions, stats, errorSnapshotter }) => {
     const { maxImages, language } = scrapingOptions;
     const { pageLoadTimeoutSec, ...options } = crawlerOptions;
-
     return new Apify.PuppeteerCrawler({
         // We have to strip this otherwise SDK complains
         ...options,
@@ -164,7 +159,7 @@ const setUpCrawler = ({ crawlerOptions, scrapingOptions, stats, errorSnapshotter
         handlePageFunction: async (pageContext) => {
             await errorSnapshotter.tryWithSnapshot(
                 pageContext.page,
-                async () => handlePageFunctionExtended({ pageContext, scrapingOptions, crawlerOptions, stats, errorSnapshotter, allPlaces }),
+                async () => handlePageFunctionExtended({ pageContext, scrapingOptions, crawlerOptions, stats, errorSnapshotter }),
             );
         },
         handleFailedRequestFunction: async ({ request, error }) => {

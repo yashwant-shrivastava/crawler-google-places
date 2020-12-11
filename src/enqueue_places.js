@@ -20,14 +20,13 @@ const { checkInPolygon } = require('./polygon');
  *   maxPlacesPerCrawl: number | undefined,
  *   exportPlaceUrls: boolean,
  *   geo: object,
- *   allPlaces: {[index: string]:  any},
- *   cachePlaces: boolean,
+ *   placesCache: PlacesCache,
  *   stats: Stats,
  * }} options
  * @return {(response: Puppeteer.Response) => Promise<void>}
  */
 const enqueuePlacesFromResponse = (options) => {
-    const { page, requestQueue, searchString, maxPlacesPerCrawl, exportPlaceUrls, geo, allPlaces, cachePlaces, stats } = options;
+    const { page, requestQueue, searchString, maxPlacesPerCrawl, exportPlaceUrls, geo, placesCache, stats } = options;
     return async (response) => {
         const url = response.url();
         if (url.startsWith('https://www.google.com/search')) {
@@ -48,8 +47,8 @@ const enqueuePlacesFromResponse = (options) => {
                             url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${place.placeId}`,
                         });
                     } else {
-                        const location = allPlaces[place.placeId];
-                        if (!cachePlaces || !geo || !location || checkInPolygon(geo, location)) {
+                        const location = placesCache.getLocation(place.placeId);
+                        if (!geo || !location || checkInPolygon(geo, location)) {
                             // At this point, page URL should be resolved
                             const searchPageUrl = page.url();
                             await requestQueue.addRequest({
@@ -76,7 +75,6 @@ const enqueuePlacesFromResponse = (options) => {
  *  searchString: string,
  *  requestQueue: Apify.RequestQueue,
  *  request: Apify.Request,
- *  allPlaces: {[index: string]: any},
  *  stats: Stats,
  *  scrapingOptions: typedefs.ScrapingOptions,
  * }} options
@@ -86,11 +84,10 @@ const enqueueAllPlaceDetails = async ({
     searchString,
     requestQueue,
     request,
-    allPlaces,
     stats,
     scrapingOptions,
 }) => {
-    const { geo, maxAutomaticZoomOut, cachePlaces, exportPlaceUrls, maxCrawledPlaces } = scrapingOptions;
+    const { geo, maxAutomaticZoomOut, placesCache, exportPlaceUrls, maxCrawledPlaces } = scrapingOptions;
     page.on('response', enqueuePlacesFromResponse({
         page,
         requestQueue,
@@ -98,8 +95,7 @@ const enqueueAllPlaceDetails = async ({
         maxPlacesPerCrawl: maxCrawledPlaces,
         exportPlaceUrls,
         geo,
-        allPlaces,
-        cachePlaces,
+        placesCache,
         stats,
     }));
     // Save state of listing pagination
