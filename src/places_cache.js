@@ -13,6 +13,7 @@ exports.PlacesCache = class PlacesCache {
 
         if (this.cachePlaces) {
             Apify.events.on('migrating', async () => {
+                const allPlacesStore = await this.placesStore();
                 log.debug('Saving places before migration');
                 const reloadedPlaces = (await allPlacesStore.getValue('places')) || {};
                 // @ts-ignore
