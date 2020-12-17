@@ -110,7 +110,10 @@ const enqueueAllPlaceDetails = async ({
     const listingStateKey = `${LISTING_PAGINATION_KEY}-${request.id}`;
     const listingPagination = await Apify.getValue(listingStateKey) || {};
     // there is no searchString when startUrls are used
-    if (searchString) await page.type('#searchboxinput', searchString);
+    if (searchString) {
+        await page.waitForSelector('#searchboxinput', { timeout: 15000 });
+        await page.type('#searchboxinput', searchString);
+    }
 
     await sleep(5000);
     await page.click('#searchbox-searchbutton');

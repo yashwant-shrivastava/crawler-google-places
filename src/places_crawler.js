@@ -220,8 +220,8 @@ const setUpCrawler = (crawlerOptions, scrapingOptions, stats, allPlaces) => {
                 // This issue can happen, mostly because proxy IP was blocked by google
                 // Let's refresh IP using browser refresh.
                 if (log.getLevel() === log.LEVELS.DEBUG) {
-                    await saveHTML(page, `${request.id}.html`);
-                    await saveScreenshot(page, `${request.id}.png`);
+                    await saveHTML(page, `${label}-${request.id}.html`);
+                    await saveScreenshot(page, `${label}-${request.id}.png`);
                 }
                 await puppeteerPool.retire(page.browser());
                 if (request.retryCount < crawlerOptions.maxRequestRetries && log.getLevel() !== log.LEVELS.DEBUG) {
