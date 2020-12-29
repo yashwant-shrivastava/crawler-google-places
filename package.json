@@ -31,7 +31,6 @@
     },
     "devDependencies": {
         "chai": "^4.2.0",
-        "eslint": "^7.11.0",
         "mocha": "^8.2.0",
         "write-json": "^3.0.1"
     }
