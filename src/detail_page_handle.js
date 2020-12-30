@@ -1,5 +1,5 @@
 const Apify = require('apify'); // eslint-disable-line no-unused-vars
-const Puppeteer = require('puppeteer'); // eslint-disable-line no-unused-vars
+const Puppeteer = require('puppeteer'); // eslint-disable-line
 
 const typedefs = require('./typedefs'); // eslint-disable-line no-unused-vars
 const ErrorSnapshotter = require('./error-snapshotter'); // eslint-disable-line no-unused-vars
@@ -62,12 +62,12 @@ module.exports.extractPlaceDetail = async (options) => {
     }
 
     // Add info from listing page
-    const { userData } = request;
+    const { shownAsAd, rank } = /** @type {{shownAsAd:boolean, rank:number}} */ (request.userData);
 
     const detail = {
         ...pageData,
-        shownAsAd: userData.shownAsAd,
-        rank: userData.rank,
+        shownAsAd,
+        rank,
         placeId: request.uniqueKey,
         url,
         searchString,
@@ -80,12 +80,12 @@ module.exports.extractPlaceDetail = async (options) => {
         ...await errorSnapshotter.tryWithSnapshot(
             page,
             async () => extractReviews({ page, totalScore: pageData.totalScore, maxReviews, reviewsSort }),
-            { name: 'Reviews extraction', returnError: false },
+            { name: 'Reviews extraction' },
         ),
         imageUrls: await errorSnapshotter.tryWithSnapshot(
             page,
             async () => extractImages({ page, maxImages }),
-            { name: 'Image extraction', returnError: false },
+            { name: 'Image extraction' },
         ),
     };
 

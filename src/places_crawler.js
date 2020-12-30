@@ -36,23 +36,23 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, crawle
     const { maxCrawledPlaces, multiplier } = scrapingOptions;
     const { requestQueue } = crawlerOptions;
 
-    const { label, searchString } = request.userData;
+    const { label, searchString } = /** @type {{ label: string, searchString: string }} */ (request.userData);
 
     await injectJQuery(page);
 
     const logLabel = label === 'startUrl' ? 'SEARCH' : 'PLACE';
 
     // Handle consent screen, this wait is ok because we wait for selector later anyway
-    // @ts-ignore
     await page.waitForTimeout(5000);
+    // @ts-ignore I'm not sure how we could fix the types here
     if (request.userData.waitingForConsent !== undefined) {
+        // @ts-ignore  I'm not sure how we could fix the types here
         await waiter(() => request.userData.waitingForConsent === false);
     }
 
     try {
         // Check if Google shows captcha
         if (await page.$('form#captcha-form')) {
-            // eslint-disable-next-line no-throw-literal
             throw `[${logLabel}]: Got CAPTCHA on page, retrying --- ${searchString || ''} ${request.url}`;
         }
         if (label === 'startUrl') {
@@ -68,7 +68,6 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, crawle
                     stats,
                     scrapingOptions,
                 }),
-                { name: logLabel, returnError: false },
             );
 
             log.info(`[${logLabel}]: Enqueuing places finished for --- ${searchString || ''} ${request.url}`);
@@ -82,7 +81,6 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, crawle
                 request,
                 searchString,
                 allPlaces,
-                // @ts-ignore
                 session,
                 scrapingOptions,
                 errorSnapshotter,

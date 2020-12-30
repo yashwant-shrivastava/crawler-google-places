@@ -1,10 +1,10 @@
-// @ts-nocheck
 /* eslint-disable object-property-newline */
 const Apify = require('apify');
 
 const typedefs = require('./typedefs'); // eslint-disable-line no-unused-vars
 
 const placesCrawler = require('./places_crawler');
+// @ts-ignore
 const resultJsonSchema = require('./result_item_schema');
 const Stats = require('./stats');
 const ErrorSnapshotter = require('./error-snapshotter');
@@ -17,7 +17,7 @@ const cachedPlacesName = 'Places-cached-locations';
 const { log } = Apify.utils;
 
 Apify.main(async () => {
-    const input = await Apify.getValue('INPUT');
+    const input = /** @type {typedefs.Input} */ (await Apify.getValue('INPUT'));
     const stats = new Stats(300);
     const errorSnapshotter = new ErrorSnapshotter();
     await errorSnapshotter.initialize(Apify.events);
@@ -33,13 +33,13 @@ Apify.main(async () => {
         // browser and request options
         pageLoadTimeoutSec = 60, useChrome = false, maxConcurrency, maxPagesPerBrowser = 1, maxPageRetries = 6,
         // Misc
-        proxyConfig, regularTestRun, debug, language = 'en', useStealth, headless = true,
+        proxyConfig, regularTestRun, debug = false, language = 'en', useStealth = false, headless = true,
         // walker is undocumented feature added by jakubdrobnik, we need to test it and document it
         walker,
 
         // Scraping options
         includeHistogram = false, includeOpeningHours = false, includePeopleAlsoSearch = false,
-        maxReviews, maxImages, exportPlaceUrls = false, additionalInfo = false, maxCrawledPlaces,
+        maxReviews = 5, maxImages = 1, exportPlaceUrls = false, additionalInfo = false, maxCrawledPlaces,
         maxAutomaticZoomOut, cachePlaces = false, reviewsSort = 'mostRelevant',
     } = input;
 
@@ -63,7 +63,7 @@ Apify.main(async () => {
     }
 
     // Requests that are used in the queue, we persist them to skip this step after migration
-    const startRequests = (await Apify.getValue('START-REQUESTS')) || [];
+    const startRequests = /** @type {Apify.RequestOptions[]} */ (await Apify.getValue('START-REQUESTS')) || [];
 
     const requestQueue = await Apify.openRequestQueue();
 
@@ -119,6 +119,7 @@ Apify.main(async () => {
                      */
                     log.info(`Place ID found in search query. We will extract data from ${searchString}.`);
                     const cleanSearch = searchString.replace(/\s+/g, '');
+                    // @ts-ignore We know this is correct
                     const placeId = cleanSearch.match(/place_id:(.*)/)[1];
                     startRequests.push({
                         url: `https://www.google.com/maps/search/?api=1&query=${cleanSearch}&query_place_id=${placeId}`,
@@ -149,6 +150,7 @@ Apify.main(async () => {
         await Apify.setValue('START-REQUESTS', startRequests);
         const apifyPlatformKVLink = `link: https://api.apify.com/v2/key-value-stores/${Apify.getEnv().defaultKeyValueStoreId}/records/START-REQUESTS?disableRedirect=true`;
         const localLink = 'local disk: apify_storage/key_value_stores/default/START-REQUESTS.json';
+        // @ts-ignore Missing type in SDK
         const link = Apify.getEnv().isAtHome ? apifyPlatformKVLink : localLink;
         log.info(`Full list of Start URLs is available on ${link}`);
     } else {
@@ -168,14 +170,13 @@ Apify.main(async () => {
     /** @type {typedefs.CrawlerOptions} */
     const crawlerOptions = {
         requestQueue,
-        // @ts-ignore
         proxyConfiguration,
         puppeteerPoolOptions,
         maxConcurrency,
         launchPuppeteerFunction: (options) => {
             return Apify.launchPuppeteer({
                 ...options,
-                // @ts-ignore
+                // @ts-ignore The SDK types don't understand Puppeteer options
                 headless,
                 useChrome,
                 args: [

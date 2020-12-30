@@ -2,7 +2,7 @@
 const Apify = require('apify');
 const querystring = require('querystring');
 
-const Puppeteer = require('puppeteer'); // eslint-disable-line no-unused-vars
+const Puppeteer = require('puppeteer'); // eslint-disable-line
 const typedefs = require('./typedefs'); // eslint-disable-line no-unused-vars
 const Stats = require('./stats'); // eslint-disable-line no-unused-vars
 
@@ -126,7 +126,7 @@ const enqueueAllPlaceDetails = async ({
 
     // In case there is a list of details, it goes through details, limits by maxPlacesPerCrawl
     const nextButtonSelector = '[jsaction="pane.paginationSection.nextPage"]';
-    while (true) {
+    for (;;) {
         await page.waitForSelector(nextButtonSelector, { timeout: DEFAULT_TIMEOUT });
         const paginationText = await page.$eval('.n7lv7yjyC35__root', (el) => el.innerText);
         const [fromString, toString] = paginationText.match(/\d+/g);

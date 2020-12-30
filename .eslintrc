@@ -4,6 +4,7 @@
         "no-confusing-arrow":"off",
         "camelcase": "off",
         "no-continue": "off",
-        "no-throw-literal": "off"
+        "no-throw-literal": "off",
+        "no-console": "off"
     }
 }

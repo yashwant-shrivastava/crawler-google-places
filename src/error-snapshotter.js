@@ -1,5 +1,5 @@
-// @ts-nocheck
 const Apify = require('apify');
+const Puppeteer = require('puppeteer'); // eslint-disable-line
 
 /**
  * Utility class that allows you to wrap your functions
@@ -7,7 +7,17 @@ const Apify = require('apify');
  * of that error
  */
 class ErrorSnapshotter {
-    constructor() {
+    /**
+     *
+     * @param {object} [options]
+     * @param {number} [options.maxErrorCharacters] Override default max error chars for all errors
+     */
+    constructor(options) {
+        const {
+            maxErrorCharacters = 80,
+        } = (options || {});
+        this.maxErrorCharacters = maxErrorCharacters;
+        /** @type {{[key: string]: number}}  */
         this.errorState = {};
         this.BASE_MESSAGE = 'Operation failed';
         this.SNAPSHOT_PREFIX = 'ERROR-SNAPSHOT-';
@@ -15,9 +25,10 @@ class ErrorSnapshotter {
 
     /**
      * Loads from state and initializes events
+     * @param {any} events
      */
     async initialize(events) {
-        this.errorState = (await Apify.getValue('ERROR-SNAPSHOTTER-STATE')) || {};
+        this.errorState = /** @type {{[key: string]: number}} */ (await Apify.getValue('ERROR-SNAPSHOTTER-STATE')) || {};
         events.on('persistState', this.persistState.bind(this));
     }
 
@@ -29,17 +40,20 @@ class ErrorSnapshotter {
      * Provide a page or HTML used to snapshot and a closure to be called
      * Optionally, you can name the action for nicer logging, otherwise name of the error is used
      * These functions can be nested, in that case only one snapshot is produced (for the bottom error)
-     * @param {any} pageOrHtml
-     * @param {() => void} fn
-     * @param {object} options
-     * @param {string} options.name Optional name of the action
-     * @param {boolean} options.returnError Returns an Error instance instead of re-throwing it
+     * @param {Puppeteer.Page | string} pageOrHtml Puppeteer page or HTML
+     * @param {() => Puppeteer.} fn Function to execute
+     * @param {{
+     *      name?: string,
+     *      returnError?: boolean,
+     *      maxErrorCharacters?: number,
+     *  }} [options] name - Name the action. returnError - Return error instead of throwing. maxErrorCharacters - Max error chars saved
+     * @returns {Promise<any>} Returns the return value of the provided function (awaits it) or an error (if configured)
      */
-    async tryWithSnapshot(pageOrHtml, fn, options = {}) {
+    async tryWithSnapshot(pageOrHtml, fn, options) {
         if (typeof pageOrHtml !== 'string' && typeof pageOrHtml !== 'object') {
             throw new Error('Try with snapshot: Wrong input! pageOrHtml must be Puppeteer page or HTML');
         }
-        const { name = null, returnError = false } = options;
+        const { name, returnError = false, maxErrorCharacters } = (options || {});
         try {
             return await fn();
         } catch (e) {
@@ -52,7 +66,9 @@ class ErrorSnapshotter {
                 throw err;
             }
             // Normalize error name
-            const errorKey = (name ? `${name}-${errMessage}` : errMessage).slice(0, 50).replace(/[^a-zA-Z0-9-_]/g, '-');
+            const errorKey = (name ? `${name}-${errMessage}` : errMessage)
+                .slice(0, maxErrorCharacters || this.maxErrorCharacters)
+                .replace(/[^a-zA-Z0-9-_]/g, '-');
 
             if (!this.errorState[errorKey]) {
                 this.errorState[errorKey] = 0;
@@ -79,11 +95,12 @@ class ErrorSnapshotter {
 
     /**
      * Works for both HTML and Puppeteer Page
-     * @param {*} pageOrHtml
+     * @param {Puppeteer.Page | string} pageOrHtml
      * @param {string} errorKey
      */
     async saveSnapshot(pageOrHtml, errorKey) {
         if (typeof pageOrHtml === 'string') {
+            // @ts-ignore wrong type for setValue in the SDK
             await Apify.setValue(`${this.SNAPSHOT_PREFIX}${errorKey}`, pageOrHtml, { contentType: 'text/html' });
         } else {
             await Apify.utils.puppeteer.saveSnapshot(pageOrHtml, { key: `${this.SNAPSHOT_PREFIX}${errorKey}` });
