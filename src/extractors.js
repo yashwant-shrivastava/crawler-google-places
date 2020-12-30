@@ -229,6 +229,12 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
     };
 
     const reviewsButtonSel = 'button[jsaction="pane.reviewChart.moreReviews"]';
+    // This selector is not present when there are no reviews
+    try {
+        await page.waitForSelector('button[jsaction="pane.reviewChart.moreReviews"]', { timeout: 15000 });
+    } catch (e) {
+        log.warning(`Could not find reviews count, check if the page really has no reviews --- ${page.url()}`);
+    }
     if (totalScore) {
         const { reviewsCountText, localization } = await page.evaluate((selector) => {
             const numberReviewsText = $(selector).text().trim();
@@ -249,6 +255,7 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
             throw new Error(`[PLACE]: Can not find localization for ${localization}, try to use different proxy IP.`);
         }
         result.totalScore = globalParser.numberParser({ round: 'floor' })(totalScore);
+        result.reviewsCountText = reviewsCountText;
         result.reviewsCount = reviewsCountText ? globalParser.numberParser({ round: 'truncate' })(reviewsCountText) : null;
 
         // click the consent iframe, working with arrays so it never fails.
