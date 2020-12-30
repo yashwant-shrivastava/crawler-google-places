@@ -51,7 +51,6 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @property {number} [maxPagesPerBrowser]
  * @property {number} [maxPageRetries]
  * @property {Apify.ProxyConfigurationOptions} [proxyConfig]
- * @property {boolean} [regularTestRun]
  * @property {boolean} [debug]
  * @property {string} [language]
  * @property {boolean} [useStealth]

@@ -1,11 +1,8 @@
-/* eslint-disable object-property-newline */
 const Apify = require('apify');
 
 const typedefs = require('./typedefs'); // eslint-disable-line no-unused-vars
 
 const placesCrawler = require('./places_crawler');
-// @ts-ignore
-const resultJsonSchema = require('./result_item_schema');
 const Stats = require('./stats');
 const ErrorSnapshotter = require('./error-snapshotter');
 const { prepareSearchUrls } = require('./search');
@@ -33,7 +30,7 @@ Apify.main(async () => {
         // browser and request options
         pageLoadTimeoutSec = 60, useChrome = false, maxConcurrency, maxPagesPerBrowser = 1, maxPageRetries = 6,
         // Misc
-        proxyConfig, regularTestRun, debug = false, language = 'en', useStealth = false, headless = true,
+        proxyConfig, debug = false, language = 'en', useStealth = false, headless = true,
         // walker is undocumented feature added by jakubdrobnik, we need to test it and document it
         walker,
 
@@ -232,18 +229,6 @@ Apify.main(async () => {
         // @ts-ignore
         const newPlaces = { ...allPlaces, ...reloadedPlaces };
         await allPlacesStore.setValue('places', newPlaces);
-    }
-
-    if (regularTestRun) {
-        const { defaultDatasetId: datasetId } = Apify.getEnv();
-        await Apify.call('drobnikj/check-crawler-results', {
-            datasetId,
-            options: {
-                minOutputtedPages: 5,
-                jsonSchema: resultJsonSchema,
-                notifyTo: 'lukas@apify.com',
-            },
-        });
     }
 
     log.info('Scraping finished!');
