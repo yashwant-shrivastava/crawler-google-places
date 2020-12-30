@@ -2,9 +2,12 @@
 /* eslint-disable object-property-newline */
 const Apify = require('apify');
 
+const typedefs = require('./typedefs'); // eslint-disable-line no-unused-vars
+
 const placesCrawler = require('./places_crawler');
 const resultJsonSchema = require('./result_item_schema');
-const { Stats } = require('./stats');
+const Stats = require('./stats');
+const ErrorSnapshotter = require('./error-snapshotter');
 const { prepareSearchUrls } = require('./search');
 const { createStartRequestsWithWalker } = require('./walker');
 const { makeInputBackwardsCompatible, validateInput } = require('./input-validation');
@@ -16,6 +19,8 @@ const { log } = Apify.utils;
 Apify.main(async () => {
     const input = await Apify.getValue('INPUT');
     const stats = new Stats(300);
+    const errorSnapshotter = new ErrorSnapshotter();
+    await errorSnapshotter.initialize(Apify.events);
 
     makeInputBackwardsCompatible(input);
     validateInput(input);
@@ -82,12 +87,12 @@ Apify.main(async () => {
             let req;
             while (req = await rlist.fetchNextRequest()) { // eslint-disable-line no-cond-assign
                 if (!req.url) {
-                    log.warning(`There is no valid URL for this request:`);
+                    log.warning('There is no valid URL for this request:');
                     console.dir(req);
                 } else if (req.url.startsWith('https://www.google.com/search')) {
                     log.warning('ATTENTION! URLs starting with "https://www.google.com/search" are not supported! Please transform your URL to start with "https://www.google.com/maps"');
                     log.warning(`Happened for provided URL: ${req.url}`);
-                } else if (!/www\.google\.com\/maps\/(search|place)\//.test(req.url) ) {
+                } else if (!/www\.google\.com\/maps\/(search|place)\//.test(req.url)) {
                     // allows only search and place urls
                     log.warning('ATTENTION! URL you provided is not recognized as a valid Google Maps URL. Please use URLs with /maps/search or /maps/place or contact support@apify.com to add a new format');
                     log.warning(`Happened for provided URL: ${req.url}`);
@@ -143,11 +148,11 @@ Apify.main(async () => {
 
         await Apify.setValue('START-REQUESTS', startRequests);
         const apifyPlatformKVLink = `link: https://api.apify.com/v2/key-value-stores/${Apify.getEnv().defaultKeyValueStoreId}/records/START-REQUESTS?disableRedirect=true`;
-        const localLink = `local disk: apify_storage/key_value_stores/default/START-REQUESTS.json`;
+        const localLink = 'local disk: apify_storage/key_value_stores/default/START-REQUESTS.json';
         const link = Apify.getEnv().isAtHome ? apifyPlatformKVLink : localLink;
         log.info(`Full list of Start URLs is available on ${link}`);
     } else {
-        log.warning(`Actor was restarted, skipping search step because it was already done...`);
+        log.warning('Actor was restarted, skipping search step because it was already done...');
     }
 
     /**
@@ -160,9 +165,7 @@ Apify.main(async () => {
 
     const proxyConfiguration = await Apify.createProxyConfiguration(proxyConfig);
 
-    /**
-     * @type {Apify.PuppeteerCrawlerOptions}
-     */
+    /** @type {typedefs.CrawlerOptions} */
     const crawlerOptions = {
         requestQueue,
         // @ts-ignore
@@ -206,7 +209,7 @@ Apify.main(async () => {
         maxRequestRetries: maxPageRetries,
     };
 
-
+    /** @type {typedefs.ScrapingOptions} */
     const scrapingOptions = {
         includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
         maxReviews, maxImages, exportPlaceUrls, additionalInfo, maxCrawledPlaces,
@@ -216,7 +219,7 @@ Apify.main(async () => {
     };
 
     // Create and run crawler
-    const crawler = placesCrawler.setUpCrawler(crawlerOptions, scrapingOptions, stats, allPlaces);
+    const crawler = placesCrawler.setUpCrawler({ crawlerOptions, scrapingOptions, stats, errorSnapshotter, allPlaces });
 
     await crawler.run();
     await stats.saveStats();

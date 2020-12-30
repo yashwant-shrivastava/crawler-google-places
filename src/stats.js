@@ -2,7 +2,7 @@ const Apify = require('apify');
 
 const { utils: { log } } = Apify;
 
-exports.Stats = class Stats {
+class Stats {
     constructor(logInterval = 30) {
         this.stats = { failed: 0, ok: 0, outOfPolygon: 0, outOfPolygonCached: 0, places: 0, maps: 0 };
         this.isLoaded = false;
@@ -70,4 +70,6 @@ exports.Stats = class Stats {
     outOfPolygonCached() {
         this.stats.outOfPolygonCached++;
     }
-};
+}
+
+module.exports = Stats;

@@ -1,9 +1,10 @@
 /* eslint-env jquery */
 const Apify = require('apify');
 const querystring = require('querystring');
-const Puppeteer = require('puppeteer');
 
-const { Stats } = require('./stats'); // eslint-disable-line no-unused-vars
+const Puppeteer = require('puppeteer'); // eslint-disable-line no-unused-vars
+const typedefs = require('./typedefs'); // eslint-disable-line no-unused-vars
+const Stats = require('./stats'); // eslint-disable-line no-unused-vars
 
 const { sleep, log } = Apify.utils;
 const { DEFAULT_TIMEOUT, LISTING_PAGINATION_KEY, PLACE_TITLE_SEL } = require('./consts');
@@ -35,19 +36,19 @@ const enqueuePlacesFromResponse = (options) => {
             // Parse place ids from response body
             const responseBody = await response.buffer();
             const places = parseSearchPlacesResponseBody(responseBody);
-            const enqueuePromises = [];
-            places.forEach((place, index) => {
+            let index = -1;
+            for (const place of places) {
+                index++;
                 const rank = ((pageNumber - 1) * 20) + (index + 1);
                 if (!maxPlacesPerCrawl || rank <= maxPlacesPerCrawl) {
-                    let promise;
                     if (exportPlaceUrls) {
-                        promise = Apify.pushData({
+                        await Apify.pushData({
                             url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${place.placeId}`,
                         });
                     } else {
                         const location = allPlaces[place.placeId];
                         if (!cachePlaces || !geo || !location || checkInPolygon(geo, location)) {
-                            promise = requestQueue.addRequest({
+                            await requestQueue.addRequest({
                                 url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${place.placeId}`,
                                 uniqueKey: place.placeId,
                                 userData: { label: 'detail', searchString, rank },
@@ -58,10 +59,8 @@ const enqueuePlacesFromResponse = (options) => {
                             stats.outOfPolygonCached();
                         }
                     }
-                    enqueuePromises.push(promise);
                 }
-            });
-            await Promise.all(enqueuePromises);
+            }
         }
     };
 };
@@ -72,29 +71,22 @@ const enqueuePlacesFromResponse = (options) => {
  *  page: Puppeteer.Page,
  *  searchString: string,
  *  requestQueue: Apify.RequestQueue,
- *  maxCrawledPlaces: number,
  *  request: Apify.Request,
- *  exportPlaceUrls: boolean,
- *  geo: any,
- *  maxAutomaticZoomOut: number,
  *  allPlaces: {[index: string]: any},
- *  cachePlaces: boolean,
  *  stats: Stats,
+ *  scrapingOptions: typedefs.ScrapingOptions,
  * }} options
  */
 const enqueueAllPlaceDetails = async ({
     page,
     searchString,
     requestQueue,
-    maxCrawledPlaces,
     request,
-    exportPlaceUrls,
-    geo,
-    maxAutomaticZoomOut,
     allPlaces,
-    cachePlaces,
     stats,
+    scrapingOptions,
 }) => {
+    const { geo, maxAutomaticZoomOut, cachePlaces, exportPlaceUrls, maxCrawledPlaces } = scrapingOptions;
     page.on('response', enqueuePlacesFromResponse({
         requestQueue,
         searchString,
@@ -168,7 +160,9 @@ const enqueueAllPlaceDetails = async ({
             } else if (maxCrawledPlaces && maxCrawledPlaces <= to) {
                 log.warning(`[SEARCH]: Finishing search because we reached maxCrawledPlaces --- ${searchString} - ${request.url}`);
             } else if (finishBecauseAutoZoom) {
-                log.warning(`[SEARCH]: Finishing search because Google zoomed out further than maxAutomaticZoomOut. Current zoom: ${parseZoomFromUrl(page.url())} --- ${searchString} - ${request.url}`);
+                log.warning('[SEARCH]: Finishing search because Google zoomed out '
+                    + 'further than maxAutomaticZoomOut. Current zoom: '
+                    + `${parseZoomFromUrl(page.url())} --- ${searchString} - ${request.url}`);
             }
             break;
         } else {

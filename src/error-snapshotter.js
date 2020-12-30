@@ -6,23 +6,23 @@ const Apify = require('apify');
  * with a try/catch that saves a screenshot on the first occurence
  * of that error
  */
-class ErrorManager {
+class ErrorSnapshotter {
     constructor() {
         this.errorState = {};
-        this.BASE_MESSAGE = 'Operation failed: ';
+        this.BASE_MESSAGE = 'Operation failed';
         this.SNAPSHOT_PREFIX = 'ERROR-SNAPSHOT-';
     }
 
     /**
      * Loads from state and initializes events
      */
-    async initialize() {
-        this.errorState = (await Apify.getValue('ERROR-MANAGER-STATE')) || {};
-        Apify.events.on('persistState', this.persistState.bind(this));
+    async initialize(events) {
+        this.errorState = (await Apify.getValue('ERROR-SNAPSHOTTER-STATE')) || {};
+        events.on('persistState', this.persistState.bind(this));
     }
 
     async persistState() {
-        await Apify.setValue('ERROR-MANAGER-STATE', this.errorState);
+        await Apify.setValue('ERROR-SNAPSHOTTER-STATE', this.errorState);
     }
 
     /**
@@ -39,17 +39,20 @@ class ErrorManager {
         if (typeof pageOrHtml !== 'string' && typeof pageOrHtml !== 'object') {
             throw new Error('Try with snapshot: Wrong input! pageOrHtml must be Puppeteer page or HTML');
         }
-        const { name, returnError } = options;
+        const { name = null, returnError = false } = options;
         try {
-            fn();
+            return await fn();
         } catch (e) {
+            let err = e;
+            // We don't want the Error: text, also we have to count with Error instances and string errors
+            const errMessage = err.message || err;
             // If error starts with BASE_MESSAGE, it means it was another nested tryWithScreenshot
             // In that case we just re-throw and skip all state updates and screenshots
-            if (e.message.startsWith(this.BASE_MESSAGE)) {
-                throw e;
+            if (errMessage.startsWith(this.BASE_MESSAGE)) {
+                throw err;
             }
             // Normalize error name
-            const errorKey = (name || e.message).slice(0, 30).replace(/[^a-zA-Z0-9-_]/g, '-');
+            const errorKey = (name ? `${name}-${errMessage}` : errMessage).slice(0, 50).replace(/[^a-zA-Z0-9-_]/g, '-');
 
             if (!this.errorState[errorKey]) {
                 this.errorState[errorKey] = 0;
@@ -60,11 +63,17 @@ class ErrorManager {
             if (this.errorState[errorKey] === 1) {
                 await this.saveSnapshot(pageOrHtml, errorKey);
             }
-            e.message = `${this.BASE_MESSAGE}${`: ${name}` || ''}. Error detail: ${e}`;
-            if (returnError) {
-                return e;
+            const newMessage = `${this.BASE_MESSAGE}${name ? `: ${name}` : ''}. Error detail: ${errMessage}`;
+            if (typeof err === 'string') {
+                err = newMessage;
+            } else {
+                err.message = newMessage;
             }
-            throw e;
+
+            if (returnError) {
+                return err;
+            }
+            throw err;
         }
     }
 
@@ -82,4 +91,4 @@ class ErrorManager {
     }
 }
 
-module.exports = ErrorManager;
+module.exports = ErrorSnapshotter;

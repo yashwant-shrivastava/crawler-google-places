@@ -2,13 +2,13 @@ const Apify = require('apify');
 const Puppeteer = require('puppeteer'); // eslint-disable-line no-unused-vars
 const Globalize = require('globalize');
 
-const { DEFAULT_TIMEOUT, PLACE_TITLE_SEL } = require('./consts');
+const { PLACE_TITLE_SEL } = require('./consts');
 const { waitForGoogleMapLoader, parseReviewFromResponseBody, scrollTo, enlargeImageUrls } = require('./utils');
 const infiniteScroll = require('./infinite_scroll');
 
+/* eslint-env jquery */
 const { log, sleep } = Apify.utils;
 
-// TODO: Fix these type anotations
 /**
  * @param {{
  *    page: Puppeteer.Page
@@ -51,7 +51,7 @@ module.exports.extractPageData = async ({ page }) => {
             permanentlyClosed,
         };
     }, PLACE_TITLE_SEL);
-}
+};
 
 /**
  * @param {{
@@ -103,7 +103,7 @@ module.exports.extractPopularTimes = async ({ page }) => {
         });
     }
     return output;
-}
+};
 
 /**
  * @param {{
@@ -134,7 +134,7 @@ module.exports.extractOpeningHours = async ({ page }) => {
         }
     }
     return result;
-}
+};
 
 /**
  * @param {{
@@ -142,7 +142,7 @@ module.exports.extractOpeningHours = async ({ page }) => {
  * }} options
    */
 module.exports.extractPeopleAlsoSearch = async ({ page }) => {
-    let result = [];
+    const result = [];
     const peopleSearchContainer = await page.$('.section-carousel-scroll-container');
     if (peopleSearchContainer) {
         const cardSel = 'button[class$="card"]';
@@ -171,7 +171,7 @@ module.exports.extractPeopleAlsoSearch = async ({ page }) => {
         }
     }
     return result;
-}
+};
 
 /**
  * @param {{
@@ -187,10 +187,10 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
         await page.waitForSelector('.section-attribute-group', { timeout: 3000 });
         result = await page.evaluate(() => {
             const result = {};
-            $('.section-attribute-group').each((i, section) => {
+            $('.section-attribute-group').each((_, section) => {
                 const key = $(section).find('.section-attribute-group-title').text().trim();
                 const values = [];
-                $(section).find('.section-attribute-group-container .section-attribute-group-item').each((i, sub) => {
+                $(section).find('.section-attribute-group-container .section-attribute-group-item').each((_, sub) => {
                     const res = {};
                     const title = $(sub).text().trim();
                     const val = $(sub).find('.section-attribute-group-item-icon.maps-sprite-place-attributes-done').length > 0;
@@ -207,7 +207,7 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
         log.info(`[PLACE]: ${e}Additional info not parsed`);
     }
     return result;
-}
+};
 
 /**
  * totalScore is string because it is parsed via localization
@@ -294,11 +294,12 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
                 }
             };
             await sleep(5000);
-            const [sort1, sort2, scroll, reviewsResponse] = await Promise.all([
+            // eslint-disable-next-line no-unused-vars
+            const [reviewsResponse] = await Promise.all([
+                page.waitForResponse((response) => response.url().includes('preview/review/listentitiesreviews')),
                 sortPromise1(),
                 sortPromise2(),
                 scrollTo(page, '.section-scrollbox.scrollable-y', 10000),
-                page.waitForResponse((response) => response.url().includes('preview/review/listentitiesreviews')),
             ]);
 
             const reviewResponseBody = await reviewsResponse.buffer();
@@ -322,7 +323,7 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
                 // Request in browser context to use proxy as in brows
                 const responseBody = await page.evaluate(async (url) => {
                     const response = await fetch(url);
-                    return await response.text();
+                    return response.text();
                 }, reviewUrl);
                 const reviews = parseReviewFromResponseBody(responseBody);
                 if (reviews.length === 0) {
@@ -338,13 +339,13 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
             await page.waitForTimeout(500);
             const backButton = await page.$('button[jsaction*=back]');
             if (!backButton) {
-                throw new Error(`Back button for reviews is not present`);
+                throw new Error('Back button for reviews is not present');
             }
             await backButton.click();
         }
     }
     return result;
-}
+};
 
 /**
  * totalScore is string because it is parsed via localization
@@ -383,6 +384,7 @@ module.exports.extractImages = async ({ page, maxImages }) => {
                 Apify.utils.sleep(20000),
             ]);
             imageUrls = await page.evaluate(() => {
+                /** @type {string[]} */
                 const urls = [];
                 $('.gallery-image-high-res').each(function () {
                     const urlMatch = $(this).attr('style').match(/url\("(.*)"\)/);
@@ -405,4 +407,4 @@ module.exports.extractImages = async ({ page, maxImages }) => {
     }
 
     return enlargeImageUrls(resultImageUrls);
-}
+};
