@@ -309,35 +309,27 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
             // Set up sort from newest
             const sortPromise1 = async () => {
                 try {
-                    await page.click('[class*=dropdown-icon]');
+                    await page.click('button[data-value="Sort"], [class*=dropdown-icon]');
                     await sleep(1000);
                     for (let i = 0; i < reviewSortOptions[reviewsSort]; i += 1) {
                         await page.keyboard.press('ArrowDown');
+                        await sleep(500);
                     }
                     await page.keyboard.press('Enter');
                 } catch (e) {
-                    log.debug('[PLACE]: Can not sort reviews with 1 options!');
+                    log.debug('[PLACE]: Unable to sort reviews!');
                 }
             };
-            const sortPromise2 = async () => {
-                try {
-                    await page.click('button[data-value="Sort"]');
-                    for (let i = 0; i < reviewSortOptions[reviewsSort]; i += 1) {
-                        await page.keyboard.press('ArrowDown');
-                    }
-                    await page.keyboard.press('Enter');
-                } catch (e) {
-                    log.debug('[PLACE]: Can not sort with 2 options!');
-                }
-            };
+
             await sleep(5000);
             // eslint-disable-next-line no-unused-vars
             const [reviewsResponse] = await Promise.all([
                 page.waitForResponse((response) => response.url().includes('preview/review/listentitiesreviews')),
                 sortPromise1(),
-                sortPromise2(),
-                scrollTo(page, '.section-scrollbox.scrollable-y', 10000),
             ]);
+
+            // This was previously inside the Promise.aa but I don't see the reason
+            await scrollTo(page, '.section-scrollbox.scrollable-y', 10000);
 
             const reviewResponseBody = await reviewsResponse.buffer();
             const reviewsFirst = parseReviewFromResponseBody(reviewResponseBody);
