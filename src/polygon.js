@@ -1,6 +1,8 @@
 const Apify = require('apify');
 const turf = require('@turf/turf');
 
+const typedefs = require('./typedefs'); // eslint-disable-line
+
 const { log } = Apify.utils;
 const TURF_UNIT = 'kilometers';
 
@@ -25,9 +27,13 @@ function coordinatesFromBoundingBox(boundingbox) {
         [numberBBox[3], numberBBox[0]],
         [numberBBox[3], numberBBox[1]],
         [numberBBox[2], numberBBox[0]],
-    ]]
+    ]];
 }
 
+/**
+ * @param {{ geojson: any; }} geo
+ * @param {{ lng: number; lat: number; }} location
+ */
 function checkInPolygon(geo, location) {
     const point = turf.point([location.lng, location.lat]);
     let included = false;
@@ -39,6 +45,10 @@ function checkInPolygon(geo, location) {
     return included;
 }
 
+/**
+ * @param {{ geometry?: any; coordinates?: any; type?: any; }} geoJson
+ * @param {number | undefined} distanceKilometers
+ */
 function getPolygons(geoJson, distanceKilometers = 5) {
     const { coordinates, type } = geoJson;
     if (type === GEO_TYPES.POLYGON) {
@@ -51,22 +61,19 @@ function getPolygons(geoJson, distanceKilometers = 5) {
 
     // We got only the point for city, lets create a circle...
     if (type === GEO_TYPES.POINT) {
-        const options = { units: TURF_UNIT };
-        return [turf.circle(coordinates, distanceKilometers, options)];
+        return [turf.circle(coordinates, distanceKilometers, { units: TURF_UNIT })];
     }
 
     // Line (road or street) - find midpoint and length and create circle
     if (type === GEO_TYPES.LINE_STRING) {
-        const options = { units: TURF_UNIT };
-
         const firstPoint = turf.point(coordinates[0]);
         const lastPoint = turf.point(coordinates[coordinates.length - 1]);
         const midPoint = turf.midpoint(firstPoint, lastPoint);
 
         const line = turf.lineString(coordinates);
-        const length = turf.length(line, options);
+        const length = turf.length(line, { units: TURF_UNIT });
 
-        return [turf.circle(midPoint, length, options)];
+        return [turf.circle(midPoint, length, { units: TURF_UNIT })];
     }
 
     // Multipolygon
@@ -75,6 +82,9 @@ function getPolygons(geoJson, distanceKilometers = 5) {
 
 // Sadly, even some bigger cities (Bremer­haven) are not found by the API
 // Maybe we need to find a fallback
+/**
+ * @param {typedefs.GeolocationOptions} options
+ */
 async function getGeolocation(options) {
     const { city, state, country, postalCode } = options;
     const cityString = (city || '').trim().replace(/\s+/g, '+');
@@ -87,10 +97,11 @@ async function getGeolocation(options) {
         url: encodeURI(`https://nominatim.openstreetmap.org/search?country=${countryString}&state=${stateString}&city=${cityString}&postalcode=${postalCodeString}&format=json&polygon_geojson=1&limit=1&polygon_threshold=0.005`),
         headers: { referer: 'http://google.com' },
     });
+    // @ts-ignore
     const body = JSON.parse(res.body);
     const data = body[0];
     if (!data) {
-        throw new Error(`[Geolocation]: Location not found! Try other geolocation options or contact support@apify.com.`);
+        throw new Error('[Geolocation]: Location not found! Try other geolocation options or contact support@apify.com.');
     }
     log.info(`[Geolocation]: Location found: ${data.display_name}, lat: ${data.lat}, long: ${data.lon}`);
     return data;
@@ -98,6 +109,8 @@ async function getGeolocation(options) {
 
 /**
  * Calculates distance meters per pixel for zoom and latitude.
+ * @param {number} lat
+ * @param {number} zoom
  */
 function distanceByZoom(lat, zoom) {
     return 156543.03392 * (Math.cos((lat * Math.PI) / 180) / (2 ** zoom));
@@ -105,8 +118,8 @@ function distanceByZoom(lat, zoom) {
 
 /**
  *  Prepare centre points grid for search
- * @param location - GeoJSON
- * @param zoom
+ * @param {any} location - GeoJSON
+ * @param {number} zoom
  * @returns {Promise<*[]|*>} Array of points
  */
 async function findPointsInPolygon(location, zoom) {
@@ -120,7 +133,7 @@ async function findPointsInPolygon(location, zoom) {
         geojson = {
             coordinates: coordinatesFromBoundingBox(boundingbox),
             type: GEO_TYPES.POLYGON,
-        }
+        };
         // We fake this so it can be passed to places
         location.geojson = geojson;
     }

@@ -23,7 +23,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * Options to set up the crawler
  * @typedef CrawlerOptions
  * @property {Apify.RequestQueue} requestQueue
- * @property {Apify.ProxyConfiguration | null} [proxyConfiguration]
+ * @property {Apify.ProxyConfiguration} [proxyConfiguration]
  * @property {Apify.PuppeteerPoolOptions} puppeteerPoolOptions
  * @property {number} [maxConcurrency]
  * @property {Apify.LaunchPuppeteerFunction} launchPuppeteerFunction
@@ -67,5 +67,30 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @property {number} [maxAutomaticZoomOut]
  * @property {boolean} [cachePlaces]
  * @property {string} [reviewsSort]
+ */
+
+/**
+ * @typedef Review
+ * @property {string} name
+ * @property {string} text
+ * @property {string} publishAt
+ * @property {number} likesCount
+ * @property {string} reviewId
+ * @property {string} reviewUrl
+ * @property {string} reviewerId
+ * @property {string} reviewerUrl
+ * @property {number} reviewerNumberOfReviews
+ * @property {boolean} isLocalGuide
+ * @property {number | undefined} stars
+ * @property {number | undefined} rating
+ * @property {string | undefined} responseFromOwnerText
+ */
+
+/**
+ * @typedef GeolocationOptions
+ * @property {string | undefined} city
+ * @property {string | undefined} state
+ * @property {string | undefined} country
+ * @property {string | undefined} postalCode
  */
 module.exports = {};

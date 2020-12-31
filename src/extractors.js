@@ -1,5 +1,5 @@
 const Apify = require('apify');
-const Puppeteer = require('puppeteer'); // eslint-disable-line no-unused-vars
+const Puppeteer = require('puppeteer'); // eslint-disable-line
 const Globalize = require('globalize');
 
 const { PLACE_TITLE_SEL } = require('./consts');
@@ -23,6 +23,7 @@ module.exports.extractPageData = async ({ page }) => {
         const secondaryAddressLineAlt = $("button[data-tooltip*='locatedin']").text().replace('Located in:', '').trim();
         const secondaryAddressLineAlt2 = $("button[data-item-id*='locatedin']").text().replace('Located in:', '').trim();
         const phone = $('[data-section-id="pn0"].section-info-speak-numeral').length
+            // @ts-ignore
             ? $('[data-section-id="pn0"].section-info-speak-numeral').attr('data-href').replace('tel:', '')
             : $("button[data-tooltip*='phone']").text().trim();
         const phoneAlt = $('button[data-item-id*=phone]').text().trim();
@@ -43,7 +44,7 @@ module.exports.extractPageData = async ({ page }) => {
                 || $("button[data-tooltip*='plus code']").text().trim()
                 || $("button[data-item-id*='oloc']").text().trim() || null,
             website: $('[data-section-id="ap"]').length
-                ? $('[data-section-id="ap"]').eq('0').text().trim()
+                ? $('[data-section-id="ap"]').eq(0).text().trim()
                 : $("button[data-tooltip*='website']").text().trim()
                 || $("button[data-item-id*='authority']").text().trim() || null,
             phone: phone || phoneAlt || null,
@@ -72,13 +73,17 @@ module.exports.extractPopularTimes = async ({ page }) => {
     const histogramSel = '.section-popular-times';
     if (await page.$(histogramSel)) {
         output.popularTimesHistogram = await page.evaluate(() => {
+            /** @type {{[key: string]: any[]}} */
             const graphs = {};
             const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
             // Extract all days graphs
             $('.section-popular-times-graph').each(function (i) {
                 const day = days[i];
                 graphs[day] = [];
+
+                /** @type {number | undefined} */
                 let graphStartFromHour;
+
                 // Finds where x axis starts
                 $(this).find('.section-popular-times-label').each(function (labelIndex) {
                     if (graphStartFromHour) return;
@@ -89,8 +94,10 @@ module.exports.extractPopularTimes = async ({ page }) => {
                 });
                 // Finds values from y axis
                 $(this).find('.section-popular-times-bar').each(function (barIndex) {
+                    // @ts-ignore
                     const occupancyMatch = $(this).attr('aria-label').match(/\d+(\s+)?%/);
                     if (occupancyMatch && occupancyMatch.length) {
+                        // @ts-ignore
                         const maybeHour = graphStartFromHour + barIndex;
                         graphs[day].push({
                             hour: maybeHour > 24 ? maybeHour - 24 : maybeHour,
@@ -117,16 +124,19 @@ module.exports.extractOpeningHours = async ({ page }) => {
     const openingHoursSelAlt2 = '.section-open-hours-container';
     const openingHoursEl = (await page.$(openingHoursSel)) || (await page.$(openingHoursSelAlt)) || (await page.$(openingHoursSelAlt2));
     if (openingHoursEl) {
-        const openingHoursText = await page.evaluate((openingHoursEl) => {
-            return openingHoursEl.getAttribute('aria-label');
+        const openingHoursText = await page.evaluate((openingHoursElem) => {
+            return openingHoursElem.getAttribute('aria-label');
         }, openingHoursEl);
+
+        /** @type {string[]} */
         const openingHours = openingHoursText.split(openingHoursText.includes(';') ? ';' : ',');
         if (openingHours.length) {
             result = openingHours.map((line) => {
                 const regexpResult = line.trim().match(/(\S+)\s(.*)/);
                 if (regexpResult) {
-                    let [match, day, hours] = regexpResult;
-                    hours = hours.split('.')[0];
+                    // eslint-disable-next-line prefer-const
+                    let [, day, hours] = regexpResult;
+                    ([hours] = hours.split('.'));
                     return { day, hours };
                 }
                 log.debug(`[PLACE]: Not able to parse opening hours: ${line}`);
@@ -162,6 +172,7 @@ module.exports.extractPeopleAlsoSearch = async ({ page }) => {
                 }, cardSel, i),
                 page.waitForNavigation({ waitUntil: ['domcontentloaded', 'networkidle2'] }),
             ]);
+            // @ts-ignore
             searchResult.url = await page.url();
             result.push(searchResult);
             await Promise.all([
@@ -183,25 +194,30 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
     log.debug('[PLACE]: Scraping additional info.');
     const button = await page.$('button.section-editorial');
     try {
+        // @ts-ignore
         await button.click();
         await page.waitForSelector('.section-attribute-group', { timeout: 3000 });
         result = await page.evaluate(() => {
-            const result = {};
+            /** @type {{[key: string]: any[]}} */
+            const innerResult = {};
             $('.section-attribute-group').each((_, section) => {
                 const key = $(section).find('.section-attribute-group-title').text().trim();
+                /** @type {object[]} */
                 const values = [];
-                $(section).find('.section-attribute-group-container .section-attribute-group-item').each((_, sub) => {
+                $(section).find('.section-attribute-group-container .section-attribute-group-item').each((_i, sub) => {
                     const res = {};
                     const title = $(sub).text().trim();
                     const val = $(sub).find('.section-attribute-group-item-icon.maps-sprite-place-attributes-done').length > 0;
+                    // @ts-ignore
                     res[title] = val;
                     values.push(res);
                 });
-                result[key] = values;
+                innerResult[key] = values;
             });
-            return result;
+            return innerResult;
         });
         const backButton = await page.$('button[aria-label*=Back]');
+        // @ts-ignore
         await backButton.click();
     } catch (e) {
         log.info(`[PLACE]: ${e}Additional info not parsed`);
@@ -221,6 +237,7 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
 module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSort }) => {
     const result = {};
 
+    /** @type {{[key: string]: number}} */
     const reviewSortOptions = {
         mostRelevant: 0,
         newest: 1,
@@ -254,8 +271,11 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
         } catch (e) {
             throw new Error(`[PLACE]: Can not find localization for ${localization}, try to use different proxy IP.`);
         }
+
+        // @ts-ignore
         result.totalScore = globalParser.numberParser({ round: 'floor' })(totalScore);
         result.reviewsCountText = reviewsCountText;
+        // @ts-ignore
         result.reviewsCount = reviewsCountText ? globalParser.numberParser({ round: 'truncate' })(reviewsCountText) : null;
 
         // click the consent iframe, working with arrays so it never fails.
@@ -264,6 +284,7 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
         await page.$$eval('#consent-bump iframe', async (frames) => {
             try {
                 frames.forEach((frame) => {
+                    // @ts-ignore
                     [...frame.contentDocument.querySelectorAll('#introAgreeButton')].forEach((s) => s.click());
                 });
             } catch (e) {
@@ -273,6 +294,7 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
 
         // TODO: Scrape default reviews (will allow us to extract 10 reviews by default without additional clicking)
         if (result.reviewsCount && typeof maxReviews === 'number' && maxReviews > 0) {
+            /** @type {object[]} */
             result.reviews = [];
             await page.waitForSelector(reviewsButtonSel);
             await page.click(reviewsButtonSel);
@@ -310,9 +332,9 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
             ]);
 
             const reviewResponseBody = await reviewsResponse.buffer();
-            const reviews = parseReviewFromResponseBody(reviewResponseBody);
+            const reviewsFirst = parseReviewFromResponseBody(reviewResponseBody);
 
-            result.reviews.push(...reviews);
+            result.reviews.push(...reviewsFirst);
             result.reviews = result.reviews.slice(0, maxReviews);
             log.info(`[PLACE]: Exracting reviews: ${result.reviews.length}/${maxReviews} --- ${page.url()}`);
             let reviewUrl = reviewsResponse.url();
@@ -320,7 +342,10 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
             reviewUrl = reviewUrl.replace(/!3e\d/, '!3e2');
             // Make sure that we star review from 0, setting !1i0
             reviewUrl = reviewUrl.replace(/!1i\d+/, '!1i0');
+
+            /** @param {string} url */
             const increaseLimitInUrl = (url) => {
+                // @ts-ignore
                 const numberString = reviewUrl.match(/!1i(\d+)/)[1];
                 const number = parseInt(numberString, 10);
                 return url.replace(/!1i\d+/, `!1i${number + 10}`);
@@ -372,6 +397,7 @@ module.exports.extractImages = async ({ page, maxImages }) => {
     const mainImage = await page.waitForSelector(mainImageSel);
 
     if (maxImages === 1) {
+        // @ts-ignore
         const imageUrl = await mainImage.$eval('img', (el) => el.src);
         resultImageUrls = [imageUrl];
     }
@@ -384,16 +410,17 @@ module.exports.extractImages = async ({ page, maxImages }) => {
 
         log.info(`[PLACE]: Infinite scroll for images started, url: ${page.url()}`);
 
-        while (true) {
+        for (;;) {
             // TODO: Debug infiniteScroll properly, it can get stuck in there sometimes, for now just adding a race
             await Promise.race([
-                infiniteScroll(page, pageBottom, '.section-scrollbox.scrollable-y', 'images', 1),
+                infiniteScroll(page, pageBottom, '.section-scrollbox.scrollable-y', 1),
                 Apify.utils.sleep(20000),
             ]);
             imageUrls = await page.evaluate(() => {
                 /** @type {string[]} */
                 const urls = [];
                 $('.gallery-image-high-res').each(function () {
+                    // @ts-ignore
                     const urlMatch = $(this).attr('style').match(/url\("(.*)"\)/);
                     if (!urlMatch) return;
                     let imageUrl = urlMatch[1];

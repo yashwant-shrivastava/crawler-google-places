@@ -87,11 +87,14 @@ Apify.main(async () => {
                     log.warning('There is no valid URL for this request:');
                     console.dir(req);
                 } else if (req.url.startsWith('https://www.google.com/search')) {
-                    log.warning('ATTENTION! URLs starting with "https://www.google.com/search" are not supported! Please transform your URL to start with "https://www.google.com/maps"');
+                    log.warning('ATTENTION! URLs starting with "https://www.google.com/search" '
+                        + 'are not supported! Please transform your URL to start with "https://www.google.com/maps"');
                     log.warning(`Happened for provided URL: ${req.url}`);
                 } else if (!/www\.google\.com\/maps\/(search|place)\//.test(req.url)) {
                     // allows only search and place urls
-                    log.warning('ATTENTION! URL you provided is not recognized as a valid Google Maps URL. Please use URLs with /maps/search or /maps/place or contact support@apify.com to add a new format');
+                    log.warning('ATTENTION! URL you provided is not '
+                        + 'recognized as a valid Google Maps URL. '
+                        + 'Please use URLs with /maps/search or /maps/place or contact support@apify.com to add a new format');
                     log.warning(`Happened for provided URL: ${req.url}`);
                 } else {
                     // The URL is correct
@@ -145,7 +148,8 @@ Apify.main(async () => {
         }
 
         await Apify.setValue('START-REQUESTS', startRequests);
-        const apifyPlatformKVLink = `link: https://api.apify.com/v2/key-value-stores/${Apify.getEnv().defaultKeyValueStoreId}/records/START-REQUESTS?disableRedirect=true`;
+        const apifyPlatformKVLink = 'link: https://api.apify.com/v2/key-value-stores/'
+            + `${Apify.getEnv().defaultKeyValueStoreId}/records/START-REQUESTS?disableRedirect=true`;
         const localLink = 'local disk: apify_storage/key_value_stores/default/START-REQUESTS.json';
         // @ts-ignore Missing type in SDK
         const link = Apify.getEnv().isAtHome ? apifyPlatformKVLink : localLink;
@@ -167,6 +171,7 @@ Apify.main(async () => {
     /** @type {typedefs.CrawlerOptions} */
     const crawlerOptions = {
         requestQueue,
+        // @ts-ignore
         proxyConfiguration,
         puppeteerPoolOptions,
         maxConcurrency,

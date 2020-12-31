@@ -16,7 +16,7 @@ const { checkInPolygon } = require('./polygon');
  * @param {{
  *   requestQueue: Apify.RequestQueue,
  *   searchString: string,
- *   maxPlacesPerCrawl: number,
+ *   maxPlacesPerCrawl: number | undefined,
  *   exportPlaceUrls: boolean,
  *   geo: object,
  *   allPlaces: {[index: string]:  any},
@@ -32,6 +32,7 @@ const enqueuePlacesFromResponse = (options) => {
         if (url.startsWith('https://www.google.com/search')) {
             // Parse page number from request url
             const queryParams = querystring.parse(url.split('?')[1]);
+            // @ts-ignore
             const pageNumber = parseInt(queryParams.ech, 10);
             // Parse place ids from response body
             const responseBody = await response.buffer();
@@ -100,7 +101,10 @@ const enqueueAllPlaceDetails = async ({
     // Save state of listing pagination
     // NOTE: If pageFunction failed crawler skipped already scraped pagination
     const listingStateKey = `${LISTING_PAGINATION_KEY}-${request.id}`;
-    const listingPagination = await Apify.getValue(listingStateKey) || {};
+
+    /** @typedef {{ from: number, to: number, isFinish: boolean }} ListingPagination */
+    const listingPagination = /** @type ListingPagination */ (await Apify.getValue(listingStateKey)) || {};
+
     // there is no searchString when startUrls are used
     if (searchString) {
         await page.waitForSelector('#searchboxinput', { timeout: 15000 });
@@ -122,12 +126,13 @@ const enqueueAllPlaceDetails = async ({
         // It can happen if there is list of details.
     }
 
-    const startZoom = parseZoomFromUrl(page.url());
+    const startZoom = /** @type {number} */ (parseZoomFromUrl(page.url()));
 
     // In case there is a list of details, it goes through details, limits by maxPlacesPerCrawl
     const nextButtonSelector = '[jsaction="pane.paginationSection.nextPage"]';
     for (;;) {
         await page.waitForSelector(nextButtonSelector, { timeout: DEFAULT_TIMEOUT });
+        // @ts-ignore
         const paginationText = await page.$eval('.n7lv7yjyC35__root', (el) => el.innerText);
         const [fromString, toString] = paginationText.match(/\d+/g);
         const from = parseInt(fromString, 10);
@@ -137,15 +142,15 @@ const enqueueAllPlaceDetails = async ({
         listingPagination.to = to;
         await Apify.setValue(listingStateKey, listingPagination);
         await page.waitForSelector(nextButtonSelector, { timeout: DEFAULT_TIMEOUT });
-        const isNextPaginationDisabled = await page.evaluate((nextButtonSelector) => {
-            return !!$(nextButtonSelector).attr('disabled');
+        const isNextPaginationDisabled = await page.evaluate((nextButtonSel) => {
+            return !!$(nextButtonSel).attr('disabled');
         }, nextButtonSelector);
         const noResultsEl = await page.$('.section-no-result-title');
 
         // If Google auto-zoomes too far, we might want to end the search
         let finishBecauseAutoZoom = false;
         if (typeof maxAutomaticZoomOut === 'number') {
-            const actualZoom = parseZoomFromUrl(page.url());
+            const actualZoom = /** @type {number} */ (parseZoomFromUrl(page.url()));
             // console.log('ACTUAL ZOOM:', actualZoom, 'STARTED ZOOM:', startZoom);
             const googleZoomedOut = startZoom - actualZoom;
             if (googleZoomedOut > maxAutomaticZoomOut) {

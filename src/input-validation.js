@@ -1,5 +1,7 @@
 const Apify = require('apify');
 
+const typedefs = require('./typedefs'); // eslint-disable-line no-unused-vars
+
 const { log } = Apify.utils;
 
 // Small hack for backward compatibillity
@@ -7,13 +9,14 @@ const { log } = Apify.utils;
 // maxImages and maxReviews 0 or empty scraped all
 // Right now, it works like you woudl expect, 0 or empty means no images, for all images just set 99999
 // If includeReviews/includeImages is not present, we process regularly
+/** @param {any} input */
 module.exports.makeInputBackwardsCompatible = (input) => {
     // Deprecated on 2020-07
     if (input.includeReviews !== undefined || input.includeImages !== undefined) {
-        log.warning('INPUT DEPRECATION: includeReviews and includeImages input fields have been deprecated and will be removed soon! Use maxImage and maxReviews instead');
+        log.warning('INPUT DEPRECATION: includeReviews and includeImages '
+        + 'input fields have been deprecated and will be removed soon! Use maxImage and maxReviews instead');
     }
     if (input.includeReviews === true && !input.maxReviews) {
-
         input.maxReviews = 999999;
     }
 
@@ -45,6 +48,7 @@ module.exports.makeInputBackwardsCompatible = (input) => {
 };
 
 // First we deprecate and re-map old values and then we validate
+/** @param {typedefs.Input} input */
 module.exports.validateInput = (input) => {
     if (!input.searchStringsArray && !input.startUrls) {
         throw 'You have to provide startUrls or searchStringsArray in input!';
@@ -57,6 +61,7 @@ module.exports.validateInput = (input) => {
     const { proxyConfig } = input;
     // Proxy is mandatory only on Apify
     if (Apify.isAtHome()) {
+        // @ts-ignore
         if (!proxyConfig || !(proxyConfig.useApifyProxy || proxyConfig.proxyUrls)) {
             throw 'You have to use Apify proxy or custom proxies when running on Apify platform!';
         }
@@ -65,4 +70,4 @@ module.exports.validateInput = (input) => {
             throw 'It is not possible to crawl google places with GOOGLE SERP proxy group. Please use a different one and rerun  the crawler!';
         }
     }
-}
+};

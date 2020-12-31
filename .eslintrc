@@ -6,6 +6,8 @@
         "no-continue": "off",
         "no-throw-literal": "off",
         "no-console": "off",
-        "object-property-newline": "off"
+        "object-property-newline": "off",
+        "no-underscore-dangle": "off",
+        "prefer-destructuring": "off"
     }
 }

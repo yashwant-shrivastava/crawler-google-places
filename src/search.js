@@ -2,10 +2,22 @@ const Apify = require('apify');
 
 const { getGeolocation, findPointsInPolygon } = require('./polygon');
 
+/**
+ * @param {{
+ *  lat: string | undefined,
+ *  lng: string | undefined,
+ *  zoom: number | undefined,
+ *  country: string | undefined,
+ *  state: string | undefined,
+ *  city: string | undefined,
+ *  postalCode: string | undefined,
+ * }} options
+ */
 exports.prepareSearchUrls = async ({ lat, lng, zoom, country, state, city, postalCode }) => {
     // Base part of the URLs to make up the startRequests
     const startUrlSearches = [];
 
+    /** @type {any} */
     let geo;
 
     // preference for startUrlSearches is lat & lng > & state & city

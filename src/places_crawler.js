@@ -81,6 +81,7 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, crawle
                 request,
                 searchString,
                 allPlaces,
+                // @ts-ignore
                 session,
                 scrapingOptions,
                 errorSnapshotter,
@@ -93,6 +94,7 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, crawle
                 // only number of places with correct geolocation
                 if (maxCrawledPlaces && maxCrawledPlaces !== 0) {
                     const dataset = await Apify.openDataset();
+                    // @ts-ignore
                     const { cleanItemCount } = await dataset.getInfo();
                     if (cleanItemCount >= maxCrawledPlaces * multiplier) {
                         await autoscaledPool.abort();
@@ -110,7 +112,7 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, crawle
         await puppeteerPool.retire(page.browser());
         throw err;
     }
-}
+};
 
 /**
  * Setting up PuppeteerCrawler
@@ -153,10 +155,11 @@ const setUpCrawler = ({ crawlerOptions, scrapingOptions, stats, errorSnapshotter
             // and block handlePageFunction from continuing until we click on that
             page.on('response', async (res) => {
                 if (res.url().includes('consent.google.com/intro')) {
-                    request.userData.waitingForConsent = true;
                     // @ts-ignore
+                    request.userData.waitingForConsent = true;
                     await page.waitForTimeout(5000);
                     await waitAndHandleConsentFrame(page, request.url);
+                    // @ts-ignore
                     request.userData.waitingForConsent = false;
                 }
             });
@@ -167,7 +170,7 @@ const setUpCrawler = ({ crawlerOptions, scrapingOptions, stats, errorSnapshotter
         handlePageFunction: async (pageContext) => {
             await errorSnapshotter.tryWithSnapshot(
                 pageContext.page,
-                async () => handlePageFunctionExtended({ pageContext, scrapingOptions, crawlerOptions, stats, errorSnapshotter, allPlaces })
+                async () => handlePageFunctionExtended({ pageContext, scrapingOptions, crawlerOptions, stats, errorSnapshotter, allPlaces }),
             );
         },
         handleFailedRequestFunction: async ({ request, error }) => {

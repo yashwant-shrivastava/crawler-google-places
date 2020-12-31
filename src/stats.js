@@ -33,6 +33,7 @@ class Stats {
     async loadInfo() {
         // load old stats
         const stats = await Apify.getValue('STATS');
+        // @ts-ignore
         if (stats) this.stats = stats;
 
         // mark as loaded
