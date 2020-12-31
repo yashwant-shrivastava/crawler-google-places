@@ -2,7 +2,7 @@ const Apify = require('apify');
 const Puppeteer = require('puppeteer'); // eslint-disable-line
 const Globalize = require('globalize');
 
-const { PLACE_TITLE_SEL } = require('./consts');
+const { PLACE_TITLE_SEL, BACK_BUTTON_SEL } = require('./consts');
 const { waitForGoogleMapLoader, parseReviewFromResponseBody, scrollTo, enlargeImageUrls } = require('./utils');
 const infiniteScroll = require('./infinite_scroll');
 
@@ -192,35 +192,43 @@ module.exports.extractPeopleAlsoSearch = async ({ page }) => {
 module.exports.extractAdditionalInfo = async ({ page }) => {
     let result;
     log.debug('[PLACE]: Scraping additional info.');
+    await page.waitForSelector('button.section-editorial', { timeout: 5000 }).catch(() => {});
     const button = await page.$('button.section-editorial');
-    try {
-        // @ts-ignore
-        await button.click();
-        await page.waitForSelector('.section-attribute-group', { timeout: 3000 });
-        result = await page.evaluate(() => {
-            /** @type {{[key: string]: any[]}} */
-            const innerResult = {};
-            $('.section-attribute-group').each((_, section) => {
-                const key = $(section).find('.section-attribute-group-title').text().trim();
-                /** @type {object[]} */
-                const values = [];
-                $(section).find('.section-attribute-group-container .section-attribute-group-item').each((_i, sub) => {
-                    const res = {};
-                    const title = $(sub).text().trim();
-                    const val = $(sub).find('.section-attribute-group-item-icon.maps-sprite-place-attributes-done').length > 0;
-                    // @ts-ignore
-                    res[title] = val;
-                    values.push(res);
+    if (button) {
+        try {
+            await button.click();
+            await page.waitForSelector('.section-attribute-group', { timeout: 30000 });
+            result = await page.evaluate(() => {
+                /** @type {{[key: string]: any[]}} */
+                const innerResult = {};
+                $('.section-attribute-group').each((_, section) => {
+                    const key = $(section).find('.section-attribute-group-title').text().trim();
+                    /** @type {object[]} */
+                    const values = [];
+                    $(section).find('.section-attribute-group-container .section-attribute-group-item').each((_i, sub) => {
+                        const res = {};
+                        const title = $(sub).text().trim();
+                        const val = $(sub).find('.section-attribute-group-item-icon.maps-sprite-place-attributes-done').length > 0;
+                        // @ts-ignore
+                        res[title] = val;
+                        values.push(res);
+                    });
+                    innerResult[key] = values;
                 });
-                innerResult[key] = values;
+                return innerResult;
             });
-            return innerResult;
-        });
-        const backButton = await page.$('button[aria-label*=Back]');
-        // @ts-ignore
-        await backButton.click();
-    } catch (e) {
-        log.info(`[PLACE]: ${e}Additional info not parsed`);
+        } catch (e) {
+            log.info(`[PLACE]: ${e}Additional info not parsed`);
+        } finally {
+            const backButton = await page.$(BACK_BUTTON_SEL);
+            if (!backButton) {
+                // eslint-disable-next-line no-unsafe-finally
+                throw new Error('Back button for additional info is not present');
+            }
+            await backButton.click();
+        }
+    } else {
+        log.warning(`Could not find button to get to additional data, skipping - ${page.url()}`);
     }
     return result;
 };
@@ -369,7 +377,7 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
             log.info(`[PLACE]: Reviews extraction finished: ${result.reviews.length} --- ${page.url()}`);
 
             await page.waitForTimeout(500);
-            const backButton = await page.$('button[jsaction*=back]');
+            const backButton = await page.$(BACK_BUTTON_SEL);
             if (!backButton) {
                 throw new Error('Back button for reviews is not present');
             }
