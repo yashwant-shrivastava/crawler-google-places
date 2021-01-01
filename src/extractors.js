@@ -196,21 +196,22 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
     const button = await page.$('button.section-editorial');
     if (button) {
         try {
-            await button.click();
+            await button.click({ delay: 200 });
             await page.waitForSelector('.section-attribute-group', { timeout: 30000 });
             result = await page.evaluate(() => {
                 /** @type {{[key: string]: any[]}} */
                 const innerResult = {};
                 $('.section-attribute-group').each((_, section) => {
                     const key = $(section).find('.section-attribute-group-title').text().trim();
-                    /** @type {object[]} */
+                    /** @type {{[key: string]: boolean}[]} */
                     const values = [];
                     $(section).find('.section-attribute-group-container .section-attribute-group-item').each((_i, sub) => {
+                        /** @type {{[key: string]: boolean}} */
                         const res = {};
                         const title = $(sub).text().trim();
-                        const val = $(sub).find('.section-attribute-group-item-icon.maps-sprite-place-attributes-done').length > 0;
+                        const isChecked = $(sub).find('.section-attribute-group-item-icon').length > 0;
                         // @ts-ignore
-                        res[title] = val;
+                        res[title] = isChecked;
                         values.push(res);
                     });
                     innerResult[key] = values;
@@ -225,7 +226,8 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
                 // eslint-disable-next-line no-unsafe-finally
                 throw new Error('Back button for additional info is not present');
             }
-            await backButton.click();
+            await backButton.click({ delay: 200 });
+            await page.waitForSelector(PLACE_TITLE_SEL);
         }
     } else {
         log.warning(`Could not find button to get to additional data, skipping - ${page.url()}`);
@@ -256,7 +258,7 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
     const reviewsButtonSel = 'button[jsaction="pane.reviewChart.moreReviews"]';
     // This selector is not present when there are no reviews
     try {
-        await page.waitForSelector('button[jsaction="pane.reviewChart.moreReviews"]', { timeout: 15000 });
+        await page.waitForSelector(reviewsButtonSel, { timeout: 15000 });
     } catch (e) {
         log.warning(`Could not find reviews count, check if the page really has no reviews --- ${page.url()}`);
     }
