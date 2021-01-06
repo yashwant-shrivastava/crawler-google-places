@@ -15,7 +15,10 @@ const { log } = Apify.utils;
 
 Apify.main(async () => {
     const input = /** @type {typedefs.Input} */ (await Apify.getValue('INPUT'));
-    const stats = new Stats(300);
+
+    const stats = new Stats();
+    await stats.initialize(Apify.events);
+
     const errorSnapshotter = new ErrorSnapshotter();
     await errorSnapshotter.initialize(Apify.events);
 
@@ -139,7 +142,6 @@ Apify.main(async () => {
             }
         }
 
-        await stats.loadInfo();
         log.info(`Prepared ${startRequests.length} Start URLs (showing max 10):`);
         console.dir(startRequests.map((r) => r.url).slice(0, 10));
 

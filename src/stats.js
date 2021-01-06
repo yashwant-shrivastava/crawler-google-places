@@ -1,23 +1,26 @@
 const Apify = require('apify');
 
+const typedefs = require('./typedefs'); // eslint-disable-line no-unused-vars
+
 const { utils: { log } } = Apify;
 
 class Stats {
-    constructor(logInterval = 30) {
+    constructor() {
+        /** @type {typedefs.InnerStats} */
         this.stats = { failed: 0, ok: 0, outOfPolygon: 0, outOfPolygonCached: 0, places: 0, maps: 0 };
-        this.isLoaded = false;
+    }
 
-        if (Number.isNaN(logInterval)) {
-            throw new Error('logInterval parameter is not number!');
+    /**
+     * @param {any} events
+     */
+    async initialize(events) {
+        const loadedStats = /** @type {typedefs.InnerStats | undefined} */ (await Apify.getValue('STATS'));
+        if (loadedStats) {
+            this.stats = loadedStats;
         }
-
-        Apify.events.on('migrating', async () => {
+        events.on('persistState', async () => {
             await this.saveStats();
         });
-
-        setInterval(async () => {
-            await this.saveStats();
-        }, logInterval * 1000);
     }
 
     async logInfo() {
@@ -30,21 +33,8 @@ class Stats {
         log.info(`[STATS]: ${statsArray.join(' | ')}`);
     }
 
-    async loadInfo() {
-        // load old stats
-        const stats = await Apify.getValue('STATS');
-        // @ts-ignore
-        if (stats) this.stats = stats;
-
-        // mark as loaded
-        this.isLoaded = true;
-    }
-
     async saveStats() {
-        if (!this.isLoaded) throw new Error('Cannot save before loading old data!');
         await Apify.setValue('STATS', this.stats);
-        log.debug('[STATS]: Saved');
-
         await this.logInfo();
     }
 

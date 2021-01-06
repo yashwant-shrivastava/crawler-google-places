@@ -93,4 +93,15 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @property {string | undefined} country
  * @property {string | undefined} postalCode
  */
+
+/**
+ * @typedef {{
+ * failed: number,
+ * ok: number,
+ * outOfPolygon: number,
+ * outOfPolygonCached: number,
+ * places: number,
+ * maps: number,
+ * }} InnerStats
+ */
 module.exports = {};
