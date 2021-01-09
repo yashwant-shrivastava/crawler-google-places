@@ -326,8 +326,7 @@
             "title": "Manual polygon",
             "type": "object",
             "editor": "json",
-            "description": "Manual polygon for searching.",
-            "default": ""
+            "description": "Manual polygon for searching."
         },
         "proxyConfig": {
             "title": "Proxy configuration",
