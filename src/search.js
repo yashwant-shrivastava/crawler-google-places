@@ -13,7 +13,7 @@ const { getGeolocation, findPointsInPolygon } = require('./polygon');
  *  postalCode: string | undefined,
  * }} options
  */
-exports.prepareSearchUrls = async ({ lat, lng, zoom, country, state, city, postalCode }) => {
+exports.prepareSearchUrls = async ({ lat, lng, zoom, country, state, city, postalCode, polygon }) => {
     // Base part of the URLs to make up the startRequests
     const startUrlSearches = [];
 
@@ -26,8 +26,8 @@ exports.prepareSearchUrls = async ({ lat, lng, zoom, country, state, city, posta
             throw 'You have to defined both lat and lng!';
         }
         startUrlSearches.push(`https://www.google.com/maps/@${lat},${lng},${zoom}z/search`);
-    } else if (country || state || city || postalCode) {
-        geo = await Apify.getValue('GEO');
+    } else if (polygon || country || state || city || postalCode) {
+        geo = polygon || await Apify.getValue('GEO');
         // Takes from KV or create a new one
         geo = geo || await getGeolocation({ country, state, city, postalCode });
 

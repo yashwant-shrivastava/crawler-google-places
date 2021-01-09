@@ -303,6 +303,32 @@
             "minimum": 0,
             "maximum": 10
         },
+        "cachePlaces": {
+            "title": "Cache Places",
+            "type": "boolean",
+            "description": "Cache places location between runs in named KeyVal. Check location in polygon before enqueuing place to requestQueue.",
+            "default": false
+        },
+        "useCachedPlaces": {
+            "title": "Use Cached Places",
+            "type": "boolean",
+            "description": "Use precached places firstly before starting search.",
+            "default": false
+        },
+        "cacheKey": {
+            "title": "Cache Key",
+            "type": "string",
+            "editor": "textfield",
+            "description": "Key for saving of cached places. Can be city/country name,...",
+            "default": ""
+        },
+        "polygon": {
+            "title": "Manual polygon",
+            "type": "object",
+            "editor": "json",
+            "description": "Manual polygon for searching.",
+            "default": ""
+        },
         "proxyConfig": {
             "title": "Proxy configuration",
             "type": "object",
@@ -358,12 +384,6 @@
             "description": "Select logging level.",
             "editor": "select",
             "enum": ["DEBUG","INFO","WARNING"]
-        },
-        "cachePlaces": {
-            "title": "Cache Places",
-            "type": "boolean",
-            "description": "Cache places location between runs in named KeyVal. Check location in polygon before enqueuing place to requestQueue.",
-            "default": false
         },
         "useStealth": {
             "title": "Use stealth",

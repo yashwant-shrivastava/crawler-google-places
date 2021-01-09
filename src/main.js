@@ -31,7 +31,7 @@ Apify.main(async () => {
         // Search and Start URLs
         startUrls, searchStringsArray,
         // Geolocation
-        lat, lng, country, state, city, postalCode, zoom = 10,
+        lat, lng, country, state, city, postalCode, zoom = 10, polygon,
         // browser and request options
         pageLoadTimeoutSec = 60, useChrome = false, maxConcurrency, maxPagesPerBrowser = 1, maxPageRetries = 6,
         // Misc
@@ -64,7 +64,7 @@ Apify.main(async () => {
     // We crate geolocation only for search. not for Start URLs
     if (!Array.isArray(startUrls) || startUrls.length === 0) {
         // This call is async because it persists geolocation into KV
-        ({ startUrlSearches, geo } = await prepareSearchUrls({ lat, lng, zoom, country, state, city, postalCode }));
+        ({ startUrlSearches, geo } = await prepareSearchUrls({ lat, lng, zoom, country, state, city, postalCode, polygon }));
     }
 
     if (startRequests.length === 0) {
