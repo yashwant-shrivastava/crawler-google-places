@@ -13,6 +13,9 @@ const cachedPlacesName = 'Places-cached-locations';
 
 const { log } = Apify.utils;
 
+// NOTE: This scraper is mostly typed with Typescript lint.
+// We had to do few ugly things because of that but hopefully it is worth it.
+
 Apify.main(async () => {
     const input = /** @type {typedefs.Input} */ (await Apify.getValue('INPUT'));
 

@@ -3,12 +3,15 @@ const Puppeteer = require('puppeteer'); // eslint-disable-line
 
 const typedefs = require('./typedefs'); // eslint-disable-line no-unused-vars
 const ErrorSnapshotter = require('./error-snapshotter'); // eslint-disable-line no-unused-vars
+const Stats = require('./stats'); // eslint-disable-line no-unused-vars
 
 const { extractPageData, extractPopularTimes, extractOpeningHours, extractPeopleAlsoSearch,
     extractAdditionalInfo, extractReviews, extractImages } = require('./extractors');
 const { DEFAULT_TIMEOUT, PLACE_TITLE_SEL } = require('./consts');
 const { checkInPolygon } = require('./polygon');
 const { waitForGoogleMapLoader } = require('./utils');
+
+const { log } = Apify.utils;
 
 /**
  * @param {{
@@ -19,11 +22,12 @@ const { waitForGoogleMapLoader } = require('./utils');
 *  session: Apify.Session,
 *  scrapingOptions: typedefs.ScrapingOptions,
 *  errorSnapshotter: ErrorSnapshotter,
+*  stats: Stats,
 * }} options
 */
-module.exports.extractPlaceDetail = async (options) => {
+module.exports.handlePlaceDetail = async (options) => {
     const {
-        page, request, searchString, allPlaces, session, scrapingOptions, errorSnapshotter,
+        page, request, searchString, allPlaces, session, scrapingOptions, errorSnapshotter, stats,
     } = options;
     const {
         includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
@@ -52,17 +56,21 @@ module.exports.extractPlaceDetail = async (options) => {
 
     const location = latMatch && lngMatch ? { lat: parseFloat(latMatch), lng: parseFloat(lngMatch) } : null;
 
+    // Add info from listing page
+    const { shownAsAd, rank, searchPageUrl } =
+        /** @type {{shownAsAd:boolean, rank:number, searchPageUrl: string}} */ (request.userData);
+
     // check if place is inside of polygon, if not return null, geo non-null only for country/state/city/postal
     if (geo && location && !checkInPolygon(geo, location)) {
         // cache place location to keyVal store
         if (cachePlaces) {
             allPlaces[request.uniqueKey] = location;
         }
-        return null;
+        log.warning(`[PLACE]: Place is outside of required location (polygon), skipping... url --- ${url}`);
+        stats.outOfPolygon();
+        stats.addOutOfPolygonPlace({ url, searchPageUrl, location });
+        return;
     }
-
-    // Add info from listing page
-    const { shownAsAd, rank } = /** @type {{shownAsAd:boolean, rank:number}} */ (request.userData);
 
     const detail = {
         ...pageData,
@@ -70,6 +78,7 @@ module.exports.extractPlaceDetail = async (options) => {
         rank,
         placeId: request.uniqueKey,
         url,
+        searchPageUrl,
         searchString,
         location,
         scrapedAt: new Date().toISOString(),
@@ -89,5 +98,7 @@ module.exports.extractPlaceDetail = async (options) => {
         ),
     };
 
-    return detail;
+    await Apify.pushData(detail);
+    stats.places();
+    log.info(`[PLACE]: Place scraped successfully --- ${url}`);
 };

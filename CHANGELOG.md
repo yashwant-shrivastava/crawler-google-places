@@ -1,3 +1,13 @@
+## 2021-01-11
+Features:
+- Automatic screenshots of errors to see what went wrong
+- Added `searchPageUrl` to output
+- Added `PLACES-OUT-OF-POLYOGON` record to Key-Value store. You can check what places were excluded.
+
+Fixes:
+- Fixed rare bug with saving stats
+- Improvement in review sorting - but it is still not ideal, more work needs to be done
+
 ## 2020-11-16
 - Added postal code geolocation to input
 - Improved errors when location is not found

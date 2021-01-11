@@ -14,6 +14,7 @@ const { checkInPolygon } = require('./polygon');
 /**
  * This handler waiting for response from xhr and enqueue places from the search response boddy.
  * @param {{
+ *   page: Puppeteer.Page,
  *   requestQueue: Apify.RequestQueue,
  *   searchString: string,
  *   maxPlacesPerCrawl: number | undefined,
@@ -26,7 +27,7 @@ const { checkInPolygon } = require('./polygon');
  * @return {(response: Puppeteer.Response) => Promise<void>}
  */
 const enqueuePlacesFromResponse = (options) => {
-    const { requestQueue, searchString, maxPlacesPerCrawl, exportPlaceUrls, geo, allPlaces, cachePlaces, stats } = options;
+    const { page, requestQueue, searchString, maxPlacesPerCrawl, exportPlaceUrls, geo, allPlaces, cachePlaces, stats } = options;
     return async (response) => {
         const url = response.url();
         if (url.startsWith('https://www.google.com/search')) {
@@ -49,10 +50,12 @@ const enqueuePlacesFromResponse = (options) => {
                     } else {
                         const location = allPlaces[place.placeId];
                         if (!cachePlaces || !geo || !location || checkInPolygon(geo, location)) {
+                            // At this point, page URL should be resolved
+                            const searchPageUrl = page.url();
                             await requestQueue.addRequest({
                                 url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${place.placeId}`,
                                 uniqueKey: place.placeId,
-                                userData: { label: 'detail', searchString, rank },
+                                userData: { label: 'detail', searchString, rank, searchPageUrl },
                             },
                             { forefront: true });
                         } else {
@@ -89,6 +92,7 @@ const enqueueAllPlaceDetails = async ({
 }) => {
     const { geo, maxAutomaticZoomOut, cachePlaces, exportPlaceUrls, maxCrawledPlaces } = scrapingOptions;
     page.on('response', enqueuePlacesFromResponse({
+        page,
         requestQueue,
         searchString,
         maxPlacesPerCrawl: maxCrawledPlaces,

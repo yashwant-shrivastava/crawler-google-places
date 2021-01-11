@@ -104,4 +104,12 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * maps: number,
  * }} InnerStats
  */
+
+/**
+ * @typedef {{
+ * url: string,
+ * searchPageUrl: string,
+ * location: { lat: number, lng: number },
+ * }} PlaceOutOfPolygon
+*/
 module.exports = {};

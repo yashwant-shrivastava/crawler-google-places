@@ -7,7 +7,7 @@ const Stats = require('./stats'); // eslint-disable-line no-unused-vars
 const ErrorSnapshotter = require('./error-snapshotter'); // eslint-disable-line no-unused-vars
 
 const { enqueueAllPlaceDetails } = require('./enqueue_places');
-const { extractPlaceDetail } = require('./detail_page_handle');
+const { handlePlaceDetail } = require('./detail_page_handle');
 const {
     waitAndHandleConsentFrame, waiter,
 } = require('./utils');
@@ -76,7 +76,7 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, crawle
             // Get data for place and save it to dataset
             log.info(`[${logLabel}]: Extracting details from place url ${page.url()}`);
 
-            const placeDetail = await extractPlaceDetail({
+            await handlePlaceDetail({
                 page,
                 request,
                 searchString,
@@ -85,26 +85,20 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, crawle
                 session,
                 scrapingOptions,
                 errorSnapshotter,
+                stats,
             });
 
-            if (placeDetail) {
-                await Apify.pushData(placeDetail);
-                // when using polygon search multiple start urls are used. Therefore more links are added to request queue,
-                // there is also good possibility that some of places will be out of desired polygon, so we do not check number of queued places,
-                // only number of places with correct geolocation
-                if (maxCrawledPlaces && maxCrawledPlaces !== 0) {
-                    const dataset = await Apify.openDataset();
-                    // @ts-ignore
-                    const { cleanItemCount } = await dataset.getInfo();
-                    if (cleanItemCount >= maxCrawledPlaces * multiplier) {
-                        await autoscaledPool.abort();
-                    }
+            // TODO: Rework this terrible thing :)
+            // when using polygon search multiple start urls are used. Therefore more links are added to request queue,
+            // there is also good possibility that some of places will be out of desired polygon, so we do not check number of queued places,
+            // only number of places with correct geolocation
+            if (maxCrawledPlaces && maxCrawledPlaces !== 0) {
+                const dataset = await Apify.openDataset();
+                // @ts-ignore
+                const { cleanItemCount } = await dataset.getInfo();
+                if (cleanItemCount >= maxCrawledPlaces * multiplier) {
+                    await autoscaledPool.abort();
                 }
-                stats.places();
-                log.info(`[${logLabel}]: Place scraped successfully --- ${placeDetail.url}`);
-            } else {
-                stats.outOfPolygon();
-                log.warning(`[${logLabel}]: Place is outside of required location (polygon), skipping... url --- ${page.url()}`);
             }
         }
         stats.ok();
