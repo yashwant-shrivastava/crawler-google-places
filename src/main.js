@@ -42,14 +42,14 @@ Apify.main(async () => {
         // Scraping options
         includeHistogram = false, includeOpeningHours = false, includePeopleAlsoSearch = false,
         maxReviews = 5, maxImages = 1, exportPlaceUrls = false, additionalInfo = false, maxCrawledPlaces,
-        maxAutomaticZoomOut, cachePlaces = false, reviewsSort = 'mostRelevant',
+        maxAutomaticZoomOut, cachePlaces = false, useCachedPlaces = false, cacheKey, reviewsSort = 'mostRelevant',
     } = input;
 
     if (debug) {
         log.setLevel(log.LEVELS.DEBUG);
     }
 
-    const placesCache = new PlacesCache(cachePlaces);
+    const placesCache = new PlacesCache({ cachePlaces, cacheKey, useCachedPlaces });
     await placesCache.loadInfo()
 
     // Requests that are used in the queue, we persist them to skip this step after migration
@@ -132,7 +132,7 @@ Apify.main(async () => {
             }
 
             // use cached place ids for geolocation
-            if (cachePlaces) {
+            if (cachePlaces && useCachedPlaces) {
                 const searchString = searchStringsArray[0];
                 for (const placeId of placesCache.placesInPolygon(geo, maxCrawledPlaces)) {
                     startRequests.push({
@@ -226,7 +226,7 @@ Apify.main(async () => {
     };
 
     // Create and run crawler
-    const crawler = placesCrawler.setUpCrawler({ crawlerOptions, scrapingOptions, stats, errorSnapshotter, placesCache });
+    const crawler = placesCrawler.setUpCrawler({ crawlerOptions, scrapingOptions, stats, errorSnapshotter });
 
     await crawler.run();
     await stats.saveStats();

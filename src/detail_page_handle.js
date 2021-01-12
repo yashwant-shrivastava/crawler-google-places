@@ -18,7 +18,6 @@ const { log } = Apify.utils;
 *  page: Puppeteer.Page,
 *  request: Apify.Request,
 *  searchString: string,
-*  allPlaces: {[index: string]: any},
 *  session: Apify.Session,
 *  scrapingOptions: typedefs.ScrapingOptions,
 *  errorSnapshotter: ErrorSnapshotter,
@@ -27,11 +26,11 @@ const { log } = Apify.utils;
 */
 module.exports.handlePlaceDetail = async (options) => {
     const {
-        page, request, searchString, allPlaces, session, scrapingOptions, errorSnapshotter, stats,
+        page, request, searchString, session, scrapingOptions, errorSnapshotter, stats,
     } = options;
     const {
         includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
-        maxReviews, maxImages, additionalInfo, geo, cachePlaces, reviewsSort,
+        maxReviews, maxImages, additionalInfo, geo, placesCache, reviewsSort,
     } = scrapingOptions;
     // Extract basic information
     await waitForGoogleMapLoader(page);
@@ -63,9 +62,7 @@ module.exports.handlePlaceDetail = async (options) => {
     // check if place is inside of polygon, if not return null, geo non-null only for country/state/city/postal
     if (geo && location && !checkInPolygon(geo, location)) {
         // cache place location to keyVal store
-        if (cachePlaces) {
-            allPlaces[request.uniqueKey] = location;
-        }
+        placesCache.addLocation(request.uniqueKey, location, searchString);
         log.warning(`[PLACE]: Place is outside of required location (polygon), skipping... url --- ${url}`);
         stats.outOfPolygon();
         stats.addOutOfPolygonPlace({ url, searchPageUrl, location });

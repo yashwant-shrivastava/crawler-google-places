@@ -8,17 +8,19 @@ exports.PlacesCache = class PlacesCache {
     allPlaces = {};
     isLoaded = false;
 
-    constructor(cachePlaces = false) {
+    constructor({ cachePlaces = false, cacheKey, useCachedPlaces }) {
         this.cachePlaces = cachePlaces;
+        this.cacheKey = cacheKey;
+        this.useCachedPlaces = useCachedPlaces;
 
         if (this.cachePlaces) {
             Apify.events.on('migrating', async () => {
                 const allPlacesStore = await this.placesStore();
                 log.debug('Saving places before migration');
-                const reloadedPlaces = (await allPlacesStore.getValue('places')) || {};
+                const reloadedPlaces = (await allPlacesStore.getValue(this.keyName())) || {};
                 // @ts-ignore
                 const newPlaces = { ...allPlaces, ...reloadedPlaces };
-                await allPlacesStore.setValue('places', newPlaces);
+                await allPlacesStore.setValue(this.keyName(), newPlaces);
             });
 
             setInterval(async () => {
@@ -29,23 +31,32 @@ exports.PlacesCache = class PlacesCache {
     }
 
     async placesStore() {
-        return Apify.openKeyValueStore(cachedPlacesName);
+        return await Apify.openKeyValueStore(cachedPlacesName);
+    }
+
+    keyName() {
+        return this.cacheKey ? `places-${this.cacheKey}` : 'places';
     }
 
     async loadPlaces() {
         const allPlacesStore = await this.placesStore();
-        return (await allPlacesStore.getValue('places')) || {};
+        return (await allPlacesStore.getValue(this.keyName())) || {};
     }
 
-    addLocation(placeId, location) {
-        if (this.cachePlaces)
-            this.allPlaces[placeId] = location;
+    addLocation(placeId, location, keyword) {
+        if (!this.cachePlaces) return null;
+        let place = {};
+        if (Array.isArray(this.allPlaces[placeId])) place.location = this.allPlaces[placeId]
+        else if (this.allPlaces[placeId]) place.keywords = [...(place.keywords || []), keyword];
+        else place = { location, keywords: [keyword] };
+        this.allPlaces[placeId] = place;
     }
 
     getLocation(placeId) {
-        if (this.cachePlaces)
+        if (!this.cachePlaces || !this.allPlaces[placeId]) return null;
+        if (Array.isArray(this.allPlaces[placeId]))
             return this.allPlaces[placeId];
-        return null;
+        return this.allPlaces[placeId].location;
     }
 
     async loadInfo() {
@@ -67,7 +78,7 @@ exports.PlacesCache = class PlacesCache {
         const reloadedPlaces = this.loadPlaces();
         // @ts-ignore
         const newPlaces = { ...this.allPlaces, ...reloadedPlaces };
-        await allPlacesStore.setValue('places', newPlaces);
+        await allPlacesStore.setValue(this.keyName(), newPlaces);
         log.info('[CACHE] places saved');
     }
 
