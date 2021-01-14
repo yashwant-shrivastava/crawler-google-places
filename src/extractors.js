@@ -247,14 +247,6 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
 module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSort }) => {
     const result = {};
 
-    /** @type {{[key: string]: number}} */
-    const reviewSortOptions = {
-        mostRelevant: 0,
-        newest: 1,
-        highestRanking: 2,
-        lowestRanking: 3,
-    };
-
     const reviewsButtonSel = 'button[jsaction="pane.reviewChart.moreReviews"]';
     // This selector is not present when there are no reviews
     try {
@@ -308,6 +300,15 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
             result.reviews = [];
             await page.waitForSelector(reviewsButtonSel);
             await page.click(reviewsButtonSel);
+
+            /** @type {{[key: string]: number}} */
+            const reviewSortOptions = {
+                mostRelevant: 0,
+                newest: 1,
+                highestRanking: 2,
+                lowestRanking: 3,
+            };
+
             // Set up sort from newest
             const sortPromise1 = async () => {
                 try {
@@ -328,10 +329,10 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
             const [reviewsResponse] = await Promise.all([
                 page.waitForResponse((response) => response.url().includes('preview/review/listentitiesreviews')),
                 sortPromise1(),
+                // This is here to work around the default setting not giving us any XHR
+                // TODO: Rework this
+                scrollTo(page, '.section-scrollbox.scrollable-y', 10000),
             ]);
-
-            // This was previously inside the Promise.aa but I don't see the reason
-            await scrollTo(page, '.section-scrollbox.scrollable-y', 10000);
 
             const reviewResponseBody = await reviewsResponse.buffer();
             const reviewsFirst = parseReviewFromResponseBody(reviewResponseBody);
@@ -340,8 +341,12 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
             result.reviews = result.reviews.slice(0, maxReviews);
             log.info(`[PLACE]: Exracting reviews: ${result.reviews.length}/${result.reviewsCount} --- ${page.url()}`);
             let reviewUrl = reviewsResponse.url();
+
+            // TODO: This looks buggy since we want to sort as user inputs, not by newest
             // Replace !3e1 in URL with !3e2, it makes list sort by newest
             reviewUrl = reviewUrl.replace(/!3e\d/, '!3e2');
+
+            // TODO: We capture the first batch, this should not start from 0 I think
             // Make sure that we star review from 0, setting !1i0
             reviewUrl = reviewUrl.replace(/!1i\d+/, '!1i0');
 
