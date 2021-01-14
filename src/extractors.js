@@ -338,7 +338,7 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
 
             result.reviews.push(...reviewsFirst);
             result.reviews = result.reviews.slice(0, maxReviews);
-            log.info(`[PLACE]: Exracting reviews: ${result.reviews.length}/${maxReviews} --- ${page.url()}`);
+            log.info(`[PLACE]: Exracting reviews: ${result.reviews.length}/${result.reviewsCount} --- ${page.url()}`);
             let reviewUrl = reviewsResponse.url();
             // Replace !3e1 in URL with !3e2, it makes list sort by newest
             reviewUrl = reviewUrl.replace(/!3e\d/, '!3e2');
@@ -365,10 +365,10 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
                 }
                 result.reviews.push(...reviews);
                 result.reviews = result.reviews.slice(0, maxReviews);
-                log.info(`[PLACE]: Exracting reviews: ${result.reviews.length}/${maxReviews} --- ${page.url()}`);
+                log.info(`[PLACE]: Exracting reviews: ${result.reviews.length}/${result.reviewsCount} --- ${page.url()}`);
                 reviewUrl = increaseLimitInUrl(reviewUrl);
             }
-            log.info(`[PLACE]: Reviews extraction finished: ${result.reviews.length} --- ${page.url()}`);
+            log.info(`[PLACE]: Reviews extraction finished: ${result.reviews.length}/${result.reviewsCount} --- ${page.url()}`);
 
             await page.waitForTimeout(500);
             const backButton = await page.$(BACK_BUTTON_SEL);
