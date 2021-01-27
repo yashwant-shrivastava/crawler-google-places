@@ -31,7 +31,7 @@ module.exports.handlePlaceDetail = async (options) => {
     } = options;
     const {
         includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
-        maxReviews, maxImages, additionalInfo, geo, cachePlaces, reviewsSort, reviewsDisableTranslation,
+        maxReviews, maxImages, additionalInfo, geo, cachePlaces, reviewsSort, reviewsTranslation,
     } = scrapingOptions;
     // Extract basic information
     await waitForGoogleMapLoader(page);
@@ -88,7 +88,7 @@ module.exports.handlePlaceDetail = async (options) => {
         additionalInfo: additionalInfo ? await extractAdditionalInfo({ page }) : undefined,
         ...await errorSnapshotter.tryWithSnapshot(
             page,
-            async () => extractReviews({ page, totalScore: pageData.totalScore, maxReviews, reviewsSort, reviewsDisableTranslation }),
+            async () => extractReviews({ page, totalScore: pageData.totalScore, maxReviews, reviewsSort, reviewsTranslation }),
             { name: 'Reviews extraction' },
         ),
         imageUrls: await errorSnapshotter.tryWithSnapshot(

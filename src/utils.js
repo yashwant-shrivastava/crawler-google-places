@@ -102,10 +102,10 @@ const parseSearchPlacesResponseBody = (responseBodyBuffer) => {
  * Response from google xhr is kind a weird. Mix of array of array.
  * This function parse reviews from the response body.
  * @param {Buffer | string} responseBody
- * @param {boolean} reviewsDisableTranslation
+ * @param {string} reviewsTranslation
  * @return [place]
  */
-const parseReviewFromResponseBody = (responseBody, reviewsDisableTranslation) => {
+const parseReviewFromResponseBody = (responseBody, reviewsTranslation) => {
     /** @type {Review[]} */
     const reviews = [];
     const stringBody = typeof responseBody === 'string'
@@ -118,12 +118,16 @@ const parseReviewFromResponseBody = (responseBody, reviewsDisableTranslation) =>
 
         // Optionally remove translation
         // TODO: Perhaps the text is differentiated in the JSON
-        if (typeof text === 'string' && reviewsDisableTranslation) {
-            const cleanReviewText = text.replace(/\r?\n|\r/g, " ");
-            const splitReviewText = cleanReviewText.split('(Original)');
-            if (splitReviewText[1]) {
-                text = splitReviewText[1].trim();
+        if (typeof text === 'string' && reviewsTranslation !== 'originalAndTranslated') {
+            const splitReviewText = text.split('\n\n(Original)\n');
+
+            if (reviewsTranslation === 'onlyOriginal') {
+                // Fallback if there is no translation
+                text = splitReviewText[1] || splitReviewText[0];
+            } else if (reviewsTranslation === 'onlyTranslated') {
+                text = splitReviewText[0];
             }
+            text = text.replace('(Translated by Google)', '').replace('\n\n(Original)\n', '').trim();
         }
 
         /** @type {Review} */

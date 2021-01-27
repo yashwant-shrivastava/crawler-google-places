@@ -246,10 +246,10 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
  *    totalScore: string,
  *    maxReviews: number,
  *    reviewsSort: string,
- *    reviewsDisableTranslation: boolean,
+ *    reviewsTranslation: string,
  * }} options
  */
-module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSort, reviewsDisableTranslation }) => {
+module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSort, reviewsTranslation }) => {
     const result = {};
 
     const reviewsButtonSel = 'button[jsaction="pane.reviewChart.moreReviews"]';
@@ -369,7 +369,7 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
                     const response = await fetch(url);
                     return response.text();
                 }, reviewUrl);
-                const reviews = parseReviewFromResponseBody(responseBody, reviewsDisableTranslation);
+                const reviews = parseReviewFromResponseBody(responseBody, reviewsTranslation);
                 if (reviews.length === 0) {
                     break;
                 }

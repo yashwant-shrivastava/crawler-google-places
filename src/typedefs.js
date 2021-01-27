@@ -17,7 +17,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @property {string} language
  * @property {number} multiplier
  * @property {object} geo
- * @property {boolean} reviewsDisableTranslation
+ * @property {string} reviewsTranslation
  */
 
 /**
@@ -68,6 +68,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @property {number} [maxAutomaticZoomOut]
  * @property {boolean} [cachePlaces]
  * @property {string} [reviewsSort]
+ * @property {string} [reviewsTranslation]
  */
 
 /**

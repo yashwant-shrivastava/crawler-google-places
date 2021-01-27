@@ -244,11 +244,22 @@
                 "Lowest ranking"
             ]
         },
-        "reviewsDisableTranslation": {
-            "title": "Disable reviews translation",
-            "type": "boolean",
-            "description": "Google automatically adds translated text to the original one. If you care only about the original language, check this option.",
-            "default": false
+        "reviewsTranslation": {
+            "title": "Reviews translation",
+            "type": "string",
+            "description": "Google automatically adds translated text to the original one. You can adjust the behavior here.",
+            "editor": "select",
+            "default": "originalAndTranslated",
+            "enum": [
+                "originalAndTranslated",
+                "onlyOriginal",
+                "onlyTranslated"
+            ],
+            "enumTitles": [
+                "Original & translated (Google's default)",
+                "Only original",
+                "Only translated"
+            ]
         },
         "exportPlaceUrls": {
             "title": "Export Place Urls Only (Skips place details)",
