@@ -48,8 +48,8 @@ const enqueuePlacesFromResponse = (options) => {
                             url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${place.placeId}`,
                         });
                     } else {
-                        const location = allPlaces[place.placeId];
-                        if (!cachePlaces || !geo || !location || checkInPolygon(geo, location)) {
+                        const coordinates = allPlaces[place.placeId];
+                        if (!cachePlaces || !geo || !coordinates || checkInPolygon(geo, coordinates)) {
                             // At this point, page URL should be resolved
                             const searchPageUrl = page.url();
                             await requestQueue.addRequest({

@@ -44,11 +44,17 @@ const parseSearchPlacesResponseBody = (responseBodyBuffer) => {
     /** @type {Array<string[]>} */
     const results = magicParamD[0][1];
     results.forEach((result) => {
+        // index 14 has detailed data about each place
         if (result[14]) {
             const place = result[14];
-            placeIds.push({ placeId: place[78] });
+            placeIds.push({
+                placeId: place[78],
+                coords: { lat: place[9][2], lng: place[9][3] },
+            });
         }
     });
+    console.log('Found places');
+    console.dir(placeIds, { depth: null })
     return placeIds;
 };
 

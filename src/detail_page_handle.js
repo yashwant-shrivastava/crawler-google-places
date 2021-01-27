@@ -50,25 +50,25 @@ module.exports.handlePlaceDetail = async (options) => {
     await page.waitForFunction(() => window.location.href.includes('/place/'));
     const url = page.url();
 
-    const locationMatch = url.match(/!3d([0-9\-.]+)!4d([0-9\-.]+)/);
-    const latMatch = locationMatch ? locationMatch[1] : null;
-    const lngMatch = locationMatch ? locationMatch[2] : null;
+    const coordinatesMatch = url.match(/!3d([0-9\-.]+)!4d([0-9\-.]+)/);
+    const latMatch = coordinatesMatch ? coordinatesMatch[1] : null;
+    const lngMatch = coordinatesMatch ? coordinatesMatch[2] : null;
 
-    const location = latMatch && lngMatch ? { lat: parseFloat(latMatch), lng: parseFloat(lngMatch) } : null;
+    const coordinates = latMatch && lngMatch ? { lat: parseFloat(latMatch), lng: parseFloat(lngMatch) } : null;
 
     // Add info from listing page
     const { shownAsAd, rank, searchPageUrl } =
         /** @type {{shownAsAd:boolean, rank:number, searchPageUrl: string}} */ (request.userData);
 
     // check if place is inside of polygon, if not return null, geo non-null only for country/state/city/postal
-    if (geo && location && !checkInPolygon(geo, location)) {
+    if (geo && coordinates && !checkInPolygon(geo, coordinates)) {
         // cache place location to keyVal store
         if (cachePlaces) {
-            allPlaces[request.uniqueKey] = location;
+            allPlaces[request.uniqueKey] = coordinates;
         }
         log.warning(`[PLACE]: Place is outside of required location (polygon), skipping... url --- ${url}`);
         stats.outOfPolygon();
-        stats.addOutOfPolygonPlace({ url, searchPageUrl, location });
+        stats.addOutOfPolygonPlace({ url, searchPageUrl, coordinates });
         return;
     }
 
@@ -80,7 +80,7 @@ module.exports.handlePlaceDetail = async (options) => {
         url,
         searchPageUrl,
         searchString,
-        location,
+        location: coordinates, // keeping backwards compatible even though coordinates is better name
         scrapedAt: new Date().toISOString(),
         ...includeHistogram ? await extractPopularTimes({ page }) : {},
         openingHours: includeOpeningHours ? await extractOpeningHours({ page }) : undefined,
