@@ -17,6 +17,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @property {string} language
  * @property {number} multiplier
  * @property {object} geo
+ * @property {boolean} reviewsDisableTranslation
  */
 
 /**
@@ -107,9 +108,35 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
 
 /**
  * @typedef {{
+ * lat: number,
+ * lng: number,
+ * }} Coordinates
+*/
+
+/**
+ * @typedef {{
+ * placeId: string,
+ * coords: Coordinates,
+ * addressParsed: AddressParsed | undefined,
+ * }} PlacePaginationData
+*/
+
+/**
+ * @typedef {{
+ * neighborhood: string,
+ * street: string,
+ * city: string,
+ * postalCode: string,
+ * state: string,
+ * countryCode: string,
+ * }} AddressParsed
+*/
+
+/**
+ * @typedef {{
  * url: string,
  * searchPageUrl: string,
- * coordinates: { lat: number, lng: number },
+ * coordinates: Coordinates,
  * }} PlaceOutOfPolygon
 */
 module.exports = {};

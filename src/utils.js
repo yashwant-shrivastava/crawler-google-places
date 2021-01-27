@@ -1,6 +1,6 @@
 const Apify = require('apify');
 const Puppeteer = require('puppeteer'); // eslint-disable-line
-const typedefs = require('./typedefs'); // eslint-disable-line
+const { PlacePaginationData, Review } = require('./typedefs'); // eslint-disable-line
 
 const { DEFAULT_TIMEOUT } = require('./consts');
 
@@ -26,46 +26,59 @@ const stringifyGoogleXrhResponse = (googleResponseString) => {
     return JSON.parse(googleResponseString.replace(')]}\'', ''));
 };
 
+/** @param {number} float */
+const fixFloatNumber = (float) => Number(float.toFixed(7));
+
 /**
  * Response from google xhr is kind a weird. Mix of array of array.
  * This function parse places from the response body.
  * @param {Buffer} responseBodyBuffer
- * @return {{[placeId: string]: string}[]}
+ * @return {PlacePaginationData[]}
  */
 const parseSearchPlacesResponseBody = (responseBodyBuffer) => {
-    /** @type {{[placeId: string]: string}[]} */
-    const placeIds = [];
+    /** @type {PlacePaginationData[]} */
+    const placePaginationData = [];
     const jsonString = responseBodyBuffer
         .toString('utf-8')
         .replace('/*""*/', '');
     const jsonObject = JSON.parse(jsonString);
     const magicParamD = stringifyGoogleXrhResponse(jsonObject.d);
 
-    /** @type {Array<string[]>} */
+    /** @type {any} Too complex to type out*/
     const results = magicParamD[0][1];
-    results.forEach((result) => {
+    results.forEach((/** @type {any} */ result ) => {
         // index 14 has detailed data about each place
         if (result[14]) {
             const place = result[14];
-            placeIds.push({
+            // Some places don't have any address
+            const addressDetail = place[183] ? place[183][1] : undefined;
+            const addressParsed = addressDetail ?  {
+                neighborhood: addressDetail[1],
+                street: addressDetail[2],
+                city: addressDetail[3],
+                postalCode: addressDetail[4],
+                state: addressDetail[5],
+                countryCode: addressDetail[6],
+            } : undefined;
+            placePaginationData.push({
                 placeId: place[78],
-                coords: { lat: place[9][2], lng: place[9][3] },
+                coords: { lat: fixFloatNumber(place[9][2]), lng: fixFloatNumber(place[9][3]) },
+                addressParsed,
             });
         }
     });
-    console.log('Found places');
-    console.dir(placeIds, { depth: null })
-    return placeIds;
+    return placePaginationData;
 };
 
 /**
  * Response from google xhr is kind a weird. Mix of array of array.
  * This function parse reviews from the response body.
  * @param {Buffer | string} responseBody
+ * @param {boolean} reviewsDisableTranslation
  * @return [place]
  */
-const parseReviewFromResponseBody = (responseBody) => {
-    /** @type {typedefs.Review[]} */
+const parseReviewFromResponseBody = (responseBody, reviewsDisableTranslation) => {
+    /** @type {Review[]} */
     const reviews = [];
     const stringBody = typeof responseBody === 'string'
         ? responseBody
@@ -73,10 +86,22 @@ const parseReviewFromResponseBody = (responseBody) => {
     const results = stringifyGoogleXrhResponse(stringBody);
     if (!results || !results[2]) return reviews;
     results[2].forEach((/** @type {any} */ reviewArray) => {
-        /** @type {typedefs.Review} */
+        let text = reviewArray[3];
+
+        // Optionally remove translation
+        // TODO: Perhaps the text is differentiated in the JSON
+        if (typeof text === 'string' && reviewsDisableTranslation) {
+            const cleanReviewText = text.replace(/\r?\n|\r/g, " ");
+            const splitReviewText = cleanReviewText.split('(Original)');
+            if (splitReviewText[1]) {
+                text = splitReviewText[1].trim();
+            }
+        }
+
+        /** @type {Review} */
         const reviewData = {
             name: reviewArray[0][1],
-            text: reviewArray[3],
+            text,
             publishAt: reviewArray[1],
             likesCount: reviewArray[15],
             reviewId: reviewArray[10],

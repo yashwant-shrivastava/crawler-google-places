@@ -1,3 +1,11 @@
+## 2021-01-27
+Features:
+- Address is parsed into `neighborhood`, `street`, `city`, `postalCode`, `state` and `countryCode` fields
+- Added `reviewsDisableTranslation` option to disable Google translating reviews from non-English languages
+
+Fixes:
+- This one is big. We removed the infamous `Place is outside of required location (polygon)` error. The location of a place is now checked during paginating and these places are skipped. This means a **massive speed of the scraper**.
+
 ## 2021-01-11
 Features:
 - Automatic screenshots of errors to see what went wrong

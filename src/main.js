@@ -43,7 +43,7 @@ Apify.main(async () => {
         // Scraping options
         includeHistogram = false, includeOpeningHours = false, includePeopleAlsoSearch = false,
         maxReviews = 5, maxImages = 1, exportPlaceUrls = false, additionalInfo = false, maxCrawledPlaces,
-        maxAutomaticZoomOut, cachePlaces = false, reviewsSort = 'mostRelevant',
+        maxAutomaticZoomOut, cachePlaces = false, reviewsSort = 'mostRelevant', reviewsDisableTranslation= false,
     } = input;
 
     if (debug) {
@@ -223,7 +223,7 @@ Apify.main(async () => {
         maxReviews, maxImages, exportPlaceUrls, additionalInfo, maxCrawledPlaces,
         maxAutomaticZoomOut, cachePlaces, reviewsSort, language,
         multiplier: startRequests.length || 1, // workaround for the maxCrawledPlaces when using multiple queries/startUrls
-        geo,
+        geo, reviewsDisableTranslation,
     };
 
     // Create and run crawler

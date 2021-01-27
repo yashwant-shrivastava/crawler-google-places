@@ -2,6 +2,8 @@ const Apify = require('apify');
 const Puppeteer = require('puppeteer'); // eslint-disable-line
 const Globalize = require('globalize');
 
+const {AddressParsed} = require('./typedefs')
+
 const { PLACE_TITLE_SEL, BACK_BUTTON_SEL } = require('./consts');
 const { waitForGoogleMapLoader, parseReviewFromResponseBody, scrollTo, enlargeImageUrls } = require('./utils');
 const infiniteScroll = require('./infinite_scroll');
@@ -11,11 +13,12 @@ const { log, sleep } = Apify.utils;
 
 /**
  * @param {{
- *    page: Puppeteer.Page
+ *    page: Puppeteer.Page,
+ *    addressParsed: AddressParsed | undefined,
  * }} options
  */
-module.exports.extractPageData = async ({ page }) => {
-    return page.evaluate((placeTitleSel) => {
+module.exports.extractPageData = async ({ page, addressParsed }) => {
+    return page.evaluate((placeTitleSel, addressParsed) => {
         const address = $('[data-section-id="ad"] .section-info-line').text().trim();
         const addressAlt = $("button[data-tooltip*='address']").text().trim();
         const addressAlt2 = $("button[data-item-id*='address']").text().trim();
@@ -40,6 +43,7 @@ module.exports.extractPageData = async ({ page }) => {
             categoryName: $('[jsaction="pane.rating.category"]').text().trim(),
             address: address || addressAlt || addressAlt2 || null,
             locatedIn: secondaryAddressLine || secondaryAddressLineAlt || secondaryAddressLineAlt2 || null,
+            ...addressParsed || {},
             plusCode: $('[data-section-id="ol"] .widget-pane-link').text().trim()
                 || $("button[data-tooltip*='plus code']").text().trim()
                 || $("button[data-item-id*='oloc']").text().trim() || null,
@@ -51,7 +55,7 @@ module.exports.extractPageData = async ({ page }) => {
             temporarilyClosed,
             permanentlyClosed,
         };
-    }, PLACE_TITLE_SEL);
+    }, PLACE_TITLE_SEL, addressParsed);
 };
 
 /**
@@ -242,9 +246,10 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
  *    totalScore: string,
  *    maxReviews: number,
  *    reviewsSort: string,
+ *    reviewsDisableTranslation: boolean,
  * }} options
  */
-module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSort }) => {
+module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSort, reviewsDisableTranslation }) => {
     const result = {};
 
     const reviewsButtonSel = 'button[jsaction="pane.reviewChart.moreReviews"]';
@@ -364,7 +369,7 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
                     const response = await fetch(url);
                     return response.text();
                 }, reviewUrl);
-                const reviews = parseReviewFromResponseBody(responseBody);
+                const reviews = parseReviewFromResponseBody(responseBody, reviewsDisableTranslation);
                 if (reviews.length === 0) {
                     break;
                 }

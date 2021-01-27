@@ -1,7 +1,7 @@
 const Apify = require('apify'); // eslint-disable-line no-unused-vars
 const Puppeteer = require('puppeteer'); // eslint-disable-line
 
-const typedefs = require('./typedefs'); // eslint-disable-line no-unused-vars
+const { ScrapingOptions, AddressParsed } = require('./typedefs'); // eslint-disable-line no-unused-vars
 const ErrorSnapshotter = require('./error-snapshotter'); // eslint-disable-line no-unused-vars
 const Stats = require('./stats'); // eslint-disable-line no-unused-vars
 
@@ -20,7 +20,7 @@ const { log } = Apify.utils;
 *  searchString: string,
 *  allPlaces: {[index: string]: any},
 *  session: Apify.Session,
-*  scrapingOptions: typedefs.ScrapingOptions,
+*  scrapingOptions: ScrapingOptions,
 *  errorSnapshotter: ErrorSnapshotter,
 *  stats: Stats,
 * }} options
@@ -31,7 +31,7 @@ module.exports.handlePlaceDetail = async (options) => {
     } = options;
     const {
         includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
-        maxReviews, maxImages, additionalInfo, geo, cachePlaces, reviewsSort,
+        maxReviews, maxImages, additionalInfo, geo, cachePlaces, reviewsSort, reviewsDisableTranslation,
     } = scrapingOptions;
     // Extract basic information
     await waitForGoogleMapLoader(page);
@@ -43,7 +43,12 @@ module.exports.handlePlaceDetail = async (options) => {
         throw 'The page didn\'t load fast enough, this will be retried';
     }
 
-    const pageData = await extractPageData({ page });
+    // Add info from listing page
+    const { shownAsAd, rank, searchPageUrl, addressParsed } =
+        /** @type {{shownAsAd: boolean, rank: number, searchPageUrl: string, addressParsed: AddressParsed | undefined}} */ (request.userData);
+
+    // Adding addressParsed there so it is nicely together in JSON
+    const pageData = await extractPageData({ page, addressParsed });
 
     // Extract gps from URL
     // We need to URL will be change, it happened asynchronously
@@ -55,10 +60,6 @@ module.exports.handlePlaceDetail = async (options) => {
     const lngMatch = coordinatesMatch ? coordinatesMatch[2] : null;
 
     const coordinates = latMatch && lngMatch ? { lat: parseFloat(latMatch), lng: parseFloat(lngMatch) } : null;
-
-    // Add info from listing page
-    const { shownAsAd, rank, searchPageUrl } =
-        /** @type {{shownAsAd:boolean, rank:number, searchPageUrl: string}} */ (request.userData);
 
     // check if place is inside of polygon, if not return null, geo non-null only for country/state/city/postal
     if (geo && coordinates && !checkInPolygon(geo, coordinates)) {
@@ -88,7 +89,7 @@ module.exports.handlePlaceDetail = async (options) => {
         additionalInfo: additionalInfo ? await extractAdditionalInfo({ page }) : undefined,
         ...await errorSnapshotter.tryWithSnapshot(
             page,
-            async () => extractReviews({ page, totalScore: pageData.totalScore, maxReviews, reviewsSort }),
+            async () => extractReviews({ page, totalScore: pageData.totalScore, maxReviews, reviewsSort, reviewsDisableTranslation }),
             { name: 'Reviews extraction' },
         ),
         imageUrls: await errorSnapshotter.tryWithSnapshot(
