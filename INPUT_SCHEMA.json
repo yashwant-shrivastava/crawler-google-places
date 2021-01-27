@@ -245,9 +245,9 @@
             ]
         },
         "reviewsDisableTranslation": {
-            "title": "Disabel reviews translation",
+            "title": "Disable reviews translation",
             "type": "boolean",
-            "description": "Google automatically adds translated text to the original. If you care only about the original, check this option.",
+            "description": "Google automatically adds translated text to the original one. If you care only about the original language, check this option.",
             "default": false
         },
         "exportPlaceUrls": {
