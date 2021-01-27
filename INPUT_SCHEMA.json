@@ -244,6 +244,12 @@
                 "Lowest ranking"
             ]
         },
+        "reviewsDisableTranslation": {
+            "title": "Disabel reviews translation",
+            "type": "boolean",
+            "description": "Google automatically adds translated text to the original. If you care only about the original, check this option.",
+            "default": false
+        },
         "exportPlaceUrls": {
             "title": "Export Place Urls Only (Skips place details)",
             "type": "boolean",
