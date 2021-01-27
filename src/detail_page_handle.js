@@ -1,7 +1,7 @@
 const Apify = require('apify'); // eslint-disable-line no-unused-vars
 const Puppeteer = require('puppeteer'); // eslint-disable-line
 
-const { ScrapingOptions, AddressParsed } = require('./typedefs'); // eslint-disable-line no-unused-vars
+const { ScrapingOptions, AddressParsed, PlaceUserData } = require('./typedefs'); // eslint-disable-line no-unused-vars
 const ErrorSnapshotter = require('./error-snapshotter'); // eslint-disable-line no-unused-vars
 const Stats = require('./stats'); // eslint-disable-line no-unused-vars
 
@@ -44,8 +44,7 @@ module.exports.handlePlaceDetail = async (options) => {
     }
 
     // Add info from listing page
-    const { shownAsAd, rank, searchPageUrl, addressParsed } =
-        /** @type {{shownAsAd: boolean, rank: number, searchPageUrl: string, addressParsed: AddressParsed | undefined}} */ (request.userData);
+    const { rank, searchPageUrl, addressParsed, isAdvertisement } = /** @type {PlaceUserData} */ (request.userData);
 
     // Adding addressParsed there so it is nicely together in JSON
     const pageData = await extractPageData({ page, addressParsed });
@@ -75,7 +74,7 @@ module.exports.handlePlaceDetail = async (options) => {
 
     const detail = {
         ...pageData,
-        shownAsAd,
+        isAdvertisement,
         rank,
         placeId: request.uniqueKey,
         url,

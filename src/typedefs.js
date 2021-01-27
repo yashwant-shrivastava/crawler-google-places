@@ -118,7 +118,17 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * placeId: string,
  * coords: Coordinates,
  * addressParsed: AddressParsed | undefined,
+ * isAdvertisement: boolean,
  * }} PlacePaginationData
+*/
+
+/**
+ * @typedef {{
+ * rank: number,
+ * searchPageUrl: string,
+ * addressParsed: AddressParsed | undefined,
+ * isAdvertisement: boolean
+ * }} PlaceUserData
 */
 
 /**

@@ -30,6 +30,35 @@ const stringifyGoogleXrhResponse = (googleResponseString) => {
 const fixFloatNumber = (float) => Number(float.toFixed(7));
 
 /**
+ * @param {any} result
+ * @param {boolean} isAdvertisement
+*/
+const parsePaginationResult = (result, isAdvertisement) => {
+    // index 14 has detailed data about each place
+    const detailInfoIndex = isAdvertisement ? 15 : 14;
+    const place = result[detailInfoIndex];
+    if (!place) {
+        return;
+    }
+    // Some places don't have any address
+    const addressDetail = place[183] ? place[183][1] : undefined;
+    const addressParsed = addressDetail ?  {
+        neighborhood: addressDetail[1],
+        street: addressDetail[2],
+        city: addressDetail[3],
+        postalCode: addressDetail[4],
+        state: addressDetail[5],
+        countryCode: addressDetail[6],
+    } : undefined;
+    return {
+        placeId: place[78],
+        coords: { lat: fixFloatNumber(place[9][2]), lng: fixFloatNumber(place[9][3]) },
+        addressParsed,
+        isAdvertisement,
+    };
+}
+
+/**
  * Response from google xhr is kind a weird. Mix of array of array.
  * This function parse places from the response body.
  * @param {Buffer} responseBodyBuffer
@@ -42,29 +71,28 @@ const parseSearchPlacesResponseBody = (responseBodyBuffer) => {
         .toString('utf-8')
         .replace('/*""*/', '');
     const jsonObject = JSON.parse(jsonString);
-    const magicParamD = stringifyGoogleXrhResponse(jsonObject.d);
+    const data = stringifyGoogleXrhResponse(jsonObject.d);
+
+    // We are paring ads but seems Google is not showing them to the scraper right now
+    const ads = (data[2] && data[2][1] && data[2][1][0]) || [];
+
+    ads.forEach((/** @type {any} */ ad) => {
+        const placeData = parsePaginationResult(ad, true);
+        if (placeData) {
+            placePaginationData.push(placeData);
+        } else {
+            log.warning(`[SEARCH]: Cannot find place data for advertisement in search.`)
+        }
+    })
 
     /** @type {any} Too complex to type out*/
-    const results = magicParamD[0][1];
-    results.forEach((/** @type {any} */ result ) => {
-        // index 14 has detailed data about each place
-        if (result[14]) {
-            const place = result[14];
-            // Some places don't have any address
-            const addressDetail = place[183] ? place[183][1] : undefined;
-            const addressParsed = addressDetail ?  {
-                neighborhood: addressDetail[1],
-                street: addressDetail[2],
-                city: addressDetail[3],
-                postalCode: addressDetail[4],
-                state: addressDetail[5],
-                countryCode: addressDetail[6],
-            } : undefined;
-            placePaginationData.push({
-                placeId: place[78],
-                coords: { lat: fixFloatNumber(place[9][2]), lng: fixFloatNumber(place[9][3]) },
-                addressParsed,
-            });
+    const organicResults = data[0][1].slice(1); // The first is not a place result
+    organicResults.forEach((/** @type {any} */ result ) => {
+        const placeData = parsePaginationResult(result, false);
+        if (placeData) {
+            placePaginationData.push(placeData);
+        } else {
+            log.warning(`[SEARCH]: Cannot find place data in search.`)
         }
     });
     return placePaginationData;

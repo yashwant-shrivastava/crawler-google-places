@@ -66,6 +66,7 @@ const enqueuePlacesFromResponse = (options) => {
                                     searchPageUrl,
                                     coords: placePaginationData.coords,
                                     addressParsed: placePaginationData.addressParsed,
+                                    isAdvertisement: placePaginationData.isAdvertisement,
                                 },
                             },
                             { forefront: true });
@@ -78,7 +79,8 @@ const enqueuePlacesFromResponse = (options) => {
                     }
                 }
             }
-            log.info(`[SEARCH]: Enqueued ${enqueued}/${placesPaginationData.length} places (correct location/total) --- ${page.url()}`)
+            const numberOfAds = placesPaginationData.filter((item) => item.isAdvertisement).length;
+            log.info(`[SEARCH]: Enqueued ${enqueued}/${placesPaginationData.length} places (correct location/total) + ${numberOfAds} ads --- ${page.url()}`)
         }
     };
 };
