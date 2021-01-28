@@ -48,12 +48,13 @@ const enqueuePlacesFromResponse = (options) => {
                 if (!maxPlacesPerCrawl || rank <= maxPlacesPerCrawl) {
                     if (exportPlaceUrls) {
                         await Apify.pushData({
-                            url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${place.placeId}`,
+                            url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${placePaginationData.placeId}`,
                         });
                     } else {
                         // TODO: Refactor this once we get rid of the caching
-                        const coordinates = placePaginationData.coords || placesCache.getLocation(place.placeId);
+                        const coordinates = placePaginationData.coords || placesCache.getLocation(placePaginationData.placeId);
                         const placeUrl = `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${placePaginationData.placeId}`;
+                        placesCache.addLocation(placePaginationData.placeId, coordinates, searchString);
                         if (!geo || !coordinates || checkInPolygon(geo, coordinates)) {
                             await requestQueue.addRequest({
                                     url: placeUrl,

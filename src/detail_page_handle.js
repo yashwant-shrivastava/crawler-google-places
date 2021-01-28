@@ -30,7 +30,7 @@ module.exports.handlePlaceDetail = async (options) => {
     } = options;
     const {
         includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
-        maxReviews, maxImages, additionalInfo, geo, placesCache, reviewsSort, reviewsTranslation,
+        maxReviews, maxImages, additionalInfo, reviewsSort, reviewsTranslation,
     } = scrapingOptions;
     // Extract basic information
     await waitForGoogleMapLoader(page);
@@ -58,16 +58,6 @@ module.exports.handlePlaceDetail = async (options) => {
     const lngMatch = coordinatesMatch ? coordinatesMatch[2] : null;
 
     const coordinates = latMatch && lngMatch ? { lat: parseFloat(latMatch), lng: parseFloat(lngMatch) } : null;
-
-    placesCache.addLocation(request.uniqueKey, location, searchString);
-    // check if place is inside of polygon, if not return null, geo non-null only for country/state/city/postal
-    if (geo && coordinates && !checkInPolygon(geo, coordinates)) {
-        // cache place location to keyVal store
-        log.warning(`[PLACE]: Place is outside of required location (polygon), skipping... url --- ${url}`);
-        stats.outOfPolygon();
-        stats.addOutOfPolygonPlace({ url, searchPageUrl, coordinates });
-        return;
-    }
 
     const detail = {
         ...pageData,
