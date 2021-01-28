@@ -394,12 +394,13 @@
             "description": "Uses full Chrome browser instead of Chromium. Be careful, it is not stable on some versions!",
             "default": false
         },
-        "logLevel": {
-            "title": "Set Log level",
-            "type": "string",
-            "description": "Select logging level.",
-            "editor": "select",
-            "enum": ["DEBUG","INFO","WARNING"]
+        "debug": {
+            "title": "Debug log",
+            "type": "boolean",
+            "description": "Debug messages will be included in the log.",
+            "default": false,
+            "sectionCaption": "Miscellaneous",
+            "sectionDescription": "Few additional settings that might be useful."
         },
         "useStealth": {
             "title": "Use stealth",

@@ -2,18 +2,27 @@ const Apify = require('apify');
 const { utils: { log } } = Apify;
 const { checkInPolygon } = require('./polygon');
 const cachedPlacesName = 'Places-cached-locations';
+const { Coordinates, CachedPlace, GeoJson } = require('./typedefs');
 
 const PlacesCache = class PlacesCache {
     cachePlaces;
     allPlaces = {};
     isLoaded = false;
 
+    /**
+     * @param {boolean} cachePlaces
+     * @param {string} cacheKey
+     * @param {boolean} useCachedPlaces
+     */
     constructor({ cachePlaces = false, cacheKey, useCachedPlaces }) {
         this.cachePlaces = cachePlaces;
         this.cacheKey = cacheKey;
         this.useCachedPlaces = useCachedPlaces;
     }
 
+    /**
+     * Load cached places if caching if enabled.
+     */
     async initialize() {
         if (this.cachePlaces) {
             log.debug('Load cached places');
@@ -29,19 +38,36 @@ const PlacesCache = class PlacesCache {
         this.isLoaded = true;
     }
 
+    /**
+     * loads cached data
+     * @returns {Promise<{}>}
+     */
     async loadPlaces() {
         const allPlacesStore = await this.placesStore();
         return (await allPlacesStore.getValue(this.keyName())) || {};
     }
 
+    /**
+     * @returns {Promise<(object|string|Buffer|null)>}
+     */
     async placesStore() {
-        return await Apify.openKeyValueStore(cachedPlacesName);
+        return Apify.openKeyValueStore(cachedPlacesName);
     }
 
+    /**
+     * returns key of cached places
+     * @returns {string}
+     */
     keyName() {
         return this.cacheKey ? `places-${this.cacheKey}` : 'places';
     }
 
+    /**
+     * Add place to cache
+     * @param {string} placeId
+     * @param {Coordinates} location
+     * @param {string} keyword
+     */
     addLocation(placeId, location, keyword) {
         if (!this.cachePlaces) return;
         let place = this.place(placeId) || { location, keywords: [] };
@@ -49,18 +75,30 @@ const PlacesCache = class PlacesCache {
         this.allPlaces[placeId] = place;
     }
 
+    /**
+     * @param {string} placeId
+     * @returns {null|CachedPlace}
+     */
     place(placeId) {
         if (!this.cachePlaces || !this.allPlaces[placeId]) return null;
-        if (this.allPlaces[placeId].lat)
+        if (this.allPlaces[placeId].lat) // backward compatible with older cache version
             return { location: this.allPlaces[placeId], keywords: [] };
         return this.allPlaces[placeId];
     }
 
+    /**
+     * @param {string} placeId
+     * @returns {Coordinates|null}
+     */
     getLocation(placeId) {
         if (!this.cachePlaces || !this.place(placeId)) return null;
         return this.place(placeId).location;
     }
 
+    /**
+     * Save places cache.
+     * @returns {Promise<void>}
+     */
     async savePlaces() {
         if (!this.isLoaded) throw new Error('Cannot save before loading old data!');
 
@@ -72,6 +110,13 @@ const PlacesCache = class PlacesCache {
         log.info('[CACHE] places saved');
     }
 
+    /**
+     * Find places for specific polygon a keywords.
+     * @param {GeoJson} geo
+     * @param {number} maxCrawledPlaces
+     * @param {string[]} keywords
+     * @returns {string[]}
+     */
     placesInPolygon(geo, maxCrawledPlaces, keywords = []) {
         const arr = [];
         if (!this.cachePlaces || !this.useCachedPlaces) return arr;

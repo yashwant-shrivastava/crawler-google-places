@@ -57,6 +57,10 @@ With this input, the actor searches places at this start URL: https://www.google
     - `lng` \<string\> Use with combination with latitude and zoom to set up viewport to search on. Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
     - `zoom` \<number\> Viewport zoom, e.g zoom: 17 in Google Maps URL -> https://www.google.com/maps/@50.0860729,14.4135326,17z vs zoom: 10 -> https://www.google.com/maps/@50.0860729,14.4135326,10z. `1` is the whole world and `21` is a tiny street. We recommend a number between 10 and 17. **Default: `12`**
     - `maxAutomaticZoomOut` \<number\> A parameter to stop searching once Google zooms out too far. It counts how far it has zoomed out from the first page. Keep in mind that `zoom: 1` is the whole world and `zoom: 21` is a tiny street. So you usually want `maxAutomaticZoomOut` to be between `0` and `5`. Also, note that Google zooms a bit differently in each run.
+    - `cachePlaces` \<boolean\> Add caching locations between runs. `placeId: location` is stored in a named key-value store. Can speed up regular runs using polygon search. **Default: `false`**
+    - `useCachedPlaces` \<boolean\> load cached places for specific location and keyword and add them to request queue before scraping stats. Can stabilize results count for regular runs. **Default: `false`**
+    - `cacheKey` \<string\> key for saving cached data. Use mainly for scraping locations from separated locations, process wouldn't load whole cache, just specific location.
+    - `polygon` \<json\> manual polygon for more specific location.
 - Browser and page settings
     - `maxConcurrency` \<number\> The maximum number of pages that will be processed in parallel. **Default: `100`**
     - `maxPageRetries` \<number\> Max page retries. **Default: `6`**
@@ -65,7 +69,6 @@ With this input, the actor searches places at this start URL: https://www.google
     - `useChrome` \<boolean\> Uses full Chrome browser instead of Chromium. Be careful, it is not stable on some versions! **Default: `false`**
 - Miscellaneous
     - `debug` \<boolean\> Debug messages will be included in log. **Default: `false`**
-    - `cachePlaces` \<boolean\> Add caching locations between runs. `placeId: location` is stored in a named key-value store. Can speed up regular runs using polygon search. **Default: `false`**
 
 ### Country localization
 You can force the scraper to access places only from a specific country location. We recommend this to ensure the correct language in the results. This only works reliably for the US (most of our proxies are from the US). Currently, this option is not available in the Editor input - you have switch to JSON input. After you switch, your configuration will remain the same, so just update the `proxyconfig` field with `apifyProxyCountry` property to specify the country, e.g.

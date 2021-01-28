@@ -31,8 +31,8 @@ function coordinatesFromBoundingBox(boundingbox) {
 }
 
 /**
- * @param {{ geojson: any; }} geo
- * @param {{ lng: number; lat: number; }} coordinates
+ * @param { GeoJson } geo
+ * @param {typedefs.Coordinates} coordinates
  */
 function checkInPolygon(geo, coordinates) {
     const point = turf.point([coordinates.lng, coordinates.lat]);

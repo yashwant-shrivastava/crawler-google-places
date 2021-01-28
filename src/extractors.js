@@ -326,7 +326,7 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
                     }
                     await page.keyboard.press('Enter');
                 } catch (e) {
-                    log.info('[PLACE]: Unable to sort reviews!');
+                    log.debug('[PLACE]: Unable to sort reviews!');
                 }
             };
 
