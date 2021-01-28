@@ -5,7 +5,7 @@ const typedefs = require('./typedefs'); // eslint-disable-line no-unused-vars
 const placesCrawler = require('./places_crawler');
 const Stats = require('./stats');
 const ErrorSnapshotter = require('./error-snapshotter');
-const { PlacesCache } = require('./places_cache');
+const PlacesCache = require('./places_cache');
 const { prepareSearchUrls } = require('./search');
 const { createStartRequestsWithWalker } = require('./walker');
 const { makeInputBackwardsCompatible, validateInput } = require('./input-validation');
@@ -19,7 +19,6 @@ Apify.main(async () => {
 
     const stats = new Stats();
     await stats.initialize(Apify.events);
-    await stats.loadInfo();
 
     const errorSnapshotter = new ErrorSnapshotter();
     await errorSnapshotter.initialize(Apify.events);
@@ -50,7 +49,7 @@ Apify.main(async () => {
     }
 
     const placesCache = new PlacesCache({ cachePlaces, cacheKey, useCachedPlaces });
-    await placesCache.loadInfo()
+    await placesCache.initialize()
 
     // Requests that are used in the queue, we persist them to skip this step after migration
     const startRequests = /** @type {Apify.RequestOptions[]} */ (await Apify.getValue('START-REQUESTS')) || [];
@@ -64,7 +63,16 @@ Apify.main(async () => {
     // We crate geolocation only for search. not for Start URLs
     if (!Array.isArray(startUrls) || startUrls.length === 0) {
         // This call is async because it persists geolocation into KV
-        ({ startUrlSearches, geo } = await prepareSearchUrls({ lat, lng, zoom, country, state, city, postalCode, polygon }));
+        ({ startUrlSearches, geo } = await prepareSearchUrls({
+            lat,
+            lng,
+            zoom,
+            country,
+            state,
+            city,
+            postalCode,
+            polygon
+        }));
     }
 
     if (startRequests.length === 0) {
@@ -132,15 +140,13 @@ Apify.main(async () => {
             }
 
             // use cached place ids for geolocation
-            if (cachePlaces && useCachedPlaces) {
-                const searchString = searchStringsArray[0];
-                for (const placeId of placesCache.placesInPolygon(geo, maxCrawledPlaces)) {
-                    startRequests.push({
-                        url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${placeId}`,
-                        uniqueKey: placeId,
-                        userData: { label: 'detail', searchString, rank: null },
-                    });
-                }
+            for (const placeId of placesCache.placesInPolygon(geo, maxCrawledPlaces, searchStringsArray)) {
+                const searchString = searchStringsArray.filter(x => placesCache.place(placeId).keywords.includes(x))[0];
+                startRequests.push({
+                    url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${placeId}`,
+                    uniqueKey: placeId,
+                    userData: { label: 'detail', searchString, rank: null },
+                });
             }
         }
 

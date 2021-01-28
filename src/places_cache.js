@@ -3,7 +3,7 @@ const { utils: { log } } = Apify;
 const { checkInPolygon } = require('./polygon');
 const cachedPlacesName = 'Places-cached-locations';
 
-exports.PlacesCache = class PlacesCache {
+const PlacesCache = class PlacesCache {
     cachePlaces;
     allPlaces = {};
     isLoaded = false;
@@ -12,22 +12,26 @@ exports.PlacesCache = class PlacesCache {
         this.cachePlaces = cachePlaces;
         this.cacheKey = cacheKey;
         this.useCachedPlaces = useCachedPlaces;
+    }
 
+    async initialize() {
         if (this.cachePlaces) {
-            Apify.events.on('migrating', async () => {
-                const allPlacesStore = await this.placesStore();
-                log.debug('Saving places before migration');
-                const reloadedPlaces = (await allPlacesStore.getValue(this.keyName())) || {};
-                // @ts-ignore
-                const newPlaces = { ...allPlaces, ...reloadedPlaces };
-                await allPlacesStore.setValue(this.keyName(), newPlaces);
+            log.debug('Load cached places');
+            this.allPlaces = await this.loadPlaces();
+            log.info('[CACHE] cached places loaded.');
+
+            Apify.events.on('persistState', async () => {
+                await this.savePlaces();
             });
+        } else log.info('[CACHE] Not enabled.');
 
-            setInterval(async () => {
-                log.debug('Saving places before migration');
+        // mark as loaded
+        this.isLoaded = true;
+    }
 
-            }, 600 * 1000);
-        }
+    async loadPlaces() {
+        const allPlacesStore = await this.placesStore();
+        return (await allPlacesStore.getValue(this.keyName())) || {};
     }
 
     async placesStore() {
@@ -38,54 +42,43 @@ exports.PlacesCache = class PlacesCache {
         return this.cacheKey ? `places-${this.cacheKey}` : 'places';
     }
 
-    async loadPlaces() {
-        const allPlacesStore = await this.placesStore();
-        return (await allPlacesStore.getValue(this.keyName())) || {};
-    }
-
     addLocation(placeId, location, keyword) {
-        if (!this.cachePlaces) return null;
-        let place = {};
-        if (Array.isArray(this.allPlaces[placeId])) place.location = this.allPlaces[placeId]
-        else if (this.allPlaces[placeId]) place.keywords = [...(place.keywords || []), keyword];
-        else place = { location, keywords: [keyword] };
+        if (!this.cachePlaces) return;
+        let place = this.place(placeId) || { location, keywords: [] };
+        place.keywords = [...(place.keywords || []), keyword];
         this.allPlaces[placeId] = place;
     }
 
-    getLocation(placeId) {
+    place(placeId) {
         if (!this.cachePlaces || !this.allPlaces[placeId]) return null;
-        if (Array.isArray(this.allPlaces[placeId]))
-            return this.allPlaces[placeId];
-        return this.allPlaces[placeId].location;
+        if (this.allPlaces[placeId].lat)
+            return { location: this.allPlaces[placeId], keywords: [] };
+        return this.allPlaces[placeId];
     }
 
-    async loadInfo() {
-        if (this.cachePlaces) {
-            log.debug('Load cached places');
-            this.allPlaces = this.loadPlaces();
-            log.debug('allPlaces', this.allPlaces);
-            log.info('[CACHE] cached places loaded.');
-        } else log.info('[CACHE] Not enabled.');
-
-        // mark as loaded
-        this.isLoaded = true;
+    getLocation(placeId) {
+        if (!this.cachePlaces || !this.place(placeId)) return null;
+        return this.place(placeId).location;
     }
 
     async savePlaces() {
         if (!this.isLoaded) throw new Error('Cannot save before loading old data!');
 
         const allPlacesStore = await this.placesStore();
-        const reloadedPlaces = this.loadPlaces();
+        const reloadedPlaces = await this.loadPlaces();
         // @ts-ignore
-        const newPlaces = { ...this.allPlaces, ...reloadedPlaces };
+        const newPlaces = { ...reloadedPlaces, ...this.allPlaces };
         await allPlacesStore.setValue(this.keyName(), newPlaces);
         log.info('[CACHE] places saved');
     }
 
-    placesInPolygon(geo, maxCrawledPlaces) {
+    placesInPolygon(geo, maxCrawledPlaces, keywords = []) {
         const arr = [];
+        if (!this.cachePlaces || !this.useCachedPlaces) return arr;
         for (const placeId in this.allPlaces) {
-            if (checkInPolygon(geo, this.allPlaces[placeId]))
+            // check if cached location is desired polygon and has at least one search string currently needed
+            if (checkInPolygon(geo, this.getLocation(placeId)) &&
+                (this.place(placeId).keywords.length === 0 || this.place(placeId).keywords.filter(x => keywords.includes(x)).length > 0))
                 arr.push(placeId);
             if (maxCrawledPlaces && maxCrawledPlaces !== 0 && arr.length >= maxCrawledPlaces)
                 break;
@@ -93,3 +86,5 @@ exports.PlacesCache = class PlacesCache {
         return arr;
     }
 };
+
+module.exports = PlacesCache;
