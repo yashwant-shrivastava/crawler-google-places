@@ -100,6 +100,7 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, crawle
         }
         stats.ok();
     } catch (err) {
+        session.retire();
         await puppeteerPool.retire(page.browser());
         throw err;
     }

@@ -1,6 +1,6 @@
 const Apify = require('apify');
 const Puppeteer = require('puppeteer'); // eslint-disable-line
-const typedefs = require('./typedefs'); // eslint-disable-line
+const { PlacePaginationData, Review } = require('./typedefs'); // eslint-disable-line
 
 const { DEFAULT_TIMEOUT } = require('./consts');
 
@@ -26,40 +26,87 @@ const stringifyGoogleXrhResponse = (googleResponseString) => {
     return JSON.parse(googleResponseString.replace(')]}\'', ''));
 };
 
+/** @param {number} float */
+const fixFloatNumber = (float) => Number(float.toFixed(7));
+
+/**
+ * @param {any} result
+ * @param {boolean} isAdvertisement
+*/
+const parsePaginationResult = (result, isAdvertisement) => {
+    // index 14 has detailed data about each place
+    const detailInfoIndex = isAdvertisement ? 15 : 14;
+    const place = result[detailInfoIndex];
+    if (!place) {
+        return;
+    }
+    // Some places don't have any address
+    const addressDetail = place[183] ? place[183][1] : undefined;
+    const addressParsed = addressDetail ?  {
+        neighborhood: addressDetail[1],
+        street: addressDetail[2],
+        city: addressDetail[3],
+        postalCode: addressDetail[4],
+        state: addressDetail[5],
+        countryCode: addressDetail[6],
+    } : undefined;
+    return {
+        placeId: place[78],
+        coords: { lat: fixFloatNumber(place[9][2]), lng: fixFloatNumber(place[9][3]) },
+        addressParsed,
+        isAdvertisement,
+    };
+}
+
 /**
  * Response from google xhr is kind a weird. Mix of array of array.
  * This function parse places from the response body.
  * @param {Buffer} responseBodyBuffer
- * @return {{[placeId: string]: string}[]}
+ * @return {PlacePaginationData[]}
  */
 const parseSearchPlacesResponseBody = (responseBodyBuffer) => {
-    /** @type {{[placeId: string]: string}[]} */
-    const placeIds = [];
+    /** @type {PlacePaginationData[]} */
+    const placePaginationData = [];
     const jsonString = responseBodyBuffer
         .toString('utf-8')
         .replace('/*""*/', '');
     const jsonObject = JSON.parse(jsonString);
-    const magicParamD = stringifyGoogleXrhResponse(jsonObject.d);
+    const data = stringifyGoogleXrhResponse(jsonObject.d);
 
-    /** @type {Array<string[]>} */
-    const results = magicParamD[0][1];
-    results.forEach((result) => {
-        if (result[14]) {
-            const place = result[14];
-            placeIds.push({ placeId: place[78] });
+    // We are paring ads but seems Google is not showing them to the scraper right now
+    const ads = (data[2] && data[2][1] && data[2][1][0]) || [];
+
+    ads.forEach((/** @type {any} */ ad) => {
+        const placeData = parsePaginationResult(ad, true);
+        if (placeData) {
+            placePaginationData.push(placeData);
+        } else {
+            log.warning(`[SEARCH]: Cannot find place data for advertisement in search.`)
+        }
+    })
+
+    /** @type {any} Too complex to type out*/
+    const organicResults = data[0][1].slice(1); // The first is not a place result
+    organicResults.forEach((/** @type {any} */ result ) => {
+        const placeData = parsePaginationResult(result, false);
+        if (placeData) {
+            placePaginationData.push(placeData);
+        } else {
+            log.warning(`[SEARCH]: Cannot find place data in search.`)
         }
     });
-    return placeIds;
+    return placePaginationData;
 };
 
 /**
  * Response from google xhr is kind a weird. Mix of array of array.
  * This function parse reviews from the response body.
  * @param {Buffer | string} responseBody
+ * @param {string} reviewsTranslation
  * @return [place]
  */
-const parseReviewFromResponseBody = (responseBody) => {
-    /** @type {typedefs.Review[]} */
+const parseReviewFromResponseBody = (responseBody, reviewsTranslation) => {
+    /** @type {Review[]} */
     const reviews = [];
     const stringBody = typeof responseBody === 'string'
         ? responseBody
@@ -67,10 +114,26 @@ const parseReviewFromResponseBody = (responseBody) => {
     const results = stringifyGoogleXrhResponse(stringBody);
     if (!results || !results[2]) return reviews;
     results[2].forEach((/** @type {any} */ reviewArray) => {
-        /** @type {typedefs.Review} */
+        let text = reviewArray[3];
+
+        // Optionally remove translation
+        // TODO: Perhaps the text is differentiated in the JSON
+        if (typeof text === 'string' && reviewsTranslation !== 'originalAndTranslated') {
+            const splitReviewText = text.split('\n\n(Original)\n');
+
+            if (reviewsTranslation === 'onlyOriginal') {
+                // Fallback if there is no translation
+                text = splitReviewText[1] || splitReviewText[0];
+            } else if (reviewsTranslation === 'onlyTranslated') {
+                text = splitReviewText[0];
+            }
+            text = text.replace('(Translated by Google)', '').replace('\n\n(Original)\n', '').trim();
+        }
+
+        /** @type {Review} */
         const reviewData = {
             name: reviewArray[0][1],
-            text: reviewArray[3],
+            text,
             publishAt: reviewArray[1],
             likesCount: reviewArray[15],
             reviewId: reviewArray[10],

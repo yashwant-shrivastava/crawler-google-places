@@ -32,10 +32,10 @@ function coordinatesFromBoundingBox(boundingbox) {
 
 /**
  * @param {{ geojson: any; }} geo
- * @param {{ lng: number; lat: number; }} location
+ * @param {{ lng: number; lat: number; }} coordinates
  */
-function checkInPolygon(geo, location) {
-    const point = turf.point([location.lng, location.lat]);
+function checkInPolygon(geo, coordinates) {
+    const point = turf.point([coordinates.lng, coordinates.lat]);
     let included = false;
     const polygons = getPolygons(geo.geojson);
     for (const polygon of polygons) {

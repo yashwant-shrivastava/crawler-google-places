@@ -2,6 +2,8 @@ const Apify = require('apify');
 const Puppeteer = require('puppeteer'); // eslint-disable-line
 const Globalize = require('globalize');
 
+const {AddressParsed} = require('./typedefs')
+
 const { PLACE_TITLE_SEL, BACK_BUTTON_SEL } = require('./consts');
 const { waitForGoogleMapLoader, parseReviewFromResponseBody, scrollTo, enlargeImageUrls } = require('./utils');
 const infiniteScroll = require('./infinite_scroll');
@@ -11,11 +13,12 @@ const { log, sleep } = Apify.utils;
 
 /**
  * @param {{
- *    page: Puppeteer.Page
+ *    page: Puppeteer.Page,
+ *    addressParsed: AddressParsed | undefined,
  * }} options
  */
-module.exports.extractPageData = async ({ page }) => {
-    return page.evaluate((placeTitleSel) => {
+module.exports.extractPageData = async ({ page, addressParsed }) => {
+    return page.evaluate((placeTitleSel, addressParsed) => {
         const address = $('[data-section-id="ad"] .section-info-line').text().trim();
         const addressAlt = $("button[data-tooltip*='address']").text().trim();
         const addressAlt2 = $("button[data-item-id*='address']").text().trim();
@@ -40,6 +43,7 @@ module.exports.extractPageData = async ({ page }) => {
             categoryName: $('[jsaction="pane.rating.category"]').text().trim(),
             address: address || addressAlt || addressAlt2 || null,
             locatedIn: secondaryAddressLine || secondaryAddressLineAlt || secondaryAddressLineAlt2 || null,
+            ...addressParsed || {},
             plusCode: $('[data-section-id="ol"] .widget-pane-link').text().trim()
                 || $("button[data-tooltip*='plus code']").text().trim()
                 || $("button[data-item-id*='oloc']").text().trim() || null,
@@ -51,7 +55,7 @@ module.exports.extractPageData = async ({ page }) => {
             temporarilyClosed,
             permanentlyClosed,
         };
-    }, PLACE_TITLE_SEL);
+    }, PLACE_TITLE_SEL, addressParsed);
 };
 
 /**
@@ -243,18 +247,11 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
  *    totalScore: string,
  *    maxReviews: number,
  *    reviewsSort: string,
+ *    reviewsTranslation: string,
  * }} options
  */
-module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSort }) => {
+module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSort, reviewsTranslation }) => {
     const result = {};
-
-    /** @type {{[key: string]: number}} */
-    const reviewSortOptions = {
-        mostRelevant: 0,
-        newest: 1,
-        highestRanking: 2,
-        lowestRanking: 3,
-    };
 
     const reviewsButtonSel = 'button[jsaction="pane.reviewChart.moreReviews"]';
     // This selector is not present when there are no reviews
@@ -309,6 +306,15 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
             result.reviews = [];
             await page.waitForSelector(reviewsButtonSel);
             await page.click(reviewsButtonSel);
+
+            /** @type {{[key: string]: number}} */
+            const reviewSortOptions = {
+                mostRelevant: 0,
+                newest: 1,
+                highestRanking: 2,
+                lowestRanking: 3,
+            };
+
             // Set up sort from newest
             const sortPromise1 = async () => {
                 try {
@@ -329,20 +335,24 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
             const [reviewsResponse] = await Promise.all([
                 page.waitForResponse((response) => response.url().includes('preview/review/listentitiesreviews')),
                 sortPromise1(),
+                // This is here to work around the default setting not giving us any XHR
+                // TODO: Rework this
+                scrollTo(page, '.section-scrollbox.scrollable-y', 10000),
             ]);
-
-            // This was previously inside the Promise.aa but I don't see the reason
-            await scrollTo(page, '.section-scrollbox.scrollable-y', 10000);
 
             const reviewResponseBody = await reviewsResponse.buffer();
             const reviewsFirst = parseReviewFromResponseBody(reviewResponseBody);
 
             result.reviews.push(...reviewsFirst);
             result.reviews = result.reviews.slice(0, maxReviews);
-            log.info(`[PLACE]: Exracting reviews: ${result.reviews.length}/${maxReviews} --- ${page.url()}`);
+            log.info(`[PLACE]: Exracting reviews: ${result.reviews.length}/${result.reviewsCount} --- ${page.url()}`);
             let reviewUrl = reviewsResponse.url();
+
+            // TODO: This looks buggy since we want to sort as user inputs, not by newest
             // Replace !3e1 in URL with !3e2, it makes list sort by newest
             reviewUrl = reviewUrl.replace(/!3e\d/, '!3e2');
+
+            // TODO: We capture the first batch, this should not start from 0 I think
             // Make sure that we star review from 0, setting !1i0
             reviewUrl = reviewUrl.replace(/!1i\d+/, '!1i0');
 
@@ -360,16 +370,16 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
                     const response = await fetch(url);
                     return response.text();
                 }, reviewUrl);
-                const reviews = parseReviewFromResponseBody(responseBody);
+                const reviews = parseReviewFromResponseBody(responseBody, reviewsTranslation);
                 if (reviews.length === 0) {
                     break;
                 }
                 result.reviews.push(...reviews);
                 result.reviews = result.reviews.slice(0, maxReviews);
-                log.info(`[PLACE]: Exracting reviews: ${result.reviews.length}/${maxReviews} --- ${page.url()}`);
+                log.info(`[PLACE]: Exracting reviews: ${result.reviews.length}/${result.reviewsCount} --- ${page.url()}`);
                 reviewUrl = increaseLimitInUrl(reviewUrl);
             }
-            log.info(`[PLACE]: Reviews extraction finished: ${result.reviews.length} --- ${page.url()}`);
+            log.info(`[PLACE]: Reviews extraction finished: ${result.reviews.length}/${result.reviewsCount} --- ${page.url()}`);
 
             await page.waitForTimeout(500);
             const backButton = await page.$(BACK_BUTTON_SEL);

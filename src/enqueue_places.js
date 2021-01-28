@@ -36,9 +36,13 @@ const enqueuePlacesFromResponse = (options) => {
             const pageNumber = parseInt(queryParams.ech, 10);
             // Parse place ids from response body
             const responseBody = await response.buffer();
-            const places = parseSearchPlacesResponseBody(responseBody);
+            const placesPaginationData = parseSearchPlacesResponseBody(responseBody);
             let index = -1;
-            for (const place of places) {
+            let enqueued = 0;
+            // At this point, page URL should be resolved
+            const searchPageUrl = page.url();
+
+            for (const placePaginationData of placesPaginationData) {
                 index++;
                 const rank = ((pageNumber - 1) * 20) + (index + 1);
                 if (!maxPlacesPerCrawl || rank <= maxPlacesPerCrawl) {
@@ -47,23 +51,35 @@ const enqueuePlacesFromResponse = (options) => {
                             url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${place.placeId}`,
                         });
                     } else {
-                        const location = placesCache.getLocation(place.placeId);
-                        if (!geo || !location || checkInPolygon(geo, location)) {
-                            // At this point, page URL should be resolved
-                            const searchPageUrl = page.url();
+                        // TODO: Refactor this once we get rid of the caching
+                        const coordinates = placePaginationData.coords || placesCache.getLocation(place.placeId);
+                        const placeUrl = `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${placePaginationData.placeId}`;
+                        if (!geo || !coordinates || checkInPolygon(geo, coordinates)) {
                             await requestQueue.addRequest({
-                                url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${place.placeId}`,
-                                uniqueKey: place.placeId,
-                                userData: { label: 'detail', searchString, rank, searchPageUrl },
-                            },
-                            { forefront: true });
+                                    url: placeUrl,
+                                    uniqueKey: placePaginationData.placeId,
+                                    userData: {
+                                        label: 'detail',
+                                        searchString,
+                                        rank,
+                                        searchPageUrl,
+                                        coords: placePaginationData.coords,
+                                        addressParsed: placePaginationData.addressParsed,
+                                        isAdvertisement: placePaginationData.isAdvertisement,
+                                    },
+                                },
+                                { forefront: true });
+                            enqueued++;
                         } else {
-                            log.info(`[SEARCH]: Skip place: ${place.placeId}`);
                             stats.outOfPolygonCached();
+                            stats.outOfPolygon();
+                            stats.addOutOfPolygonPlace({ url: placeUrl, searchPageUrl, coordinates });
                         }
                     }
                 }
             }
+            const numberOfAds = placesPaginationData.filter((item) => item.isAdvertisement).length;
+            log.info(`[SEARCH]: Enqueued ${enqueued}/${placesPaginationData.length} places (correct location/total) + ${numberOfAds} ads --- ${page.url()}`)
         }
     };
 };
@@ -80,13 +96,13 @@ const enqueuePlacesFromResponse = (options) => {
  * }} options
  */
 const enqueueAllPlaceDetails = async ({
-    page,
-    searchString,
-    requestQueue,
-    request,
-    stats,
-    scrapingOptions,
-}) => {
+                                          page,
+                                          searchString,
+                                          requestQueue,
+                                          request,
+                                          stats,
+                                          scrapingOptions,
+                                      }) => {
     const { geo, maxAutomaticZoomOut, placesCache, exportPlaceUrls, maxCrawledPlaces } = scrapingOptions;
     page.on('response', enqueuePlacesFromResponse({
         page,
@@ -130,7 +146,7 @@ const enqueueAllPlaceDetails = async ({
 
     // In case there is a list of details, it goes through details, limits by maxPlacesPerCrawl
     const nextButtonSelector = '[jsaction="pane.paginationSection.nextPage"]';
-    for (;;) {
+    for (; ;) {
         await page.waitForSelector(nextButtonSelector, { timeout: DEFAULT_TIMEOUT });
         // @ts-ignore
         const paginationText = await page.$eval('.n7lv7yjyC35__root', (el) => el.innerText);

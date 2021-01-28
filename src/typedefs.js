@@ -17,6 +17,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @property {string} language
  * @property {number} multiplier
  * @property {object} geo
+ * @property {string} reviewsTranslation
  */
 
 /**
@@ -67,6 +68,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @property {number} [maxAutomaticZoomOut]
  * @property {boolean} [cachePlaces]
  * @property {string} [reviewsSort]
+ * @property {string} [reviewsTranslation]
  */
 
 /**
@@ -107,9 +109,45 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
 
 /**
  * @typedef {{
+ * lat: number,
+ * lng: number,
+ * }} Coordinates
+*/
+
+/**
+ * @typedef {{
+ * placeId: string,
+ * coords: Coordinates,
+ * addressParsed: AddressParsed | undefined,
+ * isAdvertisement: boolean,
+ * }} PlacePaginationData
+*/
+
+/**
+ * @typedef {{
+ * rank: number,
+ * searchPageUrl: string,
+ * addressParsed: AddressParsed | undefined,
+ * isAdvertisement: boolean
+ * }} PlaceUserData
+*/
+
+/**
+ * @typedef {{
+ * neighborhood: string,
+ * street: string,
+ * city: string,
+ * postalCode: string,
+ * state: string,
+ * countryCode: string,
+ * }} AddressParsed
+*/
+
+/**
+ * @typedef {{
  * url: string,
  * searchPageUrl: string,
- * location: { lat: number, lng: number },
+ * coordinates: Coordinates,
  * }} PlaceOutOfPolygon
 */
 module.exports = {};
