@@ -5,12 +5,10 @@ const typedefs = require('./typedefs'); // eslint-disable-line no-unused-vars
 const placesCrawler = require('./places_crawler');
 const Stats = require('./stats');
 const ErrorSnapshotter = require('./error-snapshotter');
+const PlacesCache = require('./places_cache');
 const { prepareSearchUrls } = require('./search');
 const { createStartRequestsWithWalker } = require('./walker');
 const { makeInputBackwardsCompatible, validateInput } = require('./input-validation');
-
-const cachedPlacesName = 'Places-cached-locations';
-
 const { log } = Apify.utils;
 
 // NOTE: This scraper is mostly typed with Typescript lint.
@@ -32,7 +30,7 @@ Apify.main(async () => {
         // Search and Start URLs
         startUrls, searchStringsArray,
         // Geolocation
-        lat, lng, country, state, city, postalCode, zoom = 10,
+        lat, lng, country, state, city, postalCode, zoom = 10, polygon,
         // browser and request options
         pageLoadTimeoutSec = 60, useChrome = false, maxConcurrency, maxPagesPerBrowser = 1, maxPageRetries = 6,
         // Misc
@@ -43,27 +41,16 @@ Apify.main(async () => {
         // Scraping options
         includeHistogram = false, includeOpeningHours = false, includePeopleAlsoSearch = false,
         maxReviews = 5, maxImages = 1, exportPlaceUrls = false, additionalInfo = false, maxCrawledPlaces,
-        maxAutomaticZoomOut, cachePlaces = false, reviewsSort = 'mostRelevant', reviewsTranslation = 'originalAndTranslated',
+        maxAutomaticZoomOut, cachePlaces = false, useCachedPlaces = false, cacheKey, reviewsSort = 'mostRelevant',
+        reviewsTranslation = 'originalAndTranslated',
     } = input;
 
     if (debug) {
         log.setLevel(log.LEVELS.DEBUG);
     }
 
-    let allPlaces = {};
-    if (cachePlaces) {
-        log.debug('Load cached places');
-        const allPlacesStore = await Apify.openKeyValueStore(cachedPlacesName);
-        allPlaces = await allPlacesStore.getValue('places') || {};
-        log.debug('allPlaces', allPlaces);
-        Apify.events.on('migrating', async () => {
-            log.debug('Saving places before migration');
-            const reloadedPlaces = (await allPlacesStore.getValue('places')) || {};
-            // @ts-ignore
-            const newPlaces = { ...allPlaces, ...reloadedPlaces };
-            await allPlacesStore.setValue('places', newPlaces);
-        });
-    }
+    const placesCache = new PlacesCache({ cachePlaces, cacheKey, useCachedPlaces });
+    await placesCache.initialize()
 
     // Requests that are used in the queue, we persist them to skip this step after migration
     const startRequests = /** @type {Apify.RequestOptions[]} */ (await Apify.getValue('START-REQUESTS')) || [];
@@ -77,7 +64,16 @@ Apify.main(async () => {
     // We crate geolocation only for search. not for Start URLs
     if (!Array.isArray(startUrls) || startUrls.length === 0) {
         // This call is async because it persists geolocation into KV
-        ({ startUrlSearches, geo } = await prepareSearchUrls({ lat, lng, zoom, country, state, city, postalCode }));
+        ({ startUrlSearches, geo } = await prepareSearchUrls({
+            lat,
+            lng,
+            zoom,
+            country,
+            state,
+            city,
+            postalCode,
+            polygon
+        }));
     }
 
     if (startRequests.length === 0) {
@@ -142,6 +138,16 @@ Apify.main(async () => {
                         });
                     }
                 }
+            }
+
+            // use cached place ids for geolocation
+            for (const placeId of placesCache.placesInPolygon(geo, maxCrawledPlaces, searchStringsArray)) {
+                const searchString = searchStringsArray.filter(x => placesCache.place(placeId).keywords.includes(x))[0];
+                startRequests.push({
+                    url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${placeId}`,
+                    uniqueKey: placeId,
+                    userData: { label: 'detail', searchString, rank: null },
+                });
             }
         }
 
@@ -221,25 +227,17 @@ Apify.main(async () => {
     const scrapingOptions = {
         includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
         maxReviews, maxImages, exportPlaceUrls, additionalInfo, maxCrawledPlaces,
-        maxAutomaticZoomOut, cachePlaces, reviewsSort, language,
+        maxAutomaticZoomOut, placesCache, reviewsSort, language,
         multiplier: startRequests.length || 1, // workaround for the maxCrawledPlaces when using multiple queries/startUrls
         geo, reviewsTranslation,
     };
 
     // Create and run crawler
-    const crawler = placesCrawler.setUpCrawler({ crawlerOptions, scrapingOptions, stats, errorSnapshotter, allPlaces });
+    const crawler = placesCrawler.setUpCrawler({ crawlerOptions, scrapingOptions, stats, errorSnapshotter });
 
     await crawler.run();
     await stats.saveStats();
-
-    if (cachePlaces) {
-        log.debug('Saving places before migration');
-        const allPlacesStore = await Apify.openKeyValueStore(cachedPlacesName);
-        const reloadedPlaces = await allPlacesStore.getValue('places') || {};
-        // @ts-ignore
-        const newPlaces = { ...allPlaces, ...reloadedPlaces };
-        await allPlacesStore.setValue('places', newPlaces);
-    }
+    await placesCache.savePlaces();
 
     log.info('Scraping finished!');
 });

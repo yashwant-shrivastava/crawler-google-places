@@ -20,14 +20,13 @@ const { checkInPolygon } = require('./polygon');
  *   maxPlacesPerCrawl: number | undefined,
  *   exportPlaceUrls: boolean,
  *   geo: object,
- *   allPlaces: {[index: string]:  any},
- *   cachePlaces: boolean,
+ *   placesCache: PlacesCache,
  *   stats: Stats,
  * }} options
  * @return {(response: Puppeteer.Response) => Promise<void>}
  */
 const enqueuePlacesFromResponse = (options) => {
-    const { page, requestQueue, searchString, maxPlacesPerCrawl, exportPlaceUrls, geo, allPlaces, cachePlaces, stats } = options;
+    const { page, requestQueue, searchString, maxPlacesPerCrawl, exportPlaceUrls, geo, placesCache, stats } = options;
     return async (response) => {
         const url = response.url();
         if (url.startsWith('https://www.google.com/search')) {
@@ -49,27 +48,28 @@ const enqueuePlacesFromResponse = (options) => {
                 if (!maxPlacesPerCrawl || rank <= maxPlacesPerCrawl) {
                     if (exportPlaceUrls) {
                         await Apify.pushData({
-                            url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${place.placeId}`,
+                            url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${placePaginationData.placeId}`,
                         });
                     } else {
                         // TODO: Refactor this once we get rid of the caching
-                        const coordinates = placePaginationData.coords || allPlaces[placePaginationData.placeId];
+                        const coordinates = placePaginationData.coords || placesCache.getLocation(placePaginationData.placeId);
                         const placeUrl = `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${placePaginationData.placeId}`;
+                        placesCache.addLocation(placePaginationData.placeId, coordinates, searchString);
                         if (!geo || !coordinates || checkInPolygon(geo, coordinates)) {
                             await requestQueue.addRequest({
-                                url: placeUrl,
-                                uniqueKey: placePaginationData.placeId,
-                                userData: {
-                                    label: 'detail',
-                                    searchString,
-                                    rank,
-                                    searchPageUrl,
-                                    coords: placePaginationData.coords,
-                                    addressParsed: placePaginationData.addressParsed,
-                                    isAdvertisement: placePaginationData.isAdvertisement,
+                                    url: placeUrl,
+                                    uniqueKey: placePaginationData.placeId,
+                                    userData: {
+                                        label: 'detail',
+                                        searchString,
+                                        rank,
+                                        searchPageUrl,
+                                        coords: placePaginationData.coords,
+                                        addressParsed: placePaginationData.addressParsed,
+                                        isAdvertisement: placePaginationData.isAdvertisement,
+                                    },
                                 },
-                            },
-                            { forefront: true });
+                                { forefront: true });
                             enqueued++;
                         } else {
                             stats.outOfPolygonCached();
@@ -92,21 +92,19 @@ const enqueuePlacesFromResponse = (options) => {
  *  searchString: string,
  *  requestQueue: Apify.RequestQueue,
  *  request: Apify.Request,
- *  allPlaces: {[index: string]: any},
  *  stats: Stats,
  *  scrapingOptions: typedefs.ScrapingOptions,
  * }} options
  */
 const enqueueAllPlaceDetails = async ({
-    page,
-    searchString,
-    requestQueue,
-    request,
-    allPlaces,
-    stats,
-    scrapingOptions,
-}) => {
-    const { geo, maxAutomaticZoomOut, cachePlaces, exportPlaceUrls, maxCrawledPlaces } = scrapingOptions;
+                                          page,
+                                          searchString,
+                                          requestQueue,
+                                          request,
+                                          stats,
+                                          scrapingOptions,
+                                      }) => {
+    const { geo, maxAutomaticZoomOut, placesCache, exportPlaceUrls, maxCrawledPlaces } = scrapingOptions;
     page.on('response', enqueuePlacesFromResponse({
         page,
         requestQueue,
@@ -114,8 +112,7 @@ const enqueueAllPlaceDetails = async ({
         maxPlacesPerCrawl: maxCrawledPlaces,
         exportPlaceUrls,
         geo,
-        allPlaces,
-        cachePlaces,
+        placesCache,
         stats,
     }));
     // Save state of listing pagination
@@ -150,7 +147,7 @@ const enqueueAllPlaceDetails = async ({
 
     // In case there is a list of details, it goes through details, limits by maxPlacesPerCrawl
     const nextButtonSelector = '[jsaction="pane.paginationSection.nextPage"]';
-    for (;;) {
+    for (; ;) {
         await page.waitForSelector(nextButtonSelector, { timeout: DEFAULT_TIMEOUT });
         // @ts-ignore
         const paginationText = await page.$eval('.n7lv7yjyC35__root', (el) => el.innerText);

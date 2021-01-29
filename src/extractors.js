@@ -120,7 +120,7 @@ module.exports.extractPopularTimes = async ({ page }) => {
  * @param {{
  *    page: Puppeteer.Page
  * }} options
-*/
+ */
 module.exports.extractOpeningHours = async ({ page }) => {
     let result;
     const openingHoursSel = '.section-open-hours-container.section-open-hours-container-hoverable';
@@ -154,7 +154,7 @@ module.exports.extractOpeningHours = async ({ page }) => {
  * @param {{
  *    page: Puppeteer.Page
  * }} options
-   */
+ */
 module.exports.extractPeopleAlsoSearch = async ({ page }) => {
     const result = [];
     const peopleSearchContainer = await page.$('.section-carousel-scroll-container');
@@ -190,13 +190,14 @@ module.exports.extractPeopleAlsoSearch = async ({ page }) => {
 
 /**
  * @param {{
-    *    page: Puppeteer.Page
-    * }} options
-      */
+ *    page: Puppeteer.Page
+ * }} options
+ */
 module.exports.extractAdditionalInfo = async ({ page }) => {
     let result;
     log.debug('[PLACE]: Scraping additional info.');
-    await page.waitForSelector('button.section-editorial', { timeout: 5000 }).catch(() => {});
+    await page.waitForSelector('button.section-editorial', { timeout: 5000 }).catch(() => {
+    });
     const button = await page.$('button.section-editorial');
     if (button) {
         try {
@@ -422,7 +423,7 @@ module.exports.extractImages = async ({ page, maxImages }) => {
 
         log.info(`[PLACE]: Infinite scroll for images started, url: ${page.url()}`);
 
-        for (;;) {
+        for (; ;) {
             // TODO: Debug infiniteScroll properly, it can get stuck in there sometimes, for now just adding a race
             await Promise.race([
                 infiniteScroll(page, pageBottom, '.section-scrollbox.scrollable-y', 1),

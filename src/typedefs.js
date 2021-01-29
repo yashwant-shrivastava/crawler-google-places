@@ -12,7 +12,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @property {number} [maxAutomaticZoomOut]
  * @property {boolean} exportPlaceUrls
  * @property {boolean} additionalInfo
- * @property {boolean} cachePlaces
+ * @property {PlacesCache} placesCache
  * @property {string} reviewsSort
  * @property {string} language
  * @property {number} multiplier
@@ -112,7 +112,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * lat: number,
  * lng: number,
  * }} Coordinates
-*/
+ */
 
 /**
  * @typedef {{
@@ -121,7 +121,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * addressParsed: AddressParsed | undefined,
  * isAdvertisement: boolean,
  * }} PlacePaginationData
-*/
+ */
 
 /**
  * @typedef {{
@@ -130,7 +130,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * addressParsed: AddressParsed | undefined,
  * isAdvertisement: boolean
  * }} PlaceUserData
-*/
+ */
 
 /**
  * @typedef {{
@@ -141,7 +141,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * state: string,
  * countryCode: string,
  * }} AddressParsed
-*/
+ */
 
 /**
  * @typedef {{
@@ -149,5 +149,22 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * searchPageUrl: string,
  * coordinates: Coordinates,
  * }} PlaceOutOfPolygon
-*/
+ */
+
+/**
+ * @typedef {{
+ * keywords: string[],
+ * location: Coordinates,
+ * }} CachedPlace
+ */
+
+/**
+ * @typedef {{
+ * geojson: {
+ *     type: string,
+ *     coordinates: number[][]
+ * }
+ * }} GeoJson
+ */
+
 module.exports = {};
