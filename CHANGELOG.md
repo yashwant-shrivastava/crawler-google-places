@@ -7,7 +7,7 @@ Features:
 - Added `polygon` option to provide your own geolocation polygon.
 
 Fixes:
-- This one is big. We removed the infamous `Place is outside of required location (polygon)` error. The location of a place is now checked during paginating and these places are skipped. This means a **massive speed of the scraper**.
+- This one is big. We removed the infamous `Place is outside of required location (polygon)` error. The location of a place is now checked during paginating and these places are skipped. This means a **massive speed up of the scraper**.
 
 ## 2021-01-11
 Features:
