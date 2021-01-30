@@ -3,6 +3,8 @@ Features:
 - Address is parsed into `neighborhood`, `street`, `city`, `postalCode`, `state` and `countryCode` fields
 - Added `reviewsTranslation` option to adjust how Google translates reviews from non-English languages
 - Parsing ads. This means a bit more results. Those that are ads have `"isAdvertisement": true` field.
+- Added `useCachedPlaces` option to load places from your KV Store. Useful if you need to scrape the same places regularly.
+- Added `polygon` option to provide your own geolocation polygon.
 
 Fixes:
 - This one is big. We removed the infamous `Place is outside of required location (polygon)` error. The location of a place is now checked during paginating and these places are skipped. This means a **massive speed of the scraper**.
