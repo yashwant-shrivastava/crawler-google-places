@@ -86,7 +86,12 @@ const parseSearchPlacesResponseBody = (responseBodyBuffer) => {
     })
 
     /** @type {any} Too complex to type out*/
-    const organicResults = data[0][1].slice(1); // The first is not a place result
+    let organicResults = data[0][1];
+    // If the search goes to search results, the first one is not a place
+    // If the search goes to a place directly, the first one is that place
+    if (organicResults.length > 1) {
+        organicResults = organicResults.slice(1)
+    }
     organicResults.forEach((/** @type {any} */ result ) => {
         const placeData = parsePaginationResult(result, false);
         if (placeData) {
