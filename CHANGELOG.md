@@ -1,3 +1,7 @@
+## 2021-02-02
+Fixes:
+- Search keyword that links only to a single place (like `"London Eye"`) now works correctly
+
 ## 2021-01-27
 Features:
 - Address is parsed into `neighborhood`, `street`, `city`, `postalCode`, `state` and `countryCode` fields
