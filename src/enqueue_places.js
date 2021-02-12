@@ -132,12 +132,18 @@ const enqueueAllPlaceDetails = async ({
     await page.click('#searchbox-searchbutton');
     await sleep(5000);
     await waitForGoogleMapLoader(page);
+    // TODO refactor all three selectors to single race
     try {
+        // This is still important, for partial matches and for single result searches, with to low timeout run time for single result searches increase from several second to 15 minutes. (JL)
         // This might no longer work and I don't know why it is here. I reduced timeout to 5000 at least (LK)
-        await page.waitForSelector(PLACE_TITLE_SEL, { timeout: 5000 });
         // It there is place detail, it means there is just one detail and it was redirected here.
+        // Or there is partial match and so there is no pagination available
         // We do not need enqueue other places.
-        log.debug(`[SEARCH]: Search string ${searchString} has just one place to scraper.`);
+        await Promise.race([
+            page.waitForSelector(PLACE_TITLE_SEL, { timeout: 15000 }),
+            page.waitForSelector(".section-partial-interpretation .section-partial-interpretation-title", { timeout: 15000 }),
+        ]);
+        log.debug(`[SEARCH]: Search string ${searchString} has just one place to scraper or has partial match.`);
         return;
     } catch (e) {
         // It can happen if there is list of details.
