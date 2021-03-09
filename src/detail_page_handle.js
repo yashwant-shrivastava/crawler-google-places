@@ -59,8 +59,20 @@ module.exports.handlePlaceDetail = async (options) => {
 
     const coordinates = latMatch && lngMatch ? { lat: parseFloat(latMatch), lng: parseFloat(lngMatch) } : null;
 
+    // Test
+    
+    const reviewsJson = await page.evaluate(() => {
+        try {
+            // @ts-ignore
+            return JSON.parse(APP_INITIALIZATION_STATE[3][6].replace(`)]}'`, ''))[6][4];
+        } catch (e) { }
+    });
+    const totalScore = reviewsJson ? reviewsJson[7] : null;
+    const reviewsCount = reviewsJson ? reviewsJson[8] : 0;
+    
     const detail = {
         ...pageData,
+        totalScore,
         isAdvertisement,
         rank,
         placeId: request.uniqueKey,
@@ -73,9 +85,10 @@ module.exports.handlePlaceDetail = async (options) => {
         openingHours: includeOpeningHours ? await extractOpeningHours({ page }) : undefined,
         peopleAlsoSearch: includePeopleAlsoSearch ? await extractPeopleAlsoSearch({ page }) : undefined,
         additionalInfo: additionalInfo ? await extractAdditionalInfo({ page }) : undefined,
-        ...await errorSnapshotter.tryWithSnapshot(
+        reviewsCount,
+        reviews: await errorSnapshotter.tryWithSnapshot(
             page,
-            async () => extractReviews({ page, totalScore: pageData.totalScore, maxReviews, reviewsSort, reviewsTranslation }),
+            async () => extractReviews({ page, totalScore, reviewsCount, maxReviews, reviewsSort, reviewsTranslation }),
             { name: 'Reviews extraction' },
         ),
         imageUrls: await errorSnapshotter.tryWithSnapshot(

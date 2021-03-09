@@ -1,6 +1,5 @@
 /* eslint-env jquery */
 const Apify = require('apify');
-const Globalize = require('globalize');
 
 const typedefs = require('./typedefs'); // eslint-disable-line no-unused-vars
 const Stats = require('./stats'); // eslint-disable-line no-unused-vars
@@ -14,12 +13,6 @@ const {
 
 const { log } = Apify.utils;
 const { injectJQuery, blockRequests } = Apify.utils.puppeteer;
-
-// TODO: Instead of loading default ones, it should load the specific provided language
-const DEFAULT_CRAWLER_LOCALIZATION = ['en', 'cs', 'es', 'fr'];
-
-Globalize.load(require('cldr-data').entireSupplemental());
-Globalize.load(require('cldr-data').entireMainFor(...DEFAULT_CRAWLER_LOCALIZATION));
 
 /**
  * @param {{

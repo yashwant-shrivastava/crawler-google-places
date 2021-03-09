@@ -1,6 +1,5 @@
 const Apify = require('apify');
 const Puppeteer = require('puppeteer'); // eslint-disable-line
-const Globalize = require('globalize');
 
 const {AddressParsed} = require('./typedefs')
 
@@ -39,7 +38,8 @@ module.exports.extractPageData = async ({ page, addressParsed }) => {
         return {
             title: $(placeTitleSel).text().trim(),
             subTitle: $('section-hero-header-title-subtitle').first().text().trim() || null,
-            totalScore: $('span.section-star-display').eq(0).text().trim(),
+            // Getting from JSON now
+            // totalScore: $('span.section-star-display').eq(0).text().trim(),
             categoryName: $('[jsaction="pane.rating.category"]').text().trim(),
             address: address || addressAlt || addressAlt2 || null,
             locatedIn: secondaryAddressLine || secondaryAddressLineAlt || secondaryAddressLineAlt2 || null,
@@ -244,14 +244,16 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
  * totalScore is string because it is parsed via localization
  * @param {{
  *    page: Puppeteer.Page,
- *    totalScore: string,
+ *    totalScore: number,
+ *    reviewsCount: number,
  *    maxReviews: number,
  *    reviewsSort: string,
  *    reviewsTranslation: string,
  * }} options
  */
-module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSort, reviewsTranslation }) => {
-    const result = {};
+module.exports.extractReviews = async ({ page, totalScore, reviewsCount, maxReviews, reviewsSort, reviewsTranslation }) => {
+    /** @type {object[]} */
+    let reviews = [];
 
     const reviewsButtonSel = 'button[jsaction="pane.reviewChart.moreReviews"]';
     // This selector is not present when there are no reviews
@@ -261,31 +263,6 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
         log.warning(`Could not find reviews count, check if the page really has no reviews --- ${page.url()}`);
     }
     if (totalScore) {
-        const { reviewsCountText, localization } = await page.evaluate((selector) => {
-            const numberReviewsText = $(selector).text().trim();
-            // NOTE: Needs handle:
-            // Recenze: 7
-            // 1.609 reviews
-            // 9 reviews
-            const number = numberReviewsText.match(/[.,0-9]+/);
-            return {
-                reviewsCountText: number ? number[0] : null,
-                localization: navigator.language.slice(0, 2),
-            };
-        }, reviewsButtonSel);
-        let globalParser;
-        try {
-            globalParser = Globalize(localization);
-        } catch (e) {
-            throw new Error(`[PLACE]: Can not find localization for ${localization}, try to use different proxy IP.`);
-        }
-
-        // @ts-ignore
-        result.totalScore = globalParser.numberParser({ round: 'floor' })(totalScore);
-        result.reviewsCountText = reviewsCountText;
-        // @ts-ignore
-        result.reviewsCount = reviewsCountText ? globalParser.numberParser({ round: 'truncate' })(reviewsCountText) : null;
-
         // click the consent iframe, working with arrays so it never fails.
         // also if there's anything wrong with Same-Origin, just delete the modal contents
         // TODO: Why is this isolated in reviews?
@@ -301,9 +278,7 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
         });
 
         // TODO: Scrape default reviews (will allow us to extract 10 reviews by default without additional clicking)
-        if (result.reviewsCount && typeof maxReviews === 'number' && maxReviews > 0) {
-            /** @type {object[]} */
-            result.reviews = [];
+        if (reviewsCount && typeof maxReviews === 'number' && maxReviews > 0) {
             await page.waitForSelector(reviewsButtonSel);
             await page.click(reviewsButtonSel);
 
@@ -343,9 +318,9 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
             const reviewResponseBody = await reviewsResponse.buffer();
             const reviewsFirst = parseReviewFromResponseBody(reviewResponseBody);
 
-            result.reviews.push(...reviewsFirst);
-            result.reviews = result.reviews.slice(0, maxReviews);
-            log.info(`[PLACE]: Exracting reviews: ${result.reviews.length}/${result.reviewsCount} --- ${page.url()}`);
+            reviews.push(...reviewsFirst);
+            reviews = reviews.slice(0, maxReviews);
+            log.info(`[PLACE]: Exracting reviews: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
             let reviewUrl = reviewsResponse.url();
 
             // TODO: This looks buggy since we want to sort as user inputs, not by newest
@@ -364,22 +339,22 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
                 return url.replace(/!1i\d+/, `!1i${number + 10}`);
             };
 
-            while (result.reviews.length < maxReviews) {
+            while (reviews.length < maxReviews) {
                 // Request in browser context to use proxy as in brows
                 const responseBody = await page.evaluate(async (url) => {
                     const response = await fetch(url);
                     return response.text();
                 }, reviewUrl);
-                const reviews = parseReviewFromResponseBody(responseBody, reviewsTranslation);
-                if (reviews.length === 0) {
+                const currentReviews = parseReviewFromResponseBody(responseBody, reviewsTranslation);
+                if (currentReviews.length === 0) {
                     break;
                 }
-                result.reviews.push(...reviews);
-                result.reviews = result.reviews.slice(0, maxReviews);
-                log.info(`[PLACE]: Exracting reviews: ${result.reviews.length}/${result.reviewsCount} --- ${page.url()}`);
+                reviews.push(...currentReviews);
+                reviews = reviews.slice(0, maxReviews);
+                log.info(`[PLACE]: Exracting reviews: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
                 reviewUrl = increaseLimitInUrl(reviewUrl);
             }
-            log.info(`[PLACE]: Reviews extraction finished: ${result.reviews.length}/${result.reviewsCount} --- ${page.url()}`);
+            log.info(`[PLACE]: Reviews extraction finished: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
 
             await page.waitForTimeout(500);
             const backButton = await page.$(BACK_BUTTON_SEL);
@@ -389,11 +364,10 @@ module.exports.extractReviews = async ({ page, totalScore, maxReviews, reviewsSo
             await backButton.click();
         }
     }
-    return result;
+    return reviews;
 };
 
 /**
- * totalScore is string because it is parsed via localization
  * @param {{
  * page: Puppeteer.Page,
  * maxImages: number,
