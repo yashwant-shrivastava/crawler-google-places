@@ -1,3 +1,8 @@
+## 2021-03-10
+Fixes:
+- `totalScore` and `reviewsCount` are now correctly extracted for all languages
+- `startUrls` now correctly work non-.com domains and on detail places
+
 ## 2021-02-02
 Fixes:
 - Search keyword that links only to a single place (like `"London Eye"`) now works correctly
