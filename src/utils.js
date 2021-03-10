@@ -253,7 +253,7 @@ const waiter = async (predicate, options = {}) => {
 const waitAndHandleConsentFrame = async (page, url) => {
     const predicate = async () => {
         for (const frame of page.mainFrame().childFrames()) {
-            if (frame.url().includes('consent.google.com')) {
+            if (frame.url().match(/consent\.google\.[a-z.]+/)) {
                 await frame.click('#introAgreeButton');
                 return true;
             }

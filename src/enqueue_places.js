@@ -29,7 +29,7 @@ const enqueuePlacesFromResponse = (options) => {
     const { page, requestQueue, searchString, maxPlacesPerCrawl, exportPlaceUrls, geo, placesCache, stats } = options;
     return async (response) => {
         const url = response.url();
-        if (url.startsWith('https://www.google.com/search')) {
+        if (url.match(/google\.[a-z.]+\/search/)) {
             // Parse page number from request url
             const queryParams = querystring.parse(url.split('?')[1]);
             // @ts-ignore

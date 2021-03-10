@@ -137,7 +137,7 @@ const setUpCrawler = ({ crawlerOptions, scrapingOptions, stats, errorSnapshotter
             // Handle consent screen, it takes time before the iframe loads so we need to update userData
             // and block handlePageFunction from continuing until we click on that
             page.on('response', async (res) => {
-                if (res.url().includes('consent.google.com/intro')) {
+                if (res.url().match(/consent\.google\.[a-z.]+\/intro/)) {
                     // @ts-ignore
                     request.userData.waitingForConsent = true;
                     await page.waitForTimeout(5000);

@@ -43,6 +43,7 @@ module.exports.handlePlaceDetail = async (options) => {
     }
 
     // Add info from listing page
+    // TODO: Address should be parsed from place JSON so it works on direct places
     const { rank, searchPageUrl, addressParsed, isAdvertisement } = /** @type {PlaceUserData} */ (request.userData);
 
     // Adding addressParsed there so it is nicely together in JSON
