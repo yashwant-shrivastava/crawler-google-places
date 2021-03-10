@@ -79,7 +79,7 @@ module.exports.handlePlaceDetail = async (options) => {
     if (!reviewsCount) {
         reviewsCount = await page.evaluate(() => Number($('button[jsaction="pane.reviewChart.moreReviews"]')
             .text()
-            .replace(/[^0-9]+/g, '')) || null);
+            .replace(/[^0-9]+/g, '')) || 0);
     }
     
     const detail = {
