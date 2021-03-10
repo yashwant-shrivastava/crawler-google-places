@@ -72,7 +72,7 @@ Apify.main(async () => {
             state,
             city,
             postalCode,
-            polygon
+            polygon,
         }));
     }
 
@@ -88,21 +88,22 @@ Apify.main(async () => {
                 if (!req.url) {
                     log.warning('There is no valid URL for this request:');
                     console.dir(req);
-                } else if (req.url.startsWith('https://www.google.com/search')) {
+                } else if (req.url.match(/https\:\/\/www\.google\.[a-z.]+\/search/)) {
                     log.warning('ATTENTION! URLs starting with "https://www.google.com/search" '
                         + 'are not supported! Please transform your URL to start with "https://www.google.com/maps"');
                     log.warning(`Happened for provided URL: ${req.url}`);
-                } else if (!/www\.google\.com\/maps\/(search|place)\//.test(req.url)) {
+                } else if (!/google\.[a-z.]+\/maps\/(search|place)\//.test(req.url)) {
                     // allows only search and place urls
                     log.warning('ATTENTION! URL you provided is not '
                         + 'recognized as a valid Google Maps URL. '
                         + 'Please use URLs with /maps/search or /maps/place or contact support@apify.com to add a new format');
                     log.warning(`Happened for provided URL: ${req.url}`);
                 } else {
-                    // The URL is correct
+                    // TODO: Seems we don't work on place details???
+                    const isPlace = req.url.includes('/maps/place/')
                     startRequests.push({
                         ...req,
-                        userData: { label: 'startUrl', searchString: null },
+                        userData: { label: isPlace ? 'detail' : 'startUrl', searchString: null },
                     });
                 }
             }

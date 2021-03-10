@@ -67,8 +67,20 @@ module.exports.handlePlaceDetail = async (options) => {
             return JSON.parse(APP_INITIALIZATION_STATE[3][6].replace(`)]}'`, ''))[6][4];
         } catch (e) { }
     });
-    const totalScore = reviewsJson ? reviewsJson[7] : null;
-    const reviewsCount = reviewsJson ? reviewsJson[8] : 0;
+    let totalScore = reviewsJson ? reviewsJson[7] : null;
+    let reviewsCount = reviewsJson ? reviewsJson[8] : 0;
+
+    // We fallback to HTML (might be goo to do only)
+    if (!totalScore) {
+        totalScore = await page.evaluate(() => Number($('span.section-star-display')
+            .eq(0).text().trim().replace(',', '.')) || null)
+    }
+
+    if (!reviewsCount) {
+        reviewsCount = await page.evaluate(() => Number($('button[jsaction="pane.reviewChart.moreReviews"]')
+            .text()
+            .replace(/[^0-9]+/g, '')) || null);
+    }
     
     const detail = {
         ...pageData,
