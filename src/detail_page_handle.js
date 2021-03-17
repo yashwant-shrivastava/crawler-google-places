@@ -60,16 +60,15 @@ module.exports.handlePlaceDetail = async (options) => {
 
     const coordinates = latMatch && lngMatch ? { lat: parseFloat(latMatch), lng: parseFloat(lngMatch) } : null;
 
-    // Test
-    
+    // TODO: Refactor this out to separate func
     const reviewsJson = await page.evaluate(() => {
         try {
             // @ts-ignore
-            return JSON.parse(APP_INITIALIZATION_STATE[3][6].replace(`)]}'`, ''))[6][4];
+            return JSON.parse(APP_INITIALIZATION_STATE[3][6].replace(`)]}'`, ''))[6];
         } catch (e) { }
     });
-    let totalScore = reviewsJson ? reviewsJson[7] : null;
-    let reviewsCount = reviewsJson ? reviewsJson[8] : 0;
+    let totalScore = reviewsJson && reviewsJson[4] ? reviewsJson[4][7] : null;
+    let reviewsCount = reviewsJson && reviewsJson[4] ? reviewsJson[4][8] : 0;
 
     // We fallback to HTML (might be goo to do only)
     if (!totalScore) {
@@ -81,6 +80,23 @@ module.exports.handlePlaceDetail = async (options) => {
         reviewsCount = await page.evaluate(() => Number($('button[jsaction="pane.reviewChart.moreReviews"]')
             .text()
             .replace(/[^0-9]+/g, '')) || 0);
+    }
+
+    const reviewsDistributionDefault = {
+        oneStar: 0,
+        twoStar: 0,
+        threeStar: 0,
+        fourStar: 0,
+        fiveStar: 0,
+    };
+
+    let reviewsDistribution = reviewsDistributionDefault;
+
+    if (reviewsJson) {
+        if (reviewsJson[52] && Array.isArray(reviewsJson[52][3])) {
+            const [oneStar, twoStar, threeStar, fourStar, fiveStar ] = reviewsJson[52][3];
+            reviewsDistribution = { oneStar, twoStar, threeStar, fourStar, fiveStar };
+        }
     }
     
     const detail = {
@@ -99,6 +115,7 @@ module.exports.handlePlaceDetail = async (options) => {
         peopleAlsoSearch: includePeopleAlsoSearch ? await extractPeopleAlsoSearch({ page }) : undefined,
         additionalInfo: additionalInfo ? await extractAdditionalInfo({ page }) : undefined,
         reviewsCount,
+        reviewsDistribution,
         reviews: await errorSnapshotter.tryWithSnapshot(
             page,
             async () => extractReviews({ page, totalScore, reviewsCount, maxReviews, reviewsSort, reviewsTranslation }),

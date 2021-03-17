@@ -76,6 +76,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @property {string} name
  * @property {string} text
  * @property {string} publishAt
+ * @property {string} publishedAtDate
  * @property {number} likesCount
  * @property {string} reviewId
  * @property {string} reviewUrl
@@ -83,9 +84,10 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @property {string} reviewerUrl
  * @property {number} reviewerNumberOfReviews
  * @property {boolean} isLocalGuide
- * @property {number | undefined} stars
- * @property {number | undefined} rating
- * @property {string | undefined} responseFromOwnerText
+ * @property {number | null} stars
+ * @property {number | null} rating
+ * @property {string | null} responseFromOwnerDate
+ * @property {string | null} responseFromOwnerText
  */
 
 /**

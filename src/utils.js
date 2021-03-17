@@ -112,12 +112,19 @@ const parseSearchPlacesResponseBody = (responseBodyBuffer) => {
  */
 const parseReviewFromResponseBody = (responseBody, reviewsTranslation) => {
     /** @type {Review[]} */
-    const reviews = [];
+    const currentReviews = [];
     const stringBody = typeof responseBody === 'string'
         ? responseBody
         : responseBody.toString('utf-8');
-    const results = stringifyGoogleXrhResponse(stringBody);
-    if (!results || !results[2]) return reviews;
+    let results;
+    try {
+        results = stringifyGoogleXrhResponse(stringBody);
+    } catch (e) {
+        return { error: e.message };
+    } 
+    if (!results || !results[2]) {
+        return { currentReviews };
+    }
     results[2].forEach((/** @type {any} */ reviewArray) => {
         let text = reviewArray[3];
 
@@ -140,6 +147,7 @@ const parseReviewFromResponseBody = (responseBody, reviewsTranslation) => {
             name: reviewArray[0][1],
             text,
             publishAt: reviewArray[1],
+            publishedAtDate: new Date(reviewArray[27]).toISOString(),
             likesCount: reviewArray[15],
             reviewId: reviewArray[10],
             reviewUrl: reviewArray[18],
@@ -147,25 +155,19 @@ const parseReviewFromResponseBody = (responseBody, reviewsTranslation) => {
             reviewerUrl: reviewArray[0][0],
             reviewerNumberOfReviews: reviewArray[12] && reviewArray[12][1] && reviewArray[12][1][1],
             isLocalGuide: reviewArray[12] && reviewArray[12][1] && Array.isArray(reviewArray[12][1][0]),
-            stars: undefined,
-            rating: undefined,
-            responseFromOwnerText: undefined,
+            // On some places google shows reviews from other services like booking
+            // There isn't stars but rating for this places reviews
+            stars: reviewArray[4] || null,
+            // Trip advisor
+            rating: reviewArray[25] ? reviewArray[25][1] : null,
+            responseFromOwnerDate: reviewArray[9] && reviewArray[9][3]
+                ? new Date(reviewArray[9][3]).toISOString()
+                : null,
+            responseFromOwnerText: reviewArray[9] ? reviewArray[9][1] : null,
         };
-        // On some places google shows reviews from other services like booking
-        // There isn't stars but rating for this places reviews
-        if (reviewArray[4]) {
-            reviewData.stars = reviewArray[4];
-        }
-        // Trip advisor
-        if (reviewArray[25]) {
-            reviewData.rating = reviewArray[25][1];
-        }
-        if (reviewArray[5]) {
-            reviewData.responseFromOwnerText = reviewArray[5][1];
-        }
-        reviews.push(reviewData);
+        currentReviews.push(reviewData);
     });
-    return reviews;
+    return { currentReviews };
 };
 
 /**

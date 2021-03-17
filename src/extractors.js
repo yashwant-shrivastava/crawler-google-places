@@ -290,7 +290,9 @@ module.exports.extractReviews = async ({ page, totalScore, reviewsCount, maxRevi
                 lowestRanking: 3,
             };
 
-            // Set up sort from newest
+            // This is unnecessary as we can sort via URL manipulation
+            // TODO: Remove later, should not be needed
+            /*
             const sortPromise1 = async () => {
                 try {
                     await page.click('button[data-value="Sort"], [class*=dropdown-icon]');
@@ -304,28 +306,30 @@ module.exports.extractReviews = async ({ page, totalScore, reviewsCount, maxRevi
                     log.debug('[PLACE]: Unable to sort reviews!');
                 }
             };
+            */
 
             await sleep(5000);
-            // eslint-disable-next-line no-unused-vars
             const [reviewsResponse] = await Promise.all([
                 page.waitForResponse((response) => response.url().includes('preview/review/listentitiesreviews')),
-                sortPromise1(),
+                // sortPromise1(),
                 // This is here to work around the default setting not giving us any XHR
                 // TODO: Rework this
                 scrollTo(page, '.section-scrollbox.scrollable-y', 10000),
             ]);
 
+            // We skip these baceause they are loaded again when we click on all reviews
+            // Keeping them for reference as we might wanna use these and start with bigger offset
+            // to save one API call
+            /*  
             const reviewResponseBody = await reviewsResponse.buffer();
             const reviewsFirst = parseReviewFromResponseBody(reviewResponseBody);
-
             reviews.push(...reviewsFirst);
             reviews = reviews.slice(0, maxReviews);
+            */
             log.info(`[PLACE]: Exracting reviews: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
             let reviewUrl = reviewsResponse.url();
 
-            // TODO: This looks buggy since we want to sort as user inputs, not by newest
-            // Replace !3e1 in URL with !3e2, it makes list sort by newest
-            reviewUrl = reviewUrl.replace(/!3e\d/, '!3e2');
+            reviewUrl = reviewUrl.replace(/!3e\d/, `!3e${reviewSortOptions[reviewsSort] + 1}`);
 
             // TODO: We capture the first batch, this should not start from 0 I think
             // Make sure that we star review from 0, setting !1i0
@@ -345,7 +349,15 @@ module.exports.extractReviews = async ({ page, totalScore, reviewsCount, maxRevi
                     const response = await fetch(url);
                     return response.text();
                 }, reviewUrl);
-                const currentReviews = parseReviewFromResponseBody(responseBody, reviewsTranslation);
+                const { currentReviews, error } = parseReviewFromResponseBody(responseBody, reviewsTranslation);
+                if (error) {
+                    // This means that invalid response were returned
+                    // I think can happen if the review count changes
+                    log.warning(`Invalid response returned for reviews. `
+                    + `This might be caused by updated review count. The reviews should be scraped correctly. ${page.url()}`);
+                    log.warning(error);
+                    break;
+                }
                 if (currentReviews.length === 0) {
                     break;
                 }

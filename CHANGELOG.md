@@ -1,3 +1,14 @@
+## 2021-03-17
+*Fixes*
+- Removed duplicate reviews
+- `reviewsSort` finally works correctly
+- Reviews scraping is now faster
+- Handle error that irregularly happened when scraping huge amount of reviews
+
+*Features*
+- Added `reviewsDistribution`
+- Added `publishedAtDate` (exact date), `responseFromOwnerDate` and `responseFromOwnerText `for each review 
+
 ## 2021-03-10
 Fixes:
 - `totalScore` and `reviewsCount` are now correctly extracted for all languages
