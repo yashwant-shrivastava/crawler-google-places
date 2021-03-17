@@ -1,5 +1,6 @@
 # Google Maps Scraper
 
+<!-- toc start -->
 - [Features](#Features)
 - [Input configuration](#input-configuration)
 - [Results](#results)
@@ -7,6 +8,7 @@
 - [How the search works](#how-the-search-works)
 - [Using country, state and city parameters](#using-country-state-and-city-parameters)
 - [Changelog](#changelog)
+<!-- toc end -->
 
 ## Features
 This Google Maps crawler will enable you to get more data from Google Places than the official [Google Maps Places API](https://developers.google.com/places/web-service/search).
