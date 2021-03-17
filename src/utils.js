@@ -104,6 +104,53 @@ const parseSearchPlacesResponseBody = (responseBodyBuffer) => {
 };
 
 /**
+ * Parses review from a single review array json Google format
+ * @param {any} jsonArray
+ * @param {string} reviewsTranslation
+ * @return {Review}
+ */
+const parseReviewFromJson = (jsonArray, reviewsTranslation) => {
+    let text = jsonArray[3];
+
+    // Optionally remove translation
+    // TODO: Perhaps the text is differentiated in the JSON
+    if (typeof text === 'string' && reviewsTranslation !== 'originalAndTranslated') {
+        const splitReviewText = text.split('\n\n(Original)\n');
+
+        if (reviewsTranslation === 'onlyOriginal') {
+            // Fallback if there is no translation
+            text = splitReviewText[1] || splitReviewText[0];
+        } else if (reviewsTranslation === 'onlyTranslated') {
+            text = splitReviewText[0];
+        }
+        text = text.replace('(Translated by Google)', '').replace('\n\n(Original)\n', '').trim();
+    }
+
+    return {
+        name: jsonArray[0][1],
+        text,
+        publishAt: jsonArray[1],
+        publishedAtDate: new Date(jsonArray[27]).toISOString(),
+        likesCount: jsonArray[15],
+        reviewId: jsonArray[10],
+        reviewUrl: jsonArray[18],
+        reviewerId: jsonArray[6],
+        reviewerUrl: jsonArray[0][0],
+        reviewerNumberOfReviews: jsonArray[12] && jsonArray[12][1] && jsonArray[12][1][1],
+        isLocalGuide: jsonArray[12] && jsonArray[12][1] && Array.isArray(jsonArray[12][1][0]),
+        // On some places google shows reviews from other services like booking
+        // There isn't stars but rating for this places reviews
+        stars: jsonArray[4] || null,
+        // Trip advisor
+        rating: jsonArray[25] ? jsonArray[25][1] : null,
+        responseFromOwnerDate: jsonArray[9] && jsonArray[9][3]
+            ? new Date(jsonArray[9][3]).toISOString()
+            : null,
+        responseFromOwnerText: jsonArray[9] ? jsonArray[9][1] : null,
+    };
+}
+
+/**
  * Response from google xhr is kind a weird. Mix of array of array.
  * This function parse reviews from the response body.
  * @param {Buffer | string} responseBody
@@ -125,47 +172,9 @@ const parseReviewFromResponseBody = (responseBody, reviewsTranslation) => {
     if (!results || !results[2]) {
         return { currentReviews };
     }
-    results[2].forEach((/** @type {any} */ reviewArray) => {
-        let text = reviewArray[3];
-
-        // Optionally remove translation
-        // TODO: Perhaps the text is differentiated in the JSON
-        if (typeof text === 'string' && reviewsTranslation !== 'originalAndTranslated') {
-            const splitReviewText = text.split('\n\n(Original)\n');
-
-            if (reviewsTranslation === 'onlyOriginal') {
-                // Fallback if there is no translation
-                text = splitReviewText[1] || splitReviewText[0];
-            } else if (reviewsTranslation === 'onlyTranslated') {
-                text = splitReviewText[0];
-            }
-            text = text.replace('(Translated by Google)', '').replace('\n\n(Original)\n', '').trim();
-        }
-
-        /** @type {Review} */
-        const reviewData = {
-            name: reviewArray[0][1],
-            text,
-            publishAt: reviewArray[1],
-            publishedAtDate: new Date(reviewArray[27]).toISOString(),
-            likesCount: reviewArray[15],
-            reviewId: reviewArray[10],
-            reviewUrl: reviewArray[18],
-            reviewerId: reviewArray[6],
-            reviewerUrl: reviewArray[0][0],
-            reviewerNumberOfReviews: reviewArray[12] && reviewArray[12][1] && reviewArray[12][1][1],
-            isLocalGuide: reviewArray[12] && reviewArray[12][1] && Array.isArray(reviewArray[12][1][0]),
-            // On some places google shows reviews from other services like booking
-            // There isn't stars but rating for this places reviews
-            stars: reviewArray[4] || null,
-            // Trip advisor
-            rating: reviewArray[25] ? reviewArray[25][1] : null,
-            responseFromOwnerDate: reviewArray[9] && reviewArray[9][3]
-                ? new Date(reviewArray[9][3]).toISOString()
-                : null,
-            responseFromOwnerText: reviewArray[9] ? reviewArray[9][1] : null,
-        };
-        currentReviews.push(reviewData);
+    results[2].forEach((/** @type {any} */ jsonArray) => {
+        const review = parseReviewFromJson(jsonArray, reviewsTranslation);
+        currentReviews.push(review);
     });
     return { currentReviews };
 };
@@ -273,6 +282,7 @@ module.exports = {
     waitForGoogleMapLoader,
     parseSearchPlacesResponseBody,
     parseReviewFromResponseBody,
+    parseReviewFromJson,
     scrollTo,
     parseZoomFromUrl,
     enlargeImageUrls,

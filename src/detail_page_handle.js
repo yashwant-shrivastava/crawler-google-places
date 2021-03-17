@@ -82,6 +82,8 @@ module.exports.handlePlaceDetail = async (options) => {
             .replace(/[^0-9]+/g, '')) || 0);
     }
 
+    // TODO: Add a backup and figure out why some direct start URLs don't load reviewsJson
+    // direct place IDs are fine
     const reviewsDistributionDefault = {
         oneStar: 0,
         twoStar: 0,
@@ -98,6 +100,8 @@ module.exports.handlePlaceDetail = async (options) => {
             reviewsDistribution = { oneStar, twoStar, threeStar, fourStar, fiveStar };
         }
     }
+
+    const defaultReviewsJson = reviewsJson && reviewsJson[52] && reviewsJson[52][0];
     
     const detail = {
         ...pageData,
@@ -118,7 +122,7 @@ module.exports.handlePlaceDetail = async (options) => {
         reviewsDistribution,
         reviews: await errorSnapshotter.tryWithSnapshot(
             page,
-            async () => extractReviews({ page, totalScore, reviewsCount, maxReviews, reviewsSort, reviewsTranslation }),
+            async () => extractReviews({ page, totalScore, reviewsCount, maxReviews, reviewsSort, reviewsTranslation, defaultReviewsJson }),
             { name: 'Reviews extraction' },
         ),
         imageUrls: await errorSnapshotter.tryWithSnapshot(

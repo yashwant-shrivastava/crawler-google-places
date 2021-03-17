@@ -1,8 +1,8 @@
 ## 2021-03-17
 *Fixes*
-- Removed duplicate reviews
+- Removed duplicate reviews + all reviews scraped correctly
 - `reviewsSort` finally works correctly
-- Reviews scraping is now faster
+- Reviews scraping is now significantly faster
 - Handle error that irregularly happened when scraping huge amount of reviews
 
 *Features*

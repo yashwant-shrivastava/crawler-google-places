@@ -1,10 +1,11 @@
 const Apify = require('apify');
 const Puppeteer = require('puppeteer'); // eslint-disable-line
 
-const {AddressParsed} = require('./typedefs')
+const {AddressParsed, Review} = require('./typedefs')
 
 const { PLACE_TITLE_SEL, BACK_BUTTON_SEL } = require('./consts');
-const { waitForGoogleMapLoader, parseReviewFromResponseBody, scrollTo, enlargeImageUrls } = require('./utils');
+const { waitForGoogleMapLoader, parseReviewFromResponseBody,
+    scrollTo, enlargeImageUrls, parseReviewFromJson } = require('./utils');
 const infiniteScroll = require('./infinite_scroll');
 
 /* eslint-env jquery */
@@ -249,14 +250,41 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
  *    maxReviews: number,
  *    reviewsSort: string,
  *    reviewsTranslation: string,
+ *    defaultReviewsJson: any
  * }} options
  */
-module.exports.extractReviews = async ({ page, totalScore, reviewsCount, maxReviews, reviewsSort, reviewsTranslation }) => {
-    /** @type {object[]} */
+module.exports.extractReviews = async ({ page, totalScore, reviewsCount,
+    maxReviews, reviewsSort, reviewsTranslation, defaultReviewsJson }) => {
+    /** @type {Review[]} */ 
     let reviews = [];
 
+    // If we already have all reviews from the page as default ones, we can finish
+    // Just need to sort appropriatelly manually
+    if (reviewsCount > 0 && defaultReviewsJson && defaultReviewsJson.length >= reviewsCount) {
+        reviews = defaultReviewsJson.map(parseReviewFromJson);
+        // mostRelevant is default
+
+        if (reviewsSort === 'newest') {
+            reviews.sort((review1, review2) => {
+                const unixDate1 = new Date(review1.publishedAtDate).getTime();
+                const unixDate2 = new Date(review2.publishedAtDate).getTime();
+                return unixDate2 - unixDate1;
+            })
+        }
+        if (reviewsSort === 'highestRanking') {
+            reviews.sort((review1, review2) => review2.stars - review1.stars);
+        }
+        if (reviewsSort === 'lowestRanking') {
+            reviews.sort((review1, review2) => review1.stars - review2.stars);
+        }
+        log.info(`[PLACE]: Reviews extraction finished: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
+        return reviews;
+    }
+
     const reviewsButtonSel = 'button[jsaction="pane.reviewChart.moreReviews"]';
-    // This selector is not present when there are no reviews
+    
+    // TODO: We can probably safely remove this for reviewsCount == 0
+    // Will keep it now as a double check
     try {
         await page.waitForSelector(reviewsButtonSel, { timeout: 15000 });
     } catch (e) {
@@ -280,7 +308,7 @@ module.exports.extractReviews = async ({ page, totalScore, reviewsCount, maxRevi
         // TODO: Scrape default reviews (will allow us to extract 10 reviews by default without additional clicking)
         if (reviewsCount && typeof maxReviews === 'number' && maxReviews > 0) {
             await page.waitForSelector(reviewsButtonSel);
-            await page.click(reviewsButtonSel);
+            // await page.click(reviewsButtonSel);
 
             /** @type {{[key: string]: number}} */
             const reviewSortOptions = {
@@ -308,13 +336,15 @@ module.exports.extractReviews = async ({ page, totalScore, reviewsCount, maxRevi
             };
             */
 
-            await sleep(5000);
+            await sleep(500);
             const [reviewsResponse] = await Promise.all([
                 page.waitForResponse((response) => response.url().includes('preview/review/listentitiesreviews')),
+                page.click(reviewsButtonSel)
                 // sortPromise1(),
                 // This is here to work around the default setting not giving us any XHR
                 // TODO: Rework this
-                scrollTo(page, '.section-scrollbox.scrollable-y', 10000),
+                
+                // scrollTo(page, '.section-scrollbox.scrollable-y', 10000),
             ]);
 
             // We skip these baceause they are loaded again when we click on all reviews
