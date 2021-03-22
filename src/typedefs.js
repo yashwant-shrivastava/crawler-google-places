@@ -18,6 +18,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @property {number} multiplier
  * @property {object} geo
  * @property {string} reviewsTranslation
+ * @property {PersonalDataOptions} personalDataOptions
  */
 
 /**
@@ -46,6 +47,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @property {string} [city]
  * @property {string} [postalCode]
  * @property {number} [zoom]
+ * @property {any} [polygon]
  * @property {number} [pageLoadTimeoutSec]
  * @property {boolean} [useChrome]
  * @property {number} [maxConcurrency]
@@ -67,27 +69,46 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @property {number} [maxCrawledPlaces]
  * @property {number} [maxAutomaticZoomOut]
  * @property {boolean} [cachePlaces]
+ * @property {boolean} [useCachedPlaces]
+ * @property {string} [cacheKey]
  * @property {string} [reviewsSort]
  * @property {string} [reviewsTranslation]
+ * @property {boolean} scrapeReviewererName
+ * @property {boolean} scrapeReviewererId
+ * @property {boolean} scrapeReviewererUrl
+ * @property {boolean} scrapeReviewId
+ * @property {boolean} scrapeReviewUrl
+ * @property {boolean} scrapeResponseFromOwnerText
  */
 
 /**
+ * Some are maybe null if personal data is disabled
  * @typedef Review
- * @property {string} name
+ * @property {string | null} name
  * @property {string} text
  * @property {string} publishAt
  * @property {string} publishedAtDate
  * @property {number} likesCount
- * @property {string} reviewId
- * @property {string} reviewUrl
- * @property {string} reviewerId
- * @property {string} reviewerUrl
+ * @property {string | null} reviewId
+ * @property {string | null} reviewUrl
+ * @property {string | null} reviewerId
+ * @property {string | null} reviewerUrl
  * @property {number} reviewerNumberOfReviews
  * @property {boolean} isLocalGuide
  * @property {number | null} stars
  * @property {number | null} rating
  * @property {string | null} responseFromOwnerDate
  * @property {string | null} responseFromOwnerText
+ */
+
+/**
+ * @typedef PersonalDataOptions
+ * @property {boolean} scrapeReviewererName
+ * @property {boolean} scrapeReviewererId
+ * @property {boolean} scrapeReviewererUrl
+ * @property {boolean} scrapeReviewId
+ * @property {boolean} scrapeReviewUrl
+ * @property {boolean} scrapeResponseFromOwnerText
  */
 
 /**

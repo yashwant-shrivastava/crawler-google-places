@@ -7,6 +7,7 @@
 - [Usage on Apify platform and locally](#usage-on-apify-platform-and-locally)
 - [How the search works](#how-the-search-works)
 - [Using country, state and city parameters](#using-country-state-and-city-parameters)
+- [Personal data](#personal-data)
 - [Changelog](#changelog)
 <!-- toc end -->
 
@@ -279,6 +280,11 @@ There is one feature of Google Maps that is sometimes not desirable. As you prog
 You can only use `country` or `country` + `state` or `country` + `state` + `city`. The scraper uses [nominatim maps](https://nominatim.org/) to find a location polygon and then splits that into multiple searches that cover the whole area. You should play around with the `zoom` number to find the ideal granularity for searches. Too small a zoom level will find only the most famous places over a large area, too big a zoom level will lead to overlapping places and will consume a huge number of CUs. We recommend a number between 10 and 15.
 
 #### Warning: Don't use too big zoom level (17+) with country, state, city parameters
+
+## Personal data
+Reviews can contain personal data like person name, profile image and even a review ID that can be used to track down the reviewer. You should not scrape personal data if the reviewers are under protection of GDPR or similar legal document unless you have a legitimate reason to.
+
+This scraper allows you to granularly select which personal data fields you want to extract from reviews and which not.
 
 ## Changelog
 This scraper is under active development. We are always implementing new features and fixing bugs. If you would like to see a new feature, please submit an issue on GitHub. Check [CHANGELOG.md](https://github.com/drobnikj/crawler-google-places/blob/master/CHANGELOG.md) for a list of recent updates

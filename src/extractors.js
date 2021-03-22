@@ -1,7 +1,7 @@
 const Apify = require('apify');
 const Puppeteer = require('puppeteer'); // eslint-disable-line
 
-const {AddressParsed, Review} = require('./typedefs')
+const {AddressParsed, Review, PersonalDataOptions} = require('./typedefs')
 
 const { PLACE_TITLE_SEL, BACK_BUTTON_SEL } = require('./consts');
 const { waitForGoogleMapLoader, parseReviewFromResponseBody,
@@ -242,6 +242,36 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
 };
 
 /**
+ * 
+ * @param {Review[]} reviews 
+ * @param {PersonalDataOptions} personalDataOptions 
+ * @returns {Review[]}
+ */
+const removePersonalDataFromReviews = (reviews, personalDataOptions) => {
+    for (const review of reviews) {
+        if (!personalDataOptions.scrapeReviewererName) {
+            review.name = null;
+        }
+        if (!personalDataOptions.scrapeReviewererId) {
+            review.reviewerId = null;
+        }
+        if (!personalDataOptions.scrapeReviewererUrl) {
+            review.reviewerUrl = null;
+        }
+        if (!personalDataOptions.scrapeReviewId) {
+            review.reviewId = null;
+        }
+        if (!personalDataOptions.scrapeReviewUrl) {
+            review.reviewUrl = null;
+        }
+        if (!personalDataOptions.scrapeResponseFromOwnerText) {
+            review.responseFromOwnerText = null;
+        }
+    }
+    return reviews;
+}
+
+/**
  * totalScore is string because it is parsed via localization
  * @param {{
  *    page: Puppeteer.Page,
@@ -250,12 +280,15 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
  *    maxReviews: number,
  *    reviewsSort: string,
  *    reviewsTranslation: string,
- *    defaultReviewsJson: any
+ *    defaultReviewsJson: any,
+ *    personalDataOptions: PersonalDataOptions,
  * }} options
+ * @returns {Promise<Review[]>}
  */
 module.exports.extractReviews = async ({ page, totalScore, reviewsCount,
-    maxReviews, reviewsSort, reviewsTranslation, defaultReviewsJson }) => {
-    /** @type {Review[]} */ 
+    maxReviews, reviewsSort, reviewsTranslation, defaultReviewsJson, personalDataOptions }) => {
+    
+    /** Returned at the last line @type {Review[]} */ 
     let reviews = [];
 
     // If we already have all reviews from the page as default ones, we can finish
@@ -278,135 +311,136 @@ module.exports.extractReviews = async ({ page, totalScore, reviewsCount,
             reviews.sort((review1, review2) => review1.stars - review2.stars);
         }
         log.info(`[PLACE]: Reviews extraction finished: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
-        return reviews;
-    }
-
-    const reviewsButtonSel = 'button[jsaction="pane.reviewChart.moreReviews"]';
-    
-    // TODO: We can probably safely remove this for reviewsCount == 0
-    // Will keep it now as a double check
-    try {
-        await page.waitForSelector(reviewsButtonSel, { timeout: 15000 });
-    } catch (e) {
-        log.warning(`Could not find reviews count, check if the page really has no reviews --- ${page.url()}`);
-    }
-    if (totalScore) {
-        // click the consent iframe, working with arrays so it never fails.
-        // also if there's anything wrong with Same-Origin, just delete the modal contents
-        // TODO: Why is this isolated in reviews?
-        await page.$$eval('#consent-bump iframe', async (frames) => {
-            try {
-                frames.forEach((frame) => {
-                    // @ts-ignore
-                    [...frame.contentDocument.querySelectorAll('#introAgreeButton')].forEach((s) => s.click());
-                });
-            } catch (e) {
-                document.querySelectorAll('#consent-bump > *').forEach((el) => el.remove());
-            }
-        });
-
-        // TODO: Scrape default reviews (will allow us to extract 10 reviews by default without additional clicking)
-        if (reviewsCount && typeof maxReviews === 'number' && maxReviews > 0) {
-            await page.waitForSelector(reviewsButtonSel);
-            // await page.click(reviewsButtonSel);
-
-            /** @type {{[key: string]: number}} */
-            const reviewSortOptions = {
-                mostRelevant: 0,
-                newest: 1,
-                highestRanking: 2,
-                lowestRanking: 3,
-            };
-
-            // This is unnecessary as we can sort via URL manipulation
-            // TODO: Remove later, should not be needed
-            /*
-            const sortPromise1 = async () => {
+    } else {
+        // Standard scrolling
+        const reviewsButtonSel = 'button[jsaction="pane.reviewChart.moreReviews"]';
+        
+        // TODO: We can probably safely remove this for reviewsCount == 0
+        // Will keep it now as a double check
+        try {
+            await page.waitForSelector(reviewsButtonSel, { timeout: 15000 });
+        } catch (e) {
+            log.warning(`Could not find reviews count, check if the page really has no reviews --- ${page.url()}`);
+        }
+        if (totalScore) {
+            // click the consent iframe, working with arrays so it never fails.
+            // also if there's anything wrong with Same-Origin, just delete the modal contents
+            // TODO: Why is this isolated in reviews?
+            await page.$$eval('#consent-bump iframe', async (frames) => {
                 try {
-                    await page.click('button[data-value="Sort"], [class*=dropdown-icon]');
-                    await sleep(1000);
-                    for (let i = 0; i < reviewSortOptions[reviewsSort]; i += 1) {
-                        await page.keyboard.press('ArrowDown');
-                        await sleep(500);
-                    }
-                    await page.keyboard.press('Enter');
+                    frames.forEach((frame) => {
+                        // @ts-ignore
+                        [...frame.contentDocument.querySelectorAll('#introAgreeButton')].forEach((s) => s.click());
+                    });
                 } catch (e) {
-                    log.debug('[PLACE]: Unable to sort reviews!');
+                    document.querySelectorAll('#consent-bump > *').forEach((el) => el.remove());
                 }
-            };
-            */
+            });
 
-            await sleep(500);
-            const [reviewsResponse] = await Promise.all([
-                page.waitForResponse((response) => response.url().includes('preview/review/listentitiesreviews')),
-                page.click(reviewsButtonSel)
-                // sortPromise1(),
-                // This is here to work around the default setting not giving us any XHR
-                // TODO: Rework this
-                
-                // scrollTo(page, '.section-scrollbox.scrollable-y', 10000),
-            ]);
+            // TODO: Scrape default reviews (will allow us to extract 10 reviews by default without additional clicking)
+            if (reviewsCount && typeof maxReviews === 'number' && maxReviews > 0) {
+                await page.waitForSelector(reviewsButtonSel);
+                // await page.click(reviewsButtonSel);
 
-            // We skip these baceause they are loaded again when we click on all reviews
-            // Keeping them for reference as we might wanna use these and start with bigger offset
-            // to save one API call
-            /*  
-            const reviewResponseBody = await reviewsResponse.buffer();
-            const reviewsFirst = parseReviewFromResponseBody(reviewResponseBody);
-            reviews.push(...reviewsFirst);
-            reviews = reviews.slice(0, maxReviews);
-            */
-            log.info(`[PLACE]: Exracting reviews: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
-            let reviewUrl = reviewsResponse.url();
+                /** @type {{[key: string]: number}} */
+                const reviewSortOptions = {
+                    mostRelevant: 0,
+                    newest: 1,
+                    highestRanking: 2,
+                    lowestRanking: 3,
+                };
 
-            reviewUrl = reviewUrl.replace(/!3e\d/, `!3e${reviewSortOptions[reviewsSort] + 1}`);
+                // This is unnecessary as we can sort via URL manipulation
+                // TODO: Remove later, should not be needed
+                /*
+                const sortPromise1 = async () => {
+                    try {
+                        await page.click('button[data-value="Sort"], [class*=dropdown-icon]');
+                        await sleep(1000);
+                        for (let i = 0; i < reviewSortOptions[reviewsSort]; i += 1) {
+                            await page.keyboard.press('ArrowDown');
+                            await sleep(500);
+                        }
+                        await page.keyboard.press('Enter');
+                    } catch (e) {
+                        log.debug('[PLACE]: Unable to sort reviews!');
+                    }
+                };
+                */
 
-            // TODO: We capture the first batch, this should not start from 0 I think
-            // Make sure that we star review from 0, setting !1i0
-            reviewUrl = reviewUrl.replace(/!1i\d+/, '!1i0');
+                await sleep(500);
+                const [reviewsResponse] = await Promise.all([
+                    page.waitForResponse((response) => response.url().includes('preview/review/listentitiesreviews')),
+                    page.click(reviewsButtonSel)
+                    // sortPromise1(),
+                    // This is here to work around the default setting not giving us any XHR
+                    // TODO: Rework this
+                    
+                    // scrollTo(page, '.section-scrollbox.scrollable-y', 10000),
+                ]);
 
-            /** @param {string} url */
-            const increaseLimitInUrl = (url) => {
-                // @ts-ignore
-                const numberString = reviewUrl.match(/!1i(\d+)/)[1];
-                const number = parseInt(numberString, 10);
-                return url.replace(/!1i\d+/, `!1i${number + 10}`);
-            };
-
-            while (reviews.length < maxReviews) {
-                // Request in browser context to use proxy as in brows
-                const responseBody = await page.evaluate(async (url) => {
-                    const response = await fetch(url);
-                    return response.text();
-                }, reviewUrl);
-                const { currentReviews, error } = parseReviewFromResponseBody(responseBody, reviewsTranslation);
-                if (error) {
-                    // This means that invalid response were returned
-                    // I think can happen if the review count changes
-                    log.warning(`Invalid response returned for reviews. `
-                    + `This might be caused by updated review count. The reviews should be scraped correctly. ${page.url()}`);
-                    log.warning(error);
-                    break;
-                }
-                if (currentReviews.length === 0) {
-                    break;
-                }
-                reviews.push(...currentReviews);
+                // We skip these baceause they are loaded again when we click on all reviews
+                // Keeping them for reference as we might wanna use these and start with bigger offset
+                // to save one API call
+                /*  
+                const reviewResponseBody = await reviewsResponse.buffer();
+                const reviewsFirst = parseReviewFromResponseBody(reviewResponseBody);
+                reviews.push(...reviewsFirst);
                 reviews = reviews.slice(0, maxReviews);
+                */
                 log.info(`[PLACE]: Exracting reviews: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
-                reviewUrl = increaseLimitInUrl(reviewUrl);
-            }
-            log.info(`[PLACE]: Reviews extraction finished: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
+                let reviewUrl = reviewsResponse.url();
 
-            await page.waitForTimeout(500);
-            const backButton = await page.$(BACK_BUTTON_SEL);
-            if (!backButton) {
-                throw new Error('Back button for reviews is not present');
+                reviewUrl = reviewUrl.replace(/!3e\d/, `!3e${reviewSortOptions[reviewsSort] + 1}`);
+
+                // TODO: We capture the first batch, this should not start from 0 I think
+                // Make sure that we star review from 0, setting !1i0
+                reviewUrl = reviewUrl.replace(/!1i\d+/, '!1i0');
+
+                /** @param {string} url */
+                const increaseLimitInUrl = (url) => {
+                    // @ts-ignore
+                    const numberString = reviewUrl.match(/!1i(\d+)/)[1];
+                    const number = parseInt(numberString, 10);
+                    return url.replace(/!1i\d+/, `!1i${number + 10}`);
+                };
+
+                while (reviews.length < maxReviews) {
+                    // Request in browser context to use proxy as in brows
+                    const responseBody = await page.evaluate(async (url) => {
+                        const response = await fetch(url);
+                        return response.text();
+                    }, reviewUrl);
+                    const { currentReviews, error } = parseReviewFromResponseBody(responseBody, reviewsTranslation);
+                    if (error) {
+                        // This means that invalid response were returned
+                        // I think can happen if the review count changes
+                        log.warning(`Invalid response returned for reviews. `
+                        + `This might be caused by updated review count. The reviews should be scraped correctly. ${page.url()}`);
+                        log.warning(error);
+                        break;
+                    }
+                    if (currentReviews.length === 0) {
+                        break;
+                    }
+                    reviews.push(...currentReviews);
+                    reviews = reviews.slice(0, maxReviews);
+                    log.info(`[PLACE]: Exracting reviews: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
+                    reviewUrl = increaseLimitInUrl(reviewUrl);
+                }
+                log.info(`[PLACE]: Reviews extraction finished: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
+
+                await page.waitForTimeout(500);
+                const backButton = await page.$(BACK_BUTTON_SEL);
+                if (!backButton) {
+                    throw new Error('Back button for reviews is not present');
+                }
+                await backButton.click();
             }
-            await backButton.click();
         }
     }
-    return reviews;
+    reviews = reviews.slice(0, maxReviews);
+    return removePersonalDataFromReviews(reviews, personalDataOptions);
 };
 
 /**

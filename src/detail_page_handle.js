@@ -122,7 +122,8 @@ module.exports.handlePlaceDetail = async (options) => {
         reviewsDistribution,
         reviews: await errorSnapshotter.tryWithSnapshot(
             page,
-            async () => extractReviews({ page, totalScore, reviewsCount, maxReviews, reviewsSort, reviewsTranslation, defaultReviewsJson }),
+            async () => extractReviews({ page, totalScore, reviewsCount, maxReviews,
+                reviewsSort, reviewsTranslation, defaultReviewsJson, personalDataOptions: scrapingOptions.personalDataOptions }),
             { name: 'Reviews extraction' },
         ),
         imageUrls: await errorSnapshotter.tryWithSnapshot(

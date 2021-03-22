@@ -1,6 +1,7 @@
 const Apify = require('apify');
 
 const typedefs = require('./typedefs'); // eslint-disable-line no-unused-vars
+const { PersonalDataOptions } = require('./typedefs');
 
 const placesCrawler = require('./places_crawler');
 const Stats = require('./stats');
@@ -43,6 +44,11 @@ Apify.main(async () => {
         maxReviews = 5, maxImages = 1, exportPlaceUrls = false, additionalInfo = false, maxCrawledPlaces,
         maxAutomaticZoomOut, cachePlaces = false, useCachedPlaces = false, cacheKey, reviewsSort = 'mostRelevant',
         reviewsTranslation = 'originalAndTranslated',
+
+        // Personal data
+        scrapeReviewererName = true, scrapeReviewererId = true, scrapeReviewererUrl = true,
+        scrapeReviewId = true, scrapeReviewUrl = true, scrapeResponseFromOwnerText = true,
+
     } = input;
 
     if (debug) {
@@ -224,6 +230,12 @@ Apify.main(async () => {
         maxRequestRetries: maxPageRetries,
     };
 
+    /** @type {PersonalDataOptions} */
+    const personalDataOptions = {
+        scrapeReviewererName, scrapeReviewererId, scrapeReviewererUrl, scrapeReviewId,
+        scrapeReviewUrl, scrapeResponseFromOwnerText,
+    }
+
     /** @type {typedefs.ScrapingOptions} */
     const scrapingOptions = {
         includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
@@ -231,6 +243,7 @@ Apify.main(async () => {
         maxAutomaticZoomOut, placesCache, reviewsSort, language,
         multiplier: startRequests.length || 1, // workaround for the maxCrawledPlaces when using multiple queries/startUrls
         geo, reviewsTranslation,
+        personalDataOptions,
     };
 
     // Create and run crawler

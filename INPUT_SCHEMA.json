@@ -407,6 +407,44 @@
             "type": "boolean",
             "description": "Enable using stealth if you're not using Chrome",
             "default": false
+        },
+        "scrapeReviewererName": {
+            "title": "Reviewer name",
+            "type": "boolean",
+            "description": "Extract Reviewer name",
+            "default": true,
+            "sectionCaption": "Personal data (reviews only)",
+            "sectionDescription": "All of these fields contain personal data. You should not scrape personal data if the reviewers are under protection of GDPR or similar legal document unless you have a legitimate reason to."
+        },
+        "scrapeReviewererId": {
+            "title": "Reviewer ID",
+            "type": "boolean",
+            "description": "Extract Reviewer ID",
+            "default": true
+        },
+        "scrapeReviewererUrl": {
+            "title": "Reviewer URL",
+            "type": "boolean",
+            "description": "Extract Reviewer URL",
+            "default": true
+        },
+        "scrapeReviewId": {
+            "title": "Review ID",
+            "type": "boolean",
+            "description": "Extract Review ID",
+            "default": true
+        },
+        "scrapeReviewUrl": {
+            "title": "Review URL",
+            "type": "boolean",
+            "description": "Extract Review URL",
+            "default": true
+        },
+        "scrapeResponseFromOwnerText": {
+            "title": "Response from owner",
+            "type": "boolean",
+            "description": "Extract Response from owner",
+            "default": true
         }
     },
     "required": ["proxyConfig"]
