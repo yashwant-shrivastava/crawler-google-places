@@ -73,9 +73,9 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @property {string} [cacheKey]
  * @property {string} [reviewsSort]
  * @property {string} [reviewsTranslation]
- * @property {boolean} scrapeReviewererName
- * @property {boolean} scrapeReviewererId
- * @property {boolean} scrapeReviewererUrl
+ * @property {boolean} scrapeReviewerName
+ * @property {boolean} scrapeReviewerId
+ * @property {boolean} scrapeReviewerUrl
  * @property {boolean} scrapeReviewId
  * @property {boolean} scrapeReviewUrl
  * @property {boolean} scrapeResponseFromOwnerText
@@ -103,9 +103,9 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
 
 /**
  * @typedef PersonalDataOptions
- * @property {boolean} scrapeReviewererName
- * @property {boolean} scrapeReviewererId
- * @property {boolean} scrapeReviewererUrl
+ * @property {boolean} scrapeReviewerName
+ * @property {boolean} scrapeReviewerId
+ * @property {boolean} scrapeReviewerUrl
  * @property {boolean} scrapeReviewId
  * @property {boolean} scrapeReviewUrl
  * @property {boolean} scrapeResponseFromOwnerText

@@ -249,13 +249,13 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
  */
 const removePersonalDataFromReviews = (reviews, personalDataOptions) => {
     for (const review of reviews) {
-        if (!personalDataOptions.scrapeReviewererName) {
+        if (!personalDataOptions.scrapeReviewerName) {
             review.name = null;
         }
-        if (!personalDataOptions.scrapeReviewererId) {
+        if (!personalDataOptions.scrapeReviewerId) {
             review.reviewerId = null;
         }
-        if (!personalDataOptions.scrapeReviewererUrl) {
+        if (!personalDataOptions.scrapeReviewerUrl) {
             review.reviewerUrl = null;
         }
         if (!personalDataOptions.scrapeReviewId) {

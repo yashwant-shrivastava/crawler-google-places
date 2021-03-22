@@ -46,7 +46,7 @@ Apify.main(async () => {
         reviewsTranslation = 'originalAndTranslated',
 
         // Personal data
-        scrapeReviewererName = true, scrapeReviewererId = true, scrapeReviewererUrl = true,
+        scrapeReviewerName = true, scrapeReviewerId = true, scrapeReviewerUrl = true,
         scrapeReviewId = true, scrapeReviewUrl = true, scrapeResponseFromOwnerText = true,
 
     } = input;
@@ -232,7 +232,7 @@ Apify.main(async () => {
 
     /** @type {PersonalDataOptions} */
     const personalDataOptions = {
-        scrapeReviewererName, scrapeReviewererId, scrapeReviewererUrl, scrapeReviewId,
+        scrapeReviewerName, scrapeReviewerId, scrapeReviewerUrl, scrapeReviewId,
         scrapeReviewUrl, scrapeResponseFromOwnerText,
     }
 

@@ -408,7 +408,7 @@
             "description": "Enable using stealth if you're not using Chrome",
             "default": false
         },
-        "scrapeReviewererName": {
+        "scrapeReviewerName": {
             "title": "Reviewer name",
             "type": "boolean",
             "description": "Extract Reviewer name",
@@ -416,13 +416,13 @@
             "sectionCaption": "Personal data (reviews only)",
             "sectionDescription": "All of these fields contain personal data. You should not scrape personal data if the reviewers are under protection of GDPR or similar legal document unless you have a legitimate reason to."
         },
-        "scrapeReviewererId": {
+        "scrapeReviewerId": {
             "title": "Reviewer ID",
             "type": "boolean",
             "description": "Extract Reviewer ID",
             "default": true
         },
-        "scrapeReviewererUrl": {
+        "scrapeReviewerUrl": {
             "title": "Reviewer URL",
             "type": "boolean",
             "description": "Extract Reviewer URL",

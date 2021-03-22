@@ -1,7 +1,7 @@
 ## 2021-03-22
 **Warning** - Next version will be a breaking one as we will remove personal data from reviews by default. You will have to explicitly enable the fields below.
 *Features*
-- Added input fields to selectively pick which personal data fields to scrape - `scrapeReviewererName`, `scrapeReviewererId`, `scrapeReviewererUrl`, `scrapeReviewId`, `scrapeReviewUrl`, `scrapeResponseFromOwnerText`
+- Added input fields to selectively pick which personal data fields to scrape - `scrapeReviewerName`, `scrapeReviewerId`, `scrapeReviewerUrl`, `scrapeReviewId`, `scrapeReviewUrl`, `scrapeResponseFromOwnerText`
 
 ## 2021-03-17
 *Fixes*
