@@ -414,7 +414,7 @@
             "description": "Extract Reviewer name",
             "default": true,
             "sectionCaption": "Personal data (reviews only)",
-            "sectionDescription": "All of these fields contain personal data. You should not scrape personal data if the reviewers are under protection of GDPR or similar legal document unless you have a legitimate reason to."
+            "sectionDescription": "All of these fields contain personal data. Personal data is protected by GDPR in the European Union and by other regulations around the world. You should not scrape personal data unless you have a legitimate reason to do so. If you're unsure whether your reason is legitimate, consult your lawyers."
         },
         "scrapeReviewerId": {
             "title": "Reviewer ID",
