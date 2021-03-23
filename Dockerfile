@@ -13,6 +13,6 @@ RUN npm --quiet set progress=false \
  && echo "NPM version:" \
  && npm --version
  
-ENV APIFY_DISABLE_OUTDATED_WARNING 1
+ENV APIFY_DISABLE_OUTDATED_WARNING=1
 
 # No CMD here because xvfb does its own thing

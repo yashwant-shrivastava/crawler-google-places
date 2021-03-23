@@ -34,8 +34,10 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, crawle
 
     const logLabel = label === 'startUrl' ? 'SEARCH' : 'PLACE';
 
+    // TODO: Figure out how to remove the timeout and still handle consent screen
     // Handle consent screen, this wait is ok because we wait for selector later anyway
     await page.waitForTimeout(5000);
+
     // @ts-ignore I'm not sure how we could fix the types here
     if (request.userData.waitingForConsent !== undefined) {
         // @ts-ignore  I'm not sure how we could fix the types here
@@ -146,6 +148,8 @@ const setUpCrawler = ({ crawlerOptions, scrapingOptions, stats, errorSnapshotter
                     request.userData.waitingForConsent = false;
                 }
             });
+
+            // domcontent loaded should be fine, at least for place page
             const result = await page.goto(request.url, { timeout: pageLoadTimeoutSec * 1000 });
 
             return result;
