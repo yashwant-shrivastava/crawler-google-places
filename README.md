@@ -282,9 +282,7 @@ You can only use `country` or `country` + `state` or `country` + `state` + `city
 #### Warning: Don't use too big zoom level (17+) with country, state, city parameters
 
 ## Personal data
-Reviews can contain personal data like person name, profile image and even a review ID that can be used to track down the reviewer. You should not scrape personal data if the reviewers are under protection of GDPR or similar legal document unless you have a legitimate reason to.
-
-This scraper allows you to granularly select which personal data fields you want to extract from reviews and which not.
+Reviews can contain personal data like person name, profile image and even a review ID that can be used to track down the reviewer. Personal data is protected by GDPR in the European Union and by other regulations around the world. You should not scrape personal data unless you have a legitimate reason to do so. If you're unsure whether your reason is legitimate, consult your lawyers. This scraper allows you to granularly select which personal data fields you want to extract from reviews and which not.
 
 ## Changelog
 This scraper is under active development. We are always implementing new features and fixing bugs. If you would like to see a new feature, please submit an issue on GitHub. Check [CHANGELOG.md](https://github.com/drobnikj/crawler-google-places/blob/master/CHANGELOG.md) for a list of recent updates
