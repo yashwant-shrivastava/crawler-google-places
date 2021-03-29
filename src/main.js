@@ -42,8 +42,10 @@ Apify.main(async () => {
         // Scraping options
         includeHistogram = false, includeOpeningHours = false, includePeopleAlsoSearch = false,
         maxReviews = 5, maxImages = 1, exportPlaceUrls = false, additionalInfo = false, maxCrawledPlaces,
-        maxAutomaticZoomOut, cachePlaces = false, useCachedPlaces = false, cacheKey, reviewsSort = 'mostRelevant',
-        reviewsTranslation = 'originalAndTranslated',
+        maxAutomaticZoomOut, reviewsSort = 'mostRelevant', reviewsTranslation = 'originalAndTranslated',
+
+        // Fields used by Heyrick only, not present in the schema (too narrow use-case for now)
+        cachePlaces = false, useCachedPlaces = false, cacheKey,
 
         // Personal data
         scrapeReviewerName = true, scrapeReviewerId = true, scrapeReviewerUrl = true,
@@ -55,6 +57,8 @@ Apify.main(async () => {
         log.setLevel(log.LEVELS.DEBUG);
     }
 
+    // Only used for Heyrick
+    // By default, this is not used and thr functions are no-op
     const placesCache = new PlacesCache({ cachePlaces, cacheKey, useCachedPlaces });
     await placesCache.initialize()
 

@@ -24,6 +24,7 @@ const PlacesCache = class PlacesCache {
      * Load cached places if caching if enabled.
      */
     async initialize() {
+        // By default this is a no-op
         if (this.cachePlaces) {
             log.debug('Load cached places');
             this.allPlaces = await this.loadPlaces();
@@ -32,7 +33,7 @@ const PlacesCache = class PlacesCache {
             Apify.events.on('persistState', async () => {
                 await this.savePlaces();
             });
-        } else log.info('[CACHE] Not enabled.');
+        }
 
         // mark as loaded
         this.isLoaded = true;
@@ -100,14 +101,17 @@ const PlacesCache = class PlacesCache {
      * @returns {Promise<void>}
      */
     async savePlaces() {
-        if (!this.isLoaded) throw new Error('Cannot save before loading old data!');
+        // By default this is a no-op
+        if (this.cachePlaces) {
+            if (!this.isLoaded) throw new Error('Cannot save before loading old data!');
 
-        const allPlacesStore = await this.placesStore();
-        const reloadedPlaces = await this.loadPlaces();
-        // @ts-ignore
-        const newPlaces = { ...reloadedPlaces, ...this.allPlaces };
-        await allPlacesStore.setValue(this.keyName(), newPlaces);
-        log.info('[CACHE] places saved');
+            const allPlacesStore = await this.placesStore();
+            const reloadedPlaces = await this.loadPlaces();
+            // @ts-ignore
+            const newPlaces = { ...reloadedPlaces, ...this.allPlaces };
+            await allPlacesStore.setValue(this.keyName(), newPlaces);
+            log.info('[CACHE] places saved');
+        }
     }
 
     /**
