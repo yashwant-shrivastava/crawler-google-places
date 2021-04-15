@@ -274,7 +274,7 @@ const waitAndHandleConsentFrame = async (page, url) => {
         timeout: 60000,
         pollInterval: 500,
         timeoutErrorMeesage: `Waiting for consent screen frame timeouted after 60000ms on URL: ${url}`,
-        successMessage: `Aproved consent screen on URL: ${url}`,
+        successMessage: `Approved consent screen on URL: ${url}`,
     });
 };
 

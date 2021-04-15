@@ -70,7 +70,7 @@ module.exports.handlePlaceDetail = async (options) => {
     let totalScore = reviewsJson && reviewsJson[4] ? reviewsJson[4][7] : null;
     let reviewsCount = reviewsJson && reviewsJson[4] ? reviewsJson[4][8] : 0;
 
-    // We fallback to HTML (might be goo to do only)
+    // We fallback to HTML (might be good to do only)
     if (!totalScore) {
         totalScore = await page.evaluate(() => Number($('span.section-star-display')
             .eq(0).text().trim().replace(',', '.')) || null)
