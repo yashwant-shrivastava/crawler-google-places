@@ -292,7 +292,7 @@ module.exports.extractReviews = async ({ page, totalScore, reviewsCount,
     let reviews = [];
 
     // If we already have all reviews from the page as default ones, we can finish
-    // Just need to sort appropriatelly manually
+    // Just need to sort appropriately manually
     if (reviewsCount > 0 && defaultReviewsJson && defaultReviewsJson.length >= reviewsCount) {
         reviews = defaultReviewsJson.map(parseReviewFromJson);
         // mostRelevant is default
@@ -388,7 +388,7 @@ module.exports.extractReviews = async ({ page, totalScore, reviewsCount,
                 reviews.push(...reviewsFirst);
                 reviews = reviews.slice(0, maxReviews);
                 */
-                log.info(`[PLACE]: Exracting reviews: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
+                log.info(`[PLACE]: Extracting reviews: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
                 let reviewUrl = reviewsResponse.url();
 
                 reviewUrl = reviewUrl.replace(/!3e\d/, `!3e${reviewSortOptions[reviewsSort] + 1}`);
@@ -406,7 +406,7 @@ module.exports.extractReviews = async ({ page, totalScore, reviewsCount,
                 };
 
                 while (reviews.length < maxReviews) {
-                    // Request in browser context to use proxy as in brows
+                    // Request in browser context to use proxy as in browser
                     const responseBody = await page.evaluate(async (url) => {
                         const response = await fetch(url);
                         return response.text();
@@ -425,7 +425,7 @@ module.exports.extractReviews = async ({ page, totalScore, reviewsCount,
                     }
                     reviews.push(...currentReviews);
                     reviews = reviews.slice(0, maxReviews);
-                    log.info(`[PLACE]: Exracting reviews: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
+                    log.info(`[PLACE]: Extracting reviews: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
                     reviewUrl = increaseLimitInUrl(reviewUrl);
                 }
                 log.info(`[PLACE]: Reviews extraction finished: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
