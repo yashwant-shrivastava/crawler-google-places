@@ -115,7 +115,7 @@ have the following structure (here for the example of Cambridge in Great Britain
           0.0981038,
           52.1805451
         ],
-        ...
+        // ... (shortened)
       ]
     ]
   }
