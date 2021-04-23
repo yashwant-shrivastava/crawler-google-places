@@ -77,12 +77,12 @@ With this input, the actor searches places at this start URL: https://www.google
 
 The Polygon attribute is used together with `country`, `state` and `city`
 for the creation of start URLs. If no lat or lng values are passed to the
-crawler then it will try to read the "polygon" attribtue". If the "polygon"
+crawler then it will try to read the "polygon" attribute". If the "polygon"
 attribute is empty then the crawler will try to read the Polygon data from
 the GEO.json file (which is located in the Apify storage directoy where
 the INPUT.json can be found). If there is no GEO.json then the crawler
 will try to access the Nominatim Api to get GeoJSON data. The result should
-have the following structure (here for the example of Cambrige in Great Britain)
+have the following structure (here for the example of Cambridge in Great Britain)
 
 ```json
 {
