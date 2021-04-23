@@ -84,7 +84,7 @@ the INPUT.json can be found). If there is no GEO.json then the crawler
 will try to access the Nominatim Api to get GeoJSON data. The result should
 have the following structure (here for the example of Cambridge in Great Britain)
 
-```json
+```jsonc
 {
   "osm_type": "relation",
   "osm_id": 295355,
