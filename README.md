@@ -77,7 +77,7 @@ With this input, the actor searches places at this start URL: https://www.google
 
 The Polygon attribute is used together with `country`, `state` and `city`
 for the creation of start URLs. If no lat or lng values are passed to the
-crawler then it will try to read the "polygon" attribute". The data should
+crawler then it will try to read the "polygon" attribute. The data should
 have the following GeoJSON structure from the Nominatim Api
 (here for the example of Cambridge in Great Britain)
 
