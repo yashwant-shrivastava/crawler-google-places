@@ -92,7 +92,6 @@ have the following GeoJSON structure from the Nominatim Api
   "lat": "52.2034823",
   "lon": "0.1235817",
   "display_name": "Cambridge, Cambridgeshire, East of England, England, United Kingdom",
-  "type": "administrative",
   "geojson": {
     "type": "Polygon",
     "coordinates": [
