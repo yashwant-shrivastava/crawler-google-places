@@ -28,6 +28,7 @@
         "apify": "^0.22.2"
     },
     "devDependencies": {
+        "@types/jquery": "^3.5.5",
         "chai": "^4.2.0",
         "mocha": "^8.2.0",
         "write-json": "^3.0.1"

@@ -211,7 +211,7 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
                     const key = $(section).find('.section-attribute-group-title').text().trim();
                     /** @type {{[key: string]: boolean}[]} */
                     const values = [];
-                    $(section).find('.section-attribute-group-container .section-attribute-group-item').each((_i, sub) => {
+                    $(section).find('[class*="section-attribute-group-container"] .section-attribute-group-item').each((_i, sub) => {
                         /** @type {{[key: string]: boolean}} */
                         const res = {};
                         const title = $(sub).text().trim();
@@ -242,9 +242,9 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
 };
 
 /**
- * 
- * @param {Review[]} reviews 
- * @param {PersonalDataOptions} personalDataOptions 
+ *
+ * @param {Review[]} reviews
+ * @param {PersonalDataOptions} personalDataOptions
  * @returns {Review[]}
  */
 const removePersonalDataFromReviews = (reviews, personalDataOptions) => {
@@ -287,8 +287,8 @@ const removePersonalDataFromReviews = (reviews, personalDataOptions) => {
  */
 module.exports.extractReviews = async ({ page, totalScore, reviewsCount,
     maxReviews, reviewsSort, reviewsTranslation, defaultReviewsJson, personalDataOptions }) => {
-    
-    /** Returned at the last line @type {Review[]} */ 
+
+    /** Returned at the last line @type {Review[]} */
     let reviews = [];
 
     // If we already have all reviews from the page as default ones, we can finish
@@ -314,7 +314,7 @@ module.exports.extractReviews = async ({ page, totalScore, reviewsCount,
     } else {
         // Standard scrolling
         const reviewsButtonSel = 'button[jsaction="pane.reviewChart.moreReviews"]';
-        
+
         // TODO: We can probably safely remove this for reviewsCount == 0
         // Will keep it now as a double check
         try {
@@ -375,14 +375,14 @@ module.exports.extractReviews = async ({ page, totalScore, reviewsCount,
                     // sortPromise1(),
                     // This is here to work around the default setting not giving us any XHR
                     // TODO: Rework this
-                    
+
                     // scrollTo(page, '.section-scrollbox.scrollable-y', 10000),
                 ]);
 
                 // We skip these baceause they are loaded again when we click on all reviews
                 // Keeping them for reference as we might wanna use these and start with bigger offset
                 // to save one API call
-                /*  
+                /*
                 const reviewResponseBody = await reviewsResponse.buffer();
                 const reviewsFirst = parseReviewFromResponseBody(reviewResponseBody);
                 reviews.push(...reviewsFirst);
