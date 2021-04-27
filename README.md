@@ -115,6 +115,10 @@ have the following GeoJSON structure from the Nominatim Api
 }
 ```
 
+It is important that the first and the last coordinates are identical.
+Otherwise we will get the error "first and last Position are not equivalent"
+which comes from the Turf.js library.
+
 ### Country localization
 You can force the scraper to access places only from a specific country location. We recommend this to ensure the correct language in the results. This only works reliably for the US (most of our proxies are from the US). Currently, this option is not available in the Editor input - you have switch to JSON input. After you switch, your configuration will remain the same, so just update the `proxyconfig` field with `apifyProxyCountry` property to specify the country, e.g.
 
