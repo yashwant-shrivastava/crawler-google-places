@@ -209,13 +209,6 @@ const enqueueAllPlaceDetails = async ({
             return;
         }
 
-        // TODO: Delete this part when maxCrawledPlaces are reworked
-        // @ts-ignore
-        const paginationText = await page.$eval('.n7lv7yjyC35__root', (el) => el.innerText);
-        const [fromString, toString] = paginationText.match(/\d+/g);
-        const from = parseInt(fromString, 10);
-        const to = parseInt(toString, 10);
-
         // If Google auto-zoomes too far, we might want to end the search
         let finishBecauseAutoZoom = false;
         if (typeof maxAutomaticZoomOut === 'number') {
@@ -226,10 +219,8 @@ const enqueueAllPlaceDetails = async ({
                 finishBecauseAutoZoom = true;
             }
         }
-        if (maxCrawledPlaces && maxCrawledPlaces <= to) {
-            log.warning(`[SEARCH]: Finishing search because we reached maxCrawledPlaces --- ${searchString} - ${request.url}`);
-            return;
-        } else if (finishBecauseAutoZoom) {
+
+        if (finishBecauseAutoZoom) {
             log.warning('[SEARCH]: Finishing search because Google zoomed out '
                 + 'further than maxAutomaticZoomOut. Current zoom: '
                 + `${parseZoomFromUrl(page.url())} --- ${searchString} - ${request.url}`);
