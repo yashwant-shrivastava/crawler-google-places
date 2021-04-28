@@ -262,6 +262,10 @@ const waiter = async (predicate, options = {}) => {
  * @param {string} url
  */
 const waitAndHandleConsentFrame = async (page, url) => {
+    // TODO: Test if the new consent screen works well!
+
+    // Old consent, keeping as a reference if it comes back
+    /*
     const predicate = async () => {
         for (const frame of page.mainFrame().childFrames()) {
             if (frame.url().match(/consent\.google\.[a-z.]+/)) {
@@ -270,6 +274,16 @@ const waitAndHandleConsentFrame = async (page, url) => {
             }
         }
     };
+    */
+    const predicate = async () => {
+        const consentButton = await page.$('[action*="https://consent.google.com/] button');
+        if (consentButton) {
+            await consentButton.click();
+            return true;
+        }
+    };
+    
+
     await waiter(predicate, {
         timeout: 60000,
         pollInterval: 500,

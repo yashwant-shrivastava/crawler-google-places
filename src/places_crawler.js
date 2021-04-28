@@ -140,12 +140,14 @@ const setUpCrawler = ({ crawlerOptions, scrapingOptions, stats, errorSnapshotter
             // and block handlePageFunction from continuing until we click on that
             page.on('response', async (res) => {
                 if (res.url().match(/consent\.google\.[a-z.]+\/intro/)) {
+                    log.warning('Consent screen loading, we need to approve first!');
                     // @ts-ignore
                     request.userData.waitingForConsent = true;
                     await page.waitForTimeout(5000);
                     await waitAndHandleConsentFrame(page, request.url);
                     // @ts-ignore
                     request.userData.waitingForConsent = false;
+                    log.warning('Consent screen approved! We can continue scraping');
                 }
             });
 

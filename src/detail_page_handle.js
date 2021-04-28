@@ -35,6 +35,12 @@ module.exports.handlePlaceDetail = async (options) => {
     // Extract basic information
     await waitForGoogleMapLoader(page);
 
+    // Some customers are passing link to the reviews subpage for some reason
+    const maybeBackButton = await page.$('button[aria-label="Back"]');
+    if (maybeBackButton) {
+        await maybeBackButton.click();
+    }
+
     try {
         await page.waitForSelector(PLACE_TITLE_SEL, { timeout: DEFAULT_TIMEOUT });
     } catch (e) {
@@ -51,7 +57,9 @@ module.exports.handlePlaceDetail = async (options) => {
 
     // Extract gps from URL
     // We need to URL will be change, it happened asynchronously
-    await page.waitForFunction(() => window.location.href.includes('/place/'));
+    if (!maybeBackButton) {
+        await page.waitForFunction(() => window.location.href.includes('/place/'));
+    }
     const url = page.url();
 
     const coordinatesMatch = url.match(/!3d([0-9\-.]+)!4d([0-9\-.]+)/);
