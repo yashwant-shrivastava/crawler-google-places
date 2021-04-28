@@ -90,10 +90,11 @@ const enqueuePlacesFromResponse = (options) => {
     };
 };
 
+
 /**
  * Periodically checks if one of the possible search outcomes have happened
  * @param {Puppeteer.Page} page
- * @returns {Promise<any>} // Typing this would require to list all props all time
+ * @returns {Promise<SearchResultOutcome>} // Typing this would require to list all props all time
  */
 const waitForSearchResults = async (page) => {
     const start = Date.now();
