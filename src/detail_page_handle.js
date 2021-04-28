@@ -60,19 +60,20 @@ module.exports.handlePlaceDetail = async (options) => {
 
     const coordinates = latMatch && lngMatch ? { lat: parseFloat(latMatch), lng: parseFloat(lngMatch) } : null;
 
-    // TODO: Refactor this out to separate func
+    // TODO: Seems this is empty in the new layout?
     const reviewsJson = await page.evaluate(() => {
         try {
             // @ts-ignore
             return JSON.parse(APP_INITIALIZATION_STATE[3][6].replace(`)]}'`, ''))[6];
         } catch (e) { }
     });
+    
     let totalScore = reviewsJson && reviewsJson[4] ? reviewsJson[4][7] : null;
     let reviewsCount = reviewsJson && reviewsJson[4] ? reviewsJson[4][8] : 0;
 
     // We fallback to HTML (might be good to do only)
     if (!totalScore) {
-        totalScore = await page.evaluate(() => Number($('span.section-star-display')
+        totalScore = await page.evaluate(() => Number($(('[class*="section-star-display"]'))
             .eq(0).text().trim().replace(',', '.')) || null)
     }
 
@@ -122,7 +123,7 @@ module.exports.handlePlaceDetail = async (options) => {
         reviewsDistribution,
         reviews: await errorSnapshotter.tryWithSnapshot(
             page,
-            async () => extractReviews({ page, totalScore, reviewsCount, maxReviews,
+            async () => extractReviews({ page, reviewsCount, maxReviews,
                 reviewsSort, reviewsTranslation, defaultReviewsJson, personalDataOptions: scrapingOptions.personalDataOptions }),
             { name: 'Reviews extraction' },
         ),

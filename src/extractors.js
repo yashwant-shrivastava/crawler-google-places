@@ -275,7 +275,6 @@ const removePersonalDataFromReviews = (reviews, personalDataOptions) => {
  * totalScore is string because it is parsed via localization
  * @param {{
  *    page: Puppeteer.Page,
- *    totalScore: number,
  *    reviewsCount: number,
  *    maxReviews: number,
  *    reviewsSort: string,
@@ -285,7 +284,7 @@ const removePersonalDataFromReviews = (reviews, personalDataOptions) => {
  * }} options
  * @returns {Promise<Review[]>}
  */
-module.exports.extractReviews = async ({ page, totalScore, reviewsCount,
+module.exports.extractReviews = async ({ page, reviewsCount,
     maxReviews, reviewsSort, reviewsTranslation, defaultReviewsJson, personalDataOptions }) => {
 
     /** Returned at the last line @type {Review[]} */

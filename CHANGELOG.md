@@ -1,3 +1,11 @@
+## 2021-04-28
+*Fixes after Google changed layout, not everything was fixed. Next batch of fixed asap!*
+- Fixed additional data
+- Fixed search pagination getting into infinite loop
+- Fixed empty search handling
+- Fixed reviews not being scraped
+- Fixed `totalScore`
+
 ## 2021-03-22
 **Warning** - Next version will be a breaking one as we will remove personal data from reviews by default. You will have to explicitly enable the fields below.
 *Features*
