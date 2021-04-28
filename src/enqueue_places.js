@@ -3,13 +3,18 @@ const Apify = require('apify');
 const querystring = require('querystring');
 
 const Puppeteer = require('puppeteer'); // eslint-disable-line
-const typedefs = require('./typedefs'); // eslint-disable-line no-unused-vars
+const { SearchResultOutcome, ScrapingOptions } = require('./typedefs'); // eslint-disable-line no-unused-vars
 const Stats = require('./stats'); // eslint-disable-line no-unused-vars
+const PlacesCache = require('./stats'); // eslint-disable-line no-unused-vars
 
 const { sleep, log } = Apify.utils;
-const { DEFAULT_TIMEOUT, LISTING_PAGINATION_KEY, PLACE_TITLE_SEL } = require('./consts');
+const { PLACE_TITLE_SEL } = require('./consts');
 const { waitForGoogleMapLoader, parseSearchPlacesResponseBody, parseZoomFromUrl } = require('./utils');
 const { checkInPolygon } = require('./polygon');
+
+const NEXT_BUTTON_SELECTOR = '[jsaction="pane.paginationSection.nextPage"]';
+const SEARCH_WAIT_TIME_MS = 30000;
+const CHECK_LOAD_OUTCOMES_EVERY_MS = 500;
 
 /**
  * This handler waiting for response from xhr and enqueue places from the search response boddy.
@@ -86,6 +91,51 @@ const enqueuePlacesFromResponse = (options) => {
 };
 
 /**
+ * Periodically checks if one of the possible search outcomes have happened
+ * @param {Puppeteer.Page} page
+ * @returns {Promise<any>} // Typing this would require to list all props all time
+ */
+const waitForSearchResults = async (page) => {
+    const start = Date.now();
+    // All possible outcomes should be unique, when outcomes happens, we return it
+    for (;;) {
+        if (Date.now() - start > SEARCH_WAIT_TIME_MS) {
+            return { noOutcomeLoaded: true };
+        }
+        // These must be contains checks because Google sometimes puts an ID into the selector
+        const isBadQuery = await page.$('[class *= "section-bad-query"');
+        if (isBadQuery) {
+            return { isBadQuery: true };
+        }
+
+        const hasNoResults = await page.$('[class *= "section-no-result"');
+        if (hasNoResults) {
+            return { hasNoResults: true };
+        }
+
+        const isDetailPage = await page.$(PLACE_TITLE_SEL);
+        if (isDetailPage) {
+            return { isDetailPage: true };
+        }
+
+        const isNextPaginationDisabled = await page.evaluate((nextButtonSel) => {
+            return !!$(nextButtonSel).attr('disabled');
+        }, NEXT_BUTTON_SELECTOR);
+        if (isNextPaginationDisabled) {
+            return { isNextPaginationDisabled: true };
+        }
+
+        // This is the happy path
+        const hasNextPage = await page.$(NEXT_BUTTON_SELECTOR);
+        if (hasNextPage) {
+            return { hasNextPage: true };
+        }        
+
+        await page.waitForTimeout(CHECK_LOAD_OUTCOMES_EVERY_MS);
+    } 
+}
+
+/**
  * Method adds places from listing to queue
  * @param {{
  *  page: Puppeteer.Page,
@@ -93,7 +143,7 @@ const enqueuePlacesFromResponse = (options) => {
  *  requestQueue: Apify.RequestQueue,
  *  request: Apify.Request,
  *  stats: Stats,
- *  scrapingOptions: typedefs.ScrapingOptions,
+ *  scrapingOptions: ScrapingOptions,
  * }} options
  */
 const enqueueAllPlaceDetails = async ({
@@ -105,6 +155,7 @@ const enqueueAllPlaceDetails = async ({
                                           scrapingOptions,
                                       }) => {
     const { geo, maxAutomaticZoomOut, placesCache, exportPlaceUrls, maxCrawledPlaces } = scrapingOptions;
+
     page.on('response', enqueuePlacesFromResponse({
         page,
         requestQueue,
@@ -115,13 +166,6 @@ const enqueueAllPlaceDetails = async ({
         placesCache,
         stats,
     }));
-    // Save state of listing pagination
-    // NOTE: If pageFunction failed crawler skipped already scraped pagination
-    const listingStateKey = `${LISTING_PAGINATION_KEY}-${request.id}`;
-
-    /** @typedef {{ from: number, to: number, isFinish: boolean }} ListingPagination */
-    const listingPagination = /** @type ListingPagination */ (await Apify.getValue(listingStateKey)) || {};
-
     // there is no searchString when startUrls are used
     if (searchString) {
         await page.waitForSelector('#searchboxinput', { timeout: 15000 });
@@ -132,43 +176,44 @@ const enqueueAllPlaceDetails = async ({
     await page.click('#searchbox-searchbutton');
     await sleep(5000);
     await waitForGoogleMapLoader(page);
-    // TODO refactor all three selectors to single race
-    try {
-        // This is still important, for partial matches and for single result searches, with to low timeout run time for single result searches increase from several second to 15 minutes. (JL)
-        // This might no longer work and I don't know why it is here. I reduced timeout to 5000 at least (LK)
-        // It there is place detail, it means there is just one detail and it was redirected here.
-        // Or there is partial match and so there is no pagination available
-        // We do not need enqueue other places.
-        await Promise.race([
-            page.waitForSelector(PLACE_TITLE_SEL, { timeout: 15000 }),
-            page.waitForSelector(".section-partial-interpretation .section-partial-interpretation-title", { timeout: 15000 }),
-        ]);
-        log.debug(`[SEARCH]: Search string ${searchString} has just one place to scraper or has partial match.`);
-        return;
-    } catch (e) {
-        // It can happen if there is list of details.
-    }
 
     const startZoom = /** @type {number} */ (parseZoomFromUrl(page.url()));
 
-    // In case there is a list of details, it goes through details, limits by maxPlacesPerCrawl
-    const nextButtonSelector = '[jsaction="pane.paginationSection.nextPage"]';
-    for (; ;) {
-        await page.waitForSelector(nextButtonSelector, { timeout: DEFAULT_TIMEOUT });
+    for (;;) {
+        const {
+            noOutcomeLoaded,
+            isBadQuery,
+            hasNoResults,
+            isDetailPage,
+            isNextPaginationDisabled,
+            hasNextPage,
+        } = await waitForSearchResults(page);
+
+        if (noOutcomeLoaded) {
+            throw new Error(`[SEARCH]: Don't recognize the loaded content --- ${searchString}`);
+        }
+
+        if (isNextPaginationDisabled) {
+            log.warning(`[SEARCH]: Finishing search because there are no more pages --- ${searchString} - ${request.url}`);
+            return;
+        } else if (isBadQuery) {
+            log.warning(`[SEARCH]: Finishing search because this query yields no results --- ${searchString} - ${request.url}`);
+            return;
+        } else if (hasNoResults) {
+            log.warning(`[SEARCH]: Finishing search because it reached an empty page (no more results) --- ${searchString} - ${request.url}`);
+            return;
+        } else if (isDetailPage) {
+            // Direct details are processed in enqueueing so we can finish here
+            log.warning(`[SEARCH]: Finishing search because we loaded a single place page directly --- ${searchString} - ${request.url}`);
+            return;
+        }
+
+        // TODO: Delete this part when maxCrawledPlaces are reworked
         // @ts-ignore
         const paginationText = await page.$eval('.n7lv7yjyC35__root', (el) => el.innerText);
         const [fromString, toString] = paginationText.match(/\d+/g);
         const from = parseInt(fromString, 10);
         const to = parseInt(toString, 10);
-        log.debug(`[SEARCH]: Added links from pagination ${from} - ${to}`);
-        listingPagination.from = from;
-        listingPagination.to = to;
-        await Apify.setValue(listingStateKey, listingPagination);
-        await page.waitForSelector(nextButtonSelector, { timeout: DEFAULT_TIMEOUT });
-        const isNextPaginationDisabled = await page.evaluate((nextButtonSel) => {
-            return !!$(nextButtonSel).attr('disabled');
-        }, nextButtonSelector);
-        const noResultsEl = await page.$('.section-no-result-title');
 
         // If Google auto-zoomes too far, we might want to end the search
         let finishBecauseAutoZoom = false;
@@ -180,29 +225,22 @@ const enqueueAllPlaceDetails = async ({
                 finishBecauseAutoZoom = true;
             }
         }
-        if (isNextPaginationDisabled || noResultsEl || (maxCrawledPlaces && maxCrawledPlaces <= to) || finishBecauseAutoZoom) {
-            if (isNextPaginationDisabled) {
-                log.warning(`[SEARCH]: Finishing search because there are no more pages --- ${searchString} - ${request.url}`);
-            } else if (noResultsEl) {
-                log.warning(`[SEARCH]: Finishing search because it reached an empty page --- ${searchString} - ${request.url}`);
-            } else if (maxCrawledPlaces && maxCrawledPlaces <= to) {
-                log.warning(`[SEARCH]: Finishing search because we reached maxCrawledPlaces --- ${searchString} - ${request.url}`);
-            } else if (finishBecauseAutoZoom) {
-                log.warning('[SEARCH]: Finishing search because Google zoomed out '
-                    + 'further than maxAutomaticZoomOut. Current zoom: '
-                    + `${parseZoomFromUrl(page.url())} --- ${searchString} - ${request.url}`);
-            }
-            break;
-        } else {
+        if (maxCrawledPlaces && maxCrawledPlaces <= to) {
+            log.warning(`[SEARCH]: Finishing search because we reached maxCrawledPlaces --- ${searchString} - ${request.url}`);
+            return;
+        } else if (finishBecauseAutoZoom) {
+            log.warning('[SEARCH]: Finishing search because Google zoomed out '
+                + 'further than maxAutomaticZoomOut. Current zoom: '
+                + `${parseZoomFromUrl(page.url())} --- ${searchString} - ${request.url}`);
+            return;
+        }
+            
+        if (hasNextPage) {
             // NOTE: puppeteer API click() didn't work :|
-            await page.evaluate((sel) => $(sel).click(), nextButtonSelector);
+            await page.evaluate((sel) => $(sel).click(), NEXT_BUTTON_SELECTOR);
             await waitForGoogleMapLoader(page);
         }
     }
-
-    listingPagination.isFinish = true;
-    page.removeListener('request', enqueuePlacesFromResponse);
-    await Apify.setValue(listingStateKey, listingPagination);
 };
 
 module.exports = { enqueueAllPlaceDetails };

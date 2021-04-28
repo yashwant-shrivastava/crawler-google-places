@@ -132,6 +132,19 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
 
 /**
  * @typedef {{
+ * noOutcomeLoaded: boolean | undefined,
+ * isBadQuery: boolean | undefined,
+ * hasNoResults: boolean | undefined,
+ * isDetailPage: boolean | undefined,
+ * isNextPaginationDisabled: boolean | undefined,
+ * hasNextPage: boolean | undefined,
+ * }} SearchResultOutcome
+ */
+
+ 
+
+/**
+ * @typedef {{
  * lat: number,
  * lng: number,
  * }} Coordinates
