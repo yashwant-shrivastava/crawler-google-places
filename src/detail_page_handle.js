@@ -112,6 +112,7 @@ module.exports.handlePlaceDetail = async (options) => {
     }
 
     const defaultReviewsJson = reviewsJson && reviewsJson[52] && reviewsJson[52][0];
+    await Apify.setValue('DEFAUL-REV', defaultReviewsJson);
     
     const detail = {
         ...pageData,

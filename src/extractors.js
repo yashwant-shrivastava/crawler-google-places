@@ -293,7 +293,8 @@ module.exports.extractReviews = async ({ page, reviewsCount,
     // If we already have all reviews from the page as default ones, we can finish
     // Just need to sort appropriately manually
     if (reviewsCount > 0 && defaultReviewsJson && defaultReviewsJson.length >= reviewsCount) {
-        reviews = defaultReviewsJson.map(parseReviewFromJson);
+        reviews = defaultReviewsJson
+            .map((defaultReviewJson) => parseReviewFromJson(defaultReviewJson, reviewsTranslation));
         // mostRelevant is default
 
         if (reviewsSort === 'newest') {

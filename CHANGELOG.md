@@ -1,3 +1,7 @@
+## 2021-04-29
+*Fixes*
+- Fixed `reviewsTranslation`
+
 ## 2021-04-28
 *Fixes after Google changed layout, not everything was fixed. Next batch of fixed asap!*
 - Fixed additional data
