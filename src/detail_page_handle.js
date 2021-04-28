@@ -60,7 +60,8 @@ module.exports.handlePlaceDetail = async (options) => {
 
     const coordinates = latMatch && lngMatch ? { lat: parseFloat(latMatch), lng: parseFloat(lngMatch) } : null;
 
-    // TODO: Seems this is empty in the new layout?
+    // NOTE: This is empty for certain types of direct URLs
+    // Search and place IDs work fine
     const reviewsJson = await page.evaluate(() => {
         try {
             // @ts-ignore

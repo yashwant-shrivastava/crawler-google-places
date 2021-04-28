@@ -15,6 +15,7 @@ const { checkInPolygon } = require('./polygon');
 const NEXT_BUTTON_SELECTOR = '[jsaction="pane.paginationSection.nextPage"]';
 const SEARCH_WAIT_TIME_MS = 30000;
 const CHECK_LOAD_OUTCOMES_EVERY_MS = 500;
+const PLACES_PER_PAGE = 20;
 
 /**
  * This handler waiting for response from xhr and enqueue places from the search response boddy.
@@ -180,6 +181,8 @@ const enqueueAllPlaceDetails = async ({
 
     const startZoom = /** @type {number} */ (parseZoomFromUrl(page.url()));
 
+    let pagesScraped = 0;
+
     for (;;) {
         const {
             noOutcomeLoaded,
@@ -209,6 +212,11 @@ const enqueueAllPlaceDetails = async ({
             return;
         }
 
+        if (maxCrawledPlaces && pagesScraped * PLACES_PER_PAGE > maxCrawledPlaces) {
+            log.warning(`[SEARCH]: Finishing search because we scraped more than maxCrawledPlaces --- ${searchString} - ${request.url}`);
+            return;
+        }
+
         // If Google auto-zoomes too far, we might want to end the search
         let finishBecauseAutoZoom = false;
         if (typeof maxAutomaticZoomOut === 'number') {
@@ -232,6 +240,7 @@ const enqueueAllPlaceDetails = async ({
             await page.evaluate((sel) => $(sel).click(), NEXT_BUTTON_SELECTOR);
             await waitForGoogleMapLoader(page);
         }
+        pagesScraped++;
     }
 };
 
