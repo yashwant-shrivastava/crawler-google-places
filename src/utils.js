@@ -276,7 +276,7 @@ const waitAndHandleConsentFrame = async (page, url) => {
     };
     */
     const predicate = async () => {
-        const consentButton = await page.$('[action*="https://consent.google.com/] button');
+        const consentButton = await page.$('[action*="https://consent.google.com/"] button');
         if (consentButton) {
             await consentButton.click();
             return true;
