@@ -8,7 +8,7 @@ const ErrorSnapshotter = require('./error-snapshotter'); // eslint-disable-line 
 const { enqueueAllPlaceDetails } = require('./enqueue_places');
 const { handlePlaceDetail } = require('./detail_page_handle');
 const {
-    waitAndHandleConsentFrame, waiter,
+    waitAndHandleConsentScreen, waiter,
 } = require('./utils');
 
 const { log } = Apify.utils;
@@ -144,7 +144,7 @@ const setUpCrawler = ({ crawlerOptions, scrapingOptions, stats, errorSnapshotter
                     // @ts-ignore
                     request.userData.waitingForConsent = true;
                     await page.waitForTimeout(5000);
-                    await waitAndHandleConsentFrame(page, request.url);
+                    await waitAndHandleConsentScreen(page, request.url);
                     // @ts-ignore
                     request.userData.waitingForConsent = false;
                     log.warning('Consent screen approved! We can continue scraping');
