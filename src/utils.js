@@ -261,35 +261,40 @@ const waiter = async (predicate, options = {}) => {
  * @param {Puppeteer.Page} page
  * @param {string} url
  */
-const waitAndHandleConsentFrame = async (page, url) => {
+ const waitAndHandleConsentScreen = async (page, url) => {
     // TODO: Test if the new consent screen works well!
 
-    // Old consent, keeping as a reference if it comes back
-    /*
-    const predicate = async () => {
+    const predicate = async (shouldClick = false) => {
+        // handling consent page (usually shows up on startup)
+        const consentButton = await page.$('[action*="https://consent.google.com/"] button');
+        if (consentButton) {
+            if (shouldClick) {
+                await Promise.all([
+                    page.waitForNavigation({ timeout: 60000 }),
+                    consentButton.click()
+                ]);
+            }
+            return true;
+        }
+        // handling consent frame in maps
+        // (this only happens rarely, but still happens)
         for (const frame of page.mainFrame().childFrames()) {
             if (frame.url().match(/consent\.google\.[a-z.]+/)) {
-                await frame.click('#introAgreeButton');
+                if (shouldClick) {
+                    await frame.click('#introAgreeButton');
+                }
                 return true;
             }
         }
     };
-    */
-    const predicate = async () => {
-        const consentButton = await page.$('[action*="https://consent.google.com/"] button');
-        if (consentButton) {
-            await consentButton.click();
-            return true;
-        }
-    };
-    
 
     await waiter(predicate, {
         timeout: 60000,
         pollInterval: 500,
-        timeoutErrorMeesage: `Waiting for consent screen frame timeouted after 60000ms on URL: ${url}`,
+        timeoutErrorMeesage: `Waiting for consent screen timeouted after 60000ms on URL: ${url}`,
         successMessage: `Approved consent screen on URL: ${url}`,
     });
+    await predicate(true);
 };
 
 module.exports = {
@@ -301,5 +306,5 @@ module.exports = {
     parseZoomFromUrl,
     enlargeImageUrls,
     waiter,
-    waitAndHandleConsentFrame,
+    waitAndHandleConsentScreen,
 };

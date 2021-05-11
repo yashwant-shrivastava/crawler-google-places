@@ -8,7 +8,7 @@ const ErrorSnapshotter = require('./error-snapshotter'); // eslint-disable-line 
 const { enqueueAllPlaceDetails } = require('./enqueue_places');
 const { handlePlaceDetail } = require('./detail_page_handle');
 const {
-    waitAndHandleConsentFrame, waiter,
+    waitAndHandleConsentScreen, waiter,
 } = require('./utils');
 
 const { log } = Apify.utils;
@@ -30,8 +30,6 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, crawle
 
     const { label, searchString } = /** @type {{ label: string, searchString: string }} */ (request.userData);
 
-    await injectJQuery(page);
-
     const logLabel = label === 'startUrl' ? 'SEARCH' : 'PLACE';
 
     // TODO: Figure out how to remove the timeout and still handle consent screen
@@ -43,6 +41,8 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, crawle
         // @ts-ignore  I'm not sure how we could fix the types here
         await waiter(() => request.userData.waitingForConsent === false);
     }
+
+    await injectJQuery(page);
 
     try {
         // Check if Google shows captcha
@@ -139,12 +139,12 @@ const setUpCrawler = ({ crawlerOptions, scrapingOptions, stats, errorSnapshotter
             // Handle consent screen, it takes time before the iframe loads so we need to update userData
             // and block handlePageFunction from continuing until we click on that
             page.on('response', async (res) => {
-                if (res.url().match(/consent\.google\.[a-z.]+\/intro/)) {
+                if (res.url().match(/consent\.google\.[a-z.]+\/(?:intro|m\?)/)) {
                     log.warning('Consent screen loading, we need to approve first!');
                     // @ts-ignore
                     request.userData.waitingForConsent = true;
                     await page.waitForTimeout(5000);
-                    await waitAndHandleConsentFrame(page, request.url);
+                    await waitAndHandleConsentScreen(page, request.url);
                     // @ts-ignore
                     request.userData.waitingForConsent = false;
                     log.warning('Consent screen approved! We can continue scraping');
