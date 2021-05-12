@@ -283,7 +283,7 @@ const navigateBack = async (page, pageLabel) => {
     await waiter(backButtonPresent, {
         timeout: 2000,
         pollInterval: 500,
-        timeoutErrorMeesage: `Waiting for backButton on ${pageLabel} page ran into a timeout after 2s on URL: ${page.url}`,
+        timeoutErrorMeesage: `Waiting for backButton on ${pageLabel} page ran into a timeout after 2s on URL: ${page.url()}`,
     });
     const navigationSucceeded = async () => {
         const backButton = await page.$(BACK_BUTTON_SEL);
@@ -298,7 +298,7 @@ const navigateBack = async (page, pageLabel) => {
     await waiter(navigationSucceeded, {
         timeout: 10000,
         pollInterval: 500,
-        timeoutErrorMeesage: `Waiting for back navigation on ${pageLabel} page ran into a timeout after 10s on URL: ${page.url}`,
+        timeoutErrorMeesage: `Waiting for back navigation on ${pageLabel} page ran into a timeout after 10s on URL: ${page.url()}`,
     });
 }
 
