@@ -5,7 +5,7 @@ const {AddressParsed, Review, PersonalDataOptions} = require('./typedefs')
 
 const { PLACE_TITLE_SEL, BACK_BUTTON_SEL } = require('./consts');
 const { waitForGoogleMapLoader, parseReviewFromResponseBody,
-    scrollTo, enlargeImageUrls, parseReviewFromJson } = require('./utils');
+    scrollTo, enlargeImageUrls, parseReviewFromJson, waiter } = require('./utils');
 const infiniteScroll = require('./infinite_scroll');
 
 /* eslint-env jquery */
@@ -227,13 +227,11 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
         } catch (e) {
             log.info(`[PLACE]: ${e}Additional info not parsed`);
         } finally {
-            const backButton = await page.$(BACK_BUTTON_SEL);
-            if (!backButton) {
-                // eslint-disable-next-line no-unsafe-finally
-                throw new Error('Back button for additional info is not present');
+            const title = await page.$(PLACE_TITLE_SEL);
+            if (title) {
+                log.info('[PLACE]: We are still on the details page -> no back navigation needed');
             }
-            await backButton.click({ delay: 200 });
-            await page.waitForSelector(PLACE_TITLE_SEL);
+            await navigateBack(page, 'additional info');
         }
     } else {
         log.warning(`Could not find button to get to additional data, skipping - ${page.url()}`);
@@ -269,6 +267,39 @@ const removePersonalDataFromReviews = (reviews, personalDataOptions) => {
         }
     }
     return reviews;
+}
+
+/**
+ * Navigates back to the details page
+ *
+ * @param {Puppeteer.Page} page
+ * @param {string} pageLabel label for the current page for error messages
+ */
+const navigateBack = async (page, pageLabel) => {
+    const backButtonPresent = async () => {
+        const backButton = await page.$(BACK_BUTTON_SEL);
+        return backButton != null;
+    }
+    await waiter(backButtonPresent, {
+        timeout: 2000,
+        pollInterval: 500,
+        timeoutErrorMeesage: `Waiting for backButton on ${pageLabel} page ran into a timeout after 2s on URL: ${page.url}`,
+    });
+    const navigationSucceeded = async () => {
+        const backButton = await page.$(BACK_BUTTON_SEL);
+        if (backButton) {
+            await backButton.click({ delay: 200 });
+        }
+        const title = await page.$(PLACE_TITLE_SEL);
+        if (title) {
+            return true;
+        }
+    }
+    await waiter(navigationSucceeded, {
+        timeout: 10000,
+        pollInterval: 500,
+        timeoutErrorMeesage: `Waiting for back navigation on ${pageLabel} page ran into a timeout after 10s on URL: ${page.url}`,
+    });
 }
 
 /**
@@ -322,7 +353,7 @@ module.exports.extractReviews = async ({ page, reviewsCount,
         } catch (e) {
             log.warning(`Could not find reviews count, check if the page really has no reviews --- ${page.url()}`);
         }
-        
+
         // click the consent iframe, working with arrays so it never fails.
         // also if there's anything wrong with Same-Origin, just delete the modal contents
         // TODO: Why is this isolated in reviews?
@@ -429,13 +460,7 @@ module.exports.extractReviews = async ({ page, reviewsCount,
                 reviewUrl = increaseLimitInUrl(reviewUrl);
             }
             log.info(`[PLACE]: Reviews extraction finished: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
-
-            await page.waitForTimeout(500);
-            const backButton = await page.$(BACK_BUTTON_SEL);
-            if (!backButton) {
-                throw new Error('Back button for reviews is not present');
-            }
-            await backButton.click();
+            await navigateBack(page, 'reviews');
         }
     }
     reviews = reviews.slice(0, maxReviews);
