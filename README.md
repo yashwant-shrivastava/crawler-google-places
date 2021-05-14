@@ -16,7 +16,7 @@
 This Google Maps crawler will enable you to get more data from Google Places than the official [Google Maps Places API](https://developers.google.com/places/web-service/search).
 
 ## Advantages over Google Maps API
-The official Google Maps Places API is the best option for most use cases, but this scraper can provide:
+The official Google Maps Places API is an adequate option for many use cases, but this scraper can provide:
 
 - Unlimited results
 - Popular place times histogram (no data for that in official API)
