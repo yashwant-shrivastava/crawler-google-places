@@ -1,7 +1,8 @@
 # Google Maps Scraper
 
 <!-- toc start -->
-- [Features](#Features)
+- [Features](#features)
+- [Advantages over Google Maps API](#advantages-over-google-maps-api)
 - [Input configuration](#input-configuration)
 - [Results](#results)
 - [Usage on Apify platform and locally](#usage-on-apify-platform-and-locally)
@@ -14,15 +15,16 @@
 ## Features
 This Google Maps crawler will enable you to get more data from Google Places than the official [Google Maps Places API](https://developers.google.com/places/web-service/search).
 
+## Advantages over Google Maps API
 The official Google Maps Places API is the best option for most use cases, but this scraper can provide:
 
 - Unlimited results
 - Popular place times histogram (no data for that in official API)
-- All place reviews (up to 5 reviews from official API)
-- All place photos (up to 10 photos from official API)
+- All place reviews (only up to 5 reviews from official API)
+- All place photos (only up to 10 photos from official API)
 
 ## Input configuration
-When running the Google Maps Scraper, you need to provide input to configure what and how should be scraped. This input is provided either as a JSON file or in the editor on the Apify platform. Most input fields have reasonable default values.
+When running the Google Maps Scraper, you need to configure what you want to scrape and how it should be scraped. This input is provided either as a JSON file or in the editor on the Apify platform. Most input fields have reasonable default values.
 
 Example input:
 ```json
@@ -37,10 +39,10 @@ With this input, the actor searches places at this start URL: https://www.google
 
 - Search and URLs
     - `startUrls` \<Array\<[Request](https://sdk.apify.com/docs/api/request#docsNav)\>\> A list of URLs. Can be search or place URLs.
-    - `searchStringsArray` \<Array\<string\>\> Array of strings, that will be searched on Google maps. It is also possible to fill [Google Place ID](https://developers.google.com/places/place-id) in format `place_id:ChIJp4JiUCNP0xQR1JaSjpW_Hms`
-    - `language` \<string\> Sets the language for the interface. Can also affect the returned reviews language. **Default: `en`**
+    - `searchStringsArray` \<Array\<string\>\> Array of strings that will be searched on Google maps. It is also possible to fill in [Google Place ID](https://developers.google.com/places/place-id) in the format `place_id:ChIJp4JiUCNP0xQR1JaSjpW_Hms`
+    - `language` \<string\> Sets the language for the interface. Can also affect the returned review language. **Default: `en`**
 - General settings
-    - `proxyConfig` \<ProxyConfiguration\> Apify proxy configuration - required to provide proxy when running on the Apify platform. **Default: `{ useApifyProxy: true }`**
+    - `proxyConfig` \<ProxyConfiguration\> Apify Proxy configuration - required to provide proxy when running on the Apify platform. **Default: `{ useApifyProxy: true }`**
     - `maxCrawledPlaces` \<number\> Limit the number of places you want to get from the crawler **Default: `20`**
 - Output configuration
     - `maxReviews` \<number\> Maximum number of reviews per place. **Default: `0`**
@@ -48,33 +50,33 @@ With this input, the actor searches places at this start URL: https://www.google
     - `includeHistogram` \<boolean\> If checked, the crawler scrapes popular times for all places. You can speed up crawling if you disable this. **Default: `false`**
     - `includeOpeningHours` \<boolean\> If checked, the crawler scrapes opening hours for all places. You can speed up crawling if you disable this. **Default: `false`**
     - `includePeopleAlsoSearch` \<boolean\> If checked, the crawler scrapes \"people also search\" for all places. You can speed up crawling if you disable this. **Default: `false`**
-    - `additionalInfo` \<boolean\> Export additional info: Service Options, Highlights, Offerings,... **Default: `false`**
-    - `reviewsSort` \<string\> sort place reviews before extraction. **Default: `mostRelevant`**
+    - `additionalInfo` \<boolean\> Export additional info: Service Options, Highlights, Offers,... **Default: `false`**
+    - `reviewsSort` \<string\> Sort place reviews before extraction. **Default: `mostRelevant`**
     - `exportPlaceUrls` \<boolean\> Won't crawl through place pages, return links to places. **Default: `false`**
 - Localization (choose either country/state/city or lat/long)
     - `country` \<string\> Country name for polygon localization
     - `state` \<string\> State name for polygon localization
     - `city` \<string\> City name for polygon localization
     - `postalCode` \<string\> Set a postal code where the search should be performed - e.g. 10001. Select a country as well to ensure the correct postal code is used. For a more accurate search, set `lat` and `lng`.
-    - `lat` \<string\> Use with combination with longitude and zoom to set up viewport to search on. Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
-    - `lng` \<string\> Use with combination with latitude and zoom to set up viewport to search on. Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
-    - `zoom` \<number\> Viewport zoom, e.g zoom: 17 in Google Maps URL -> https://www.google.com/maps/@50.0860729,14.4135326,17z vs zoom: 10 -> https://www.google.com/maps/@50.0860729,14.4135326,10z. `1` is the whole world and `21` is a tiny street. We recommend a number between 10 and 17. **Default: `12`**
-    - `maxAutomaticZoomOut` \<number\> A parameter to stop searching once Google zooms out too far. It counts how far it has zoomed out from the first page. Keep in mind that `zoom: 1` is the whole world and `zoom: 21` is a tiny street. So you usually want `maxAutomaticZoomOut` to be between `0` and `5`. Also, note that Google zooms a bit differently in each run.
+    - `lat` \<string\> Use in combination with longitude and zoom to set up viewport to search on. Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
+    - `lng` \<string\> Use in combination with latitude and zoom to set up viewport to search on. Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
+    - `zoom` \<number\> Viewport zoom, e.g. zoom: 17 in Google Maps URL -> https://www.google.com/maps/@50.0860729,14.4135326,17z vs zoom: 10 -> https://www.google.com/maps/@50.0860729,14.4135326,10z. `1` is the whole world and `21` is a tiny street. We recommend a number between 10 and 17. **Default: `12`**
+    - `maxAutomaticZoomOut` \<number\> A parameter to stop searching once Google zooms out too far. It counts how far it has zoomed out from the first page. Keep in mind that `zoom: 1` is the whole world and `zoom: 21` is a tiny street. So you usually want `maxAutomaticZoomOut` to be between `0` and `5`. Also note that Google zooms a bit differently in each run.
     - `cachePlaces` \<boolean\> Add caching locations between runs. `placeId: location` is stored in a named key-value store. Can speed up regular runs using polygon search. **Default: `false`**
-    - `useCachedPlaces` \<boolean\> load cached places for specific location and keyword and add them to request queue before scraping stats. Can stabilize results count for regular runs. **Default: `false`**
-    - `cacheKey` \<string\> key for saving cached data. Use mainly for scraping locations from separated locations, process wouldn't load whole cache, just specific location.
-    - `polygon` \<json\> manual polygon for more specific location.
+    - `useCachedPlaces` \<boolean\> Load cached places for specific location and keyword and add them to request queue before scraping stats. Can stabilize results count for regular runs. **Default: `false`**
+    - `cacheKey` \<string\> Key for saving cached data. Use mainly for scraping locations from separated locations so that the process will not load the whole cache, just the specific location.
+    - `polygon` \<json\> Manual polygon for more specific location.
 - Browser and page settings
     - `maxConcurrency` \<number\> The maximum number of pages that will be processed in parallel. **Default: `100`**
     - `maxPageRetries` \<number\> Max page retries. **Default: `6`**
     - `pageLoadTimeoutSec` \<number\> Max times that the page can be loading. **Default: `60`**
-    - `maxPagesPerBrowser` \<number\> How many pages can be opened at once for each browser. Having more pages in one browser is faster but can lead to increased blocking. **Default: `1`**
-    - `useChrome` \<boolean\> Uses full Chrome browser instead of Chromium. Be careful, it is not stable on some versions! **Default: `false`**
+    - `maxPagesPerBrowser` \<number\> The maximum number of pages that can be opened at once for each browser. Having more pages in one browser is faster but can lead to increased blocking. **Default: `1`**
+    - `useChrome` \<boolean\> Uses full Chrome browser instead of Chromium. Be careful, this is not stable on some versions! **Default: `false`**
 - Miscellaneous
     - `debug` \<boolean\> Debug messages will be included in log. **Default: `false`**
 
 ### Country localization
-You can force the scraper to access places only from a specific country location. We recommend this to ensure the correct language in the results. This only works reliably for the US (most of our proxies are from the US). Currently, this option is not available in the Editor input - you have switch to JSON input. After you switch, your configuration will remain the same, so just update the `proxyconfig` field with `apifyProxyCountry` property to specify the country, e.g.
+You can force the scraper to access places only from a specific country. We recommend this to ensure that you receive the correct language in the results. This only works reliably for the US (most of our proxies are from the US). Currently, this option is not available in the Editor input - you have switch to JSON input. After you switch, your configuration will remain the same, so just update the `proxyconfig` field with `apifyProxyCountry` property to specify the country, e.g.
 
 ```json
 "proxyConfig": {
@@ -84,7 +86,7 @@ You can force the scraper to access places only from a specific country location
 ```
 
 ## Results
-The scraped data is stored in the dataset of each run. The data can be viewed or downloaded in many popular formats like JSON, CSV, Excel, XML, RSS and HTML.
+The scraped data is stored in the dataset of each run. The data can be viewed or downloaded in many popular formats such as JSON, CSV, Excel, XML, RSS and HTML.
 
 A single place result looks like this:
 
@@ -259,7 +261,7 @@ A single place result looks like this:
 If you want to run the actor on the [Apify platform](https://apify.com), you need to have at least a few proxy IPs to avoid being blocked by Google. You can use your free Apify Proxy trial or you can subscribe to one of [Apify's subscription plans](https://apify.com/pricing).
 
 ### Compute unit consumption
-It is recommended to run the actor with at least 8GB memory. On the Apify platform, 8GB memory gives you:
+We recommend that you run the actor with at least 8GB memory. On the Apify platform, 8GB memory gives you:
 - 100 Google place details for 1-2 compute units
 - 100 Google place details with images and reviews for 4-8 compute units - the usage really depends on the number of images and reviews for each place scraped.
 
@@ -272,17 +274,17 @@ It works exactly as though you were searching Google Maps on your computer. It o
 ### Google automatically expands the search location
 There is one feature of Google Maps that is sometimes not desirable. As you progress to the next page, there might not be enough places of the type that you have searched for, e.g. restaurants in your city. Google will naturally zoom out and include places from a broader area. It will happily do this over a large area and might include places from far out that you are not interested in. There are three ways to solve this:
 
-- Limit `maxCrawledPlaces` - This is the simplest option, but you usually don't know how many places there are, so it is not that useful.
+- Limit `maxCrawledPlaces` - This is the simplest option, but you usually don't know how many places there are, so it isn't that useful.
 - Use the `maxAutomaticZoomOut` parameter to stop searching once Google zooms out too far. It counts how far it zoomed out from the first page. Keep in mind that `zoom: 1` is the whole world and `zoom: 21` is a tiny street. So you usually want `maxAutomaticZoomOut` to be between `0` and `5`.
 - Use `country`, `state`, `city` parameters.
 
 ## Using country, state and city parameters
 You can only use `country` or `country` + `state` or `country` + `state` + `city`. The scraper uses [nominatim maps](https://nominatim.org/) to find a location polygon and then splits that into multiple searches that cover the whole area. You should play around with the `zoom` number to find the ideal granularity for searches. Too small a zoom level will find only the most famous places over a large area, too big a zoom level will lead to overlapping places and will consume a huge number of CUs. We recommend a number between 10 and 15.
 
-#### Warning: Don't use too big zoom level (17+) with country, state, city parameters
+#### Warning: Don't use too big a zoom level (17+) with country, state, city parameters
 
 ## Personal data
-Reviews can contain personal data like person name, profile image and even a review ID that can be used to track down the reviewer. Personal data is protected by GDPR in the European Union and by other regulations around the world. You should not scrape personal data unless you have a legitimate reason to do so. If you're unsure whether your reason is legitimate, consult your lawyers. This scraper allows you to granularly select which personal data fields you want to extract from reviews and which not.
+Reviews can contain personal data such as a name, profile image and even a review ID that could be used to track down the reviewer. Personal data is protected by GDPR in the European Union and by other regulations around the world. You should not scrape personal data unless you have a legitimate reason to do so. If you're unsure whether your reason is legitimate, consult your lawyers. This scraper allows you to granularly select which personal data fields you want to extract from reviews and which not.
 
 ## Changelog
 This scraper is under active development. We are always implementing new features and fixing bugs. If you would like to see a new feature, please submit an issue on GitHub. Check [CHANGELOG.md](https://github.com/drobnikj/crawler-google-places/blob/master/CHANGELOG.md) for a list of recent updates
