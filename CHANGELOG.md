@@ -1,3 +1,8 @@
+## 2021-05-18
+*Fixes*
+- Partially fixed consent screen issues
+- Should also help with `Failed to set the 'innerHTML' property on 'Element': This document requires 'TrustedHTML' assignment.` which is caused by injecting JQuery into constent screen
+
 ## 2021-04-29
 *Fixes*
 - Fixed `reviewsTranslation`

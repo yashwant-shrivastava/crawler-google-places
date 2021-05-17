@@ -42,6 +42,8 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, crawle
         await waiter(() => request.userData.waitingForConsent === false);
     }
 
+    // Inject JQuery crashes on consent screen
+    // we need to first approve consent screen before injecting
     await injectJQuery(page);
 
     try {
