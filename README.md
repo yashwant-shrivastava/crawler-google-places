@@ -37,89 +37,7 @@ Example input:
 ```
 With this input, the actor searches places at this start URL: https://www.google.com/maps/search/pubs+near+prague/@50.0860729,14.4135326,10z
 
-- Search and URLs
-    - `startUrls` \<Array\<[Request](https://sdk.apify.com/docs/api/request#docsNav)\>\> A list of URLs. Can be search or place URLs.
-    - `searchStringsArray` \<Array\<string\>\> Array of strings that will be searched on Google maps. It is also possible to fill in [Google Place ID](https://developers.google.com/places/place-id) in the format `place_id:ChIJp4JiUCNP0xQR1JaSjpW_Hms`
-    - `language` \<string\> Sets the language for the interface. Can also affect the returned review language. **Default: `en`**
-- General settings
-    - `proxyConfig` \<ProxyConfiguration\> Apify Proxy configuration - required to provide proxy when running on the Apify platform. **Default: `{ useApifyProxy: true }`**
-    - `maxCrawledPlaces` \<number\> Limit the number of places you want to get from the crawler **Default: `20`**
-- Output configuration
-    - `maxReviews` \<number\> Maximum number of reviews per place. **Default: `0`**
-    - `maxImages` \<number\> Maximum number of images per place. **Default: `0`**
-    - `includeHistogram` \<boolean\> If checked, the crawler scrapes popular times for all places. You can speed up crawling if you disable this. **Default: `false`**
-    - `includeOpeningHours` \<boolean\> If checked, the crawler scrapes opening hours for all places. You can speed up crawling if you disable this. **Default: `false`**
-    - `includePeopleAlsoSearch` \<boolean\> If checked, the crawler scrapes \"people also search\" for all places. You can speed up crawling if you disable this. **Default: `false`**
-    - `additionalInfo` \<boolean\> Export additional info: Service Options, Highlights, Offers,... **Default: `false`**
-    - `reviewsSort` \<string\> Sort place reviews before extraction. **Default: `mostRelevant`**
-    - `exportPlaceUrls` \<boolean\> Won't crawl through place pages, return links to places. **Default: `false`**
-- Localization (choose either country/state/city or lat/long)
-    - `country` \<string\> Country name for polygon localization
-    - `state` \<string\> State name for polygon localization
-    - `city` \<string\> City name for polygon localization
-    - `postalCode` \<string\> Set a postal code where the search should be performed - e.g. 10001. Select a country as well to ensure the correct postal code is used. For a more accurate search, set `lat` and `lng`.
-    - `lat` \<string\> Use in combination with longitude and zoom to set up viewport to search on. Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
-    - `lng` \<string\> Use in combination with latitude and zoom to set up viewport to search on. Do not use `lat` and `lng` in combination with polygon localization (`country`, `state`, `city`).
-    - `zoom` \<number\> Viewport zoom, e.g. zoom: 17 in Google Maps URL -> https://www.google.com/maps/@50.0860729,14.4135326,17z vs zoom: 10 -> https://www.google.com/maps/@50.0860729,14.4135326,10z. `1` is the whole world and `21` is a tiny street. We recommend a number between 10 and 17. **Default: `12`**
-    - `maxAutomaticZoomOut` \<number\> A parameter to stop searching once Google zooms out too far. It counts how far it has zoomed out from the first page. Keep in mind that `zoom: 1` is the whole world and `zoom: 21` is a tiny street. So you usually want `maxAutomaticZoomOut` to be between `0` and `5`. Also note that Google zooms a bit differently in each run.
-    - `cachePlaces` \<boolean\> Add caching locations between runs. `placeId: location` is stored in a named key-value store. Can speed up regular runs using polygon search. **Default: `false`**
-    - `useCachedPlaces` \<boolean\> Load cached places for specific location and keyword and add them to request queue before scraping stats. Can stabilize results count for regular runs. **Default: `false`**
-    - `cacheKey` \<string\> Key for saving cached data. Use mainly for scraping locations from separated locations so that the process will not load the whole cache, just the specific location.
-    - `polygon` \<json\> Manual polygon for more specific location.
-- Browser and page settings
-    - `maxConcurrency` \<number\> The maximum number of pages that will be processed in parallel. **Default: `100`**
-    - `maxPageRetries` \<number\> Max page retries. **Default: `6`**
-    - `pageLoadTimeoutSec` \<number\> Max times that the page can be loading. **Default: `60`**
-    - `maxPagesPerBrowser` \<number\> The maximum number of pages that can be opened at once for each browser. Having more pages in one browser is faster but can lead to increased blocking. **Default: `1`**
-    - `useChrome` \<boolean\> Uses full Chrome browser instead of Chromium. Be careful, this is not stable on some versions! **Default: `false`**
-- Miscellaneous
-    - `debug` \<boolean\> Debug messages will be included in log. **Default: `false`**
-
-### Polygon
-
-The Polygon attribute is used together with `country`, `state` and `city`
-for the creation of start URLs. If no lat or lng values are passed to the
-crawler then it will try to read the "polygon" attribute. The data should
-have the following GeoJSON structure from the Nominatim Api
-(here for the example of Cambridge in Great Britain)
-
-```jsonc
-{
-  "boundingbox": [
-    "52.1579417",
-    "52.2372296",
-    "0.0686389",
-    "0.1826865"
-  ],
-  "lat": "52.2034823",
-  "lon": "0.1235817",
-  "display_name": "Cambridge, Cambridgeshire, East of England, England, United Kingdom",
-  "geojson": {
-    "type": "Polygon",
-    "coordinates": [
-      [
-        [
-          0.0686389,
-          52.2161086
-        ],
-        [
-          0.1046861,
-          52.1906436
-        ],
-        [
-          0.0981038,
-          52.1805451
-        ],
-        // ... (shortened)
-      ]
-    ]
-  }
-}
-```
-
-It is important that the first and the last coordinates are identical.
-Otherwise we will get the error "first and last Position are not equivalent"
-which comes from the Turf.js library.
+For detailed description and examples of all input fields please visit the dedicated [Input page](https://apify.com/drobnikj/crawler-google-places/input-schema).
 
 ### Country localization
 You can force the scraper to access places only from a specific country. We recommend this to ensure that you receive the correct language in the results. This only works reliably for the US (most of our proxies are from the US). Currently, this option is not available in the Editor input - you have switch to JSON input. After you switch, your configuration will remain the same, so just update the `proxyconfig` field with `apifyProxyCountry` property to specify the country, e.g.
@@ -130,6 +48,11 @@ You can force the scraper to access places only from a specific country. We reco
     "apifyProxyCountry": "US"
   }
 ```
+
+## Manual Polygon
+
+The easiest way to use Google Maps scraper is to provide `country`, `state` or `city` input parameters. But in rare cases your location might not be found or you want to customize it. In that case you can use manual polygon for the creation of start URLs. It should have the following GeoJSON structure from the [Nominatim Api](https://nominatim.openstreetmap.org)
+([here for the example of Cambridge in Great Britain](https://nominatim.openstreetmap.org/search?country=united%20kingdom&state=&city=cambridge&postalcode=&format=json&polygon_geojson=1&limit=1&polygon_threshold=0.005))
 
 ## Results
 The scraped data is stored in the dataset of each run. The data can be viewed or downloaded in many popular formats such as JSON, CSV, Excel, XML, RSS and HTML.
