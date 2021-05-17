@@ -227,10 +227,6 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
         } catch (e) {
             log.info(`[PLACE]: ${e}Additional info not parsed`);
         } finally {
-            const title = await page.$(PLACE_TITLE_SEL);
-            if (title) {
-                log.info('[PLACE]: We are still on the details page -> no back navigation needed');
-            }
             await navigateBack(page, 'additional info');
         }
     } else {
@@ -276,6 +272,10 @@ const removePersonalDataFromReviews = (reviews, personalDataOptions) => {
  * @param {string} pageLabel label for the current page for error messages
  */
 const navigateBack = async (page, pageLabel) => {
+    const title = await page.$(PLACE_TITLE_SEL);
+    if (title) {
+        log.info('[PLACE]: We are still on the details page -> no back navigation needed');
+    }
     const backButtonPresent = async () => {
         const backButton = await page.$(BACK_BUTTON_SEL);
         return backButton != null;
