@@ -75,6 +75,52 @@ With this input, the actor searches places at this start URL: https://www.google
 - Miscellaneous
     - `debug` \<boolean\> Debug messages will be included in log. **Default: `false`**
 
+### Polygon
+
+The Polygon attribute is used together with `country`, `state` and `city`
+for the creation of start URLs. If no lat or lng values are passed to the
+crawler then it will try to read the "polygon" attribute. The data should
+have the following GeoJSON structure from the Nominatim Api
+(here for the example of Cambridge in Great Britain)
+
+```jsonc
+{
+  "boundingbox": [
+    "52.1579417",
+    "52.2372296",
+    "0.0686389",
+    "0.1826865"
+  ],
+  "lat": "52.2034823",
+  "lon": "0.1235817",
+  "display_name": "Cambridge, Cambridgeshire, East of England, England, United Kingdom",
+  "geojson": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          0.0686389,
+          52.2161086
+        ],
+        [
+          0.1046861,
+          52.1906436
+        ],
+        [
+          0.0981038,
+          52.1805451
+        ],
+        // ... (shortened)
+      ]
+    ]
+  }
+}
+```
+
+It is important that the first and the last coordinates are identical.
+Otherwise we will get the error "first and last Position are not equivalent"
+which comes from the Turf.js library.
+
 ### Country localization
 You can force the scraper to access places only from a specific country. We recommend this to ensure that you receive the correct language in the results. This only works reliably for the US (most of our proxies are from the US). Currently, this option is not available in the Editor input - you have switch to JSON input. After you switch, your configuration will remain the same, so just update the `proxyconfig` field with `apifyProxyCountry` property to specify the country, e.g.
 
