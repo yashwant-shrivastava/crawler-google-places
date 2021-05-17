@@ -275,6 +275,7 @@ const navigateBack = async (page, pageLabel) => {
     const title = await page.$(PLACE_TITLE_SEL);
     if (title) {
         log.info('[PLACE]: We are still on the details page -> no back navigation needed');
+        return;
     }
     const backButtonPresent = async () => {
         const backButton = await page.$(BACK_BUTTON_SEL);
