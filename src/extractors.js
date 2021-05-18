@@ -289,7 +289,11 @@ const navigateBack = async (page, pageLabel) => {
     const navigationSucceeded = async () => {
         const backButton = await page.$(BACK_BUTTON_SEL);
         if (backButton) {
-            await backButton.click({ delay: 200 });
+            await backButton.evaluate((backButtonNode) => {
+                if (backButtonNode instanceof HTMLElement) {
+                    backButtonNode.click();
+                }
+            });
         }
         const title = await page.$(PLACE_TITLE_SEL);
         if (title) {
