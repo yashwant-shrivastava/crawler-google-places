@@ -5,8 +5,10 @@ const { ScrapingOptions, AddressParsed, PlaceUserData } = require('./typedefs');
 const ErrorSnapshotter = require('./error-snapshotter'); // eslint-disable-line no-unused-vars
 const Stats = require('./stats'); // eslint-disable-line no-unused-vars
 
-const { extractPageData, extractPopularTimes, extractOpeningHours, extractPeopleAlsoSearch,
-    extractAdditionalInfo, extractReviews, extractImages } = require('./extractors');
+const {
+    extractPageData, extractPopularTimes, extractOpeningHours, extractPeopleAlsoSearch,
+    extractAdditionalInfo, extractReviews, extractImages
+} = require('./extractors');
 const { DEFAULT_TIMEOUT, PLACE_TITLE_SEL } = require('./consts');
 const { checkInPolygon } = require('./polygon');
 const { waitForGoogleMapLoader } = require('./utils');
@@ -15,15 +17,15 @@ const { log } = Apify.utils;
 
 /**
  * @param {{
-*  page: Puppeteer.Page,
-*  request: Apify.Request,
-*  searchString: string,
-*  session: Apify.Session,
-*  scrapingOptions: ScrapingOptions,
-*  errorSnapshotter: ErrorSnapshotter,
-*  stats: Stats,
-* }} options
-*/
+ *  page: Puppeteer.Page,
+ *  request: Apify.Request,
+ *  searchString: string,
+ *  session: Apify.Session,
+ *  scrapingOptions: ScrapingOptions,
+ *  errorSnapshotter: ErrorSnapshotter,
+ *  stats: Stats,
+ * }} options
+ */
 module.exports.handlePlaceDetail = async (options) => {
     const {
         page, request, searchString, session, scrapingOptions, errorSnapshotter, stats,
@@ -74,9 +76,20 @@ module.exports.handlePlaceDetail = async (options) => {
         try {
             // @ts-ignore
             return JSON.parse(APP_INITIALIZATION_STATE[3][6].replace(`)]}'`, ''))[6];
-        } catch (e) { }
+        } catch (e) {
+        }
     });
-    
+
+    const orderBy = (() => {
+        try {
+            return reviewsJson[75][0][0][2].map((i) => {
+                return { name: i[0][0], url: i[1][2][0] }
+            });
+        } catch (e) {
+            return [];
+        }
+    })();
+
     let totalScore = reviewsJson && reviewsJson[4] ? reviewsJson[4][7] : null;
     let reviewsCount = reviewsJson && reviewsJson[4] ? reviewsJson[4][8] : 0;
 
@@ -106,13 +119,13 @@ module.exports.handlePlaceDetail = async (options) => {
 
     if (reviewsJson) {
         if (reviewsJson[52] && Array.isArray(reviewsJson[52][3])) {
-            const [oneStar, twoStar, threeStar, fourStar, fiveStar ] = reviewsJson[52][3];
+            const [oneStar, twoStar, threeStar, fourStar, fiveStar] = reviewsJson[52][3];
             reviewsDistribution = { oneStar, twoStar, threeStar, fourStar, fiveStar };
         }
     }
 
     const defaultReviewsJson = reviewsJson && reviewsJson[52] && reviewsJson[52][0];
-    
+
     const detail = {
         ...pageData,
         totalScore,
@@ -132,8 +145,15 @@ module.exports.handlePlaceDetail = async (options) => {
         reviewsDistribution,
         reviews: await errorSnapshotter.tryWithSnapshot(
             page,
-            async () => extractReviews({ page, reviewsCount, maxReviews,
-                reviewsSort, reviewsTranslation, defaultReviewsJson, personalDataOptions: scrapingOptions.personalDataOptions }),
+            async () => extractReviews({
+                page,
+                reviewsCount,
+                maxReviews,
+                reviewsSort,
+                reviewsTranslation,
+                defaultReviewsJson,
+                personalDataOptions: scrapingOptions.personalDataOptions
+            }),
             { name: 'Reviews extraction' },
         ),
         imageUrls: await errorSnapshotter.tryWithSnapshot(
@@ -141,6 +161,7 @@ module.exports.handlePlaceDetail = async (options) => {
             async () => extractImages({ page, maxImages }),
             { name: 'Image extraction' },
         ),
+        orderBy,
     };
 
     await Apify.pushData(detail);

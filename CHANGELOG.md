@@ -1,3 +1,7 @@
+## 2021-05-25
+*Features*
+- Added orderBy attribute to result scrape
+
 ## 2021-05-18
 *Fixes*
 - Fully or partially fixed consent screen issues
@@ -29,7 +33,7 @@
 
 *Features*
 - Added `reviewsDistribution`
-- Added `publishedAtDate` (exact date), `responseFromOwnerDate` and `responseFromOwnerText `for each review 
+- Added `publishedAtDate` (exact date), `responseFromOwnerDate` and `responseFromOwnerText `for each review
 
 ## 2021-03-10
 Fixes:
