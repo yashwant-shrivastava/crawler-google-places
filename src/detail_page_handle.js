@@ -90,8 +90,6 @@ module.exports.handlePlaceDetail = async (options) => {
         }
     })();
 
-    await Apify.setValue('reviewsJson', reviewsJson[75][0][0][2])
-
     let totalScore = reviewsJson && reviewsJson[4] ? reviewsJson[4][7] : null;
     let reviewsCount = reviewsJson && reviewsJson[4] ? reviewsJson[4][8] : 0;
 
