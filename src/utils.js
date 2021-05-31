@@ -260,8 +260,10 @@ const waiter = async (predicate, options = {}) => {
 /**
  * @param {Puppeteer.Page} page
  * @param {string} url
+ * @param {boolean} persistCookiesPerSession
+ * @param {Apify.Session | undefined} session
  */
- const waitAndHandleConsentScreen = async (page, url) => {
+ const waitAndHandleConsentScreen = async (page, url, persistCookiesPerSession, session) => {
     // TODO: Test if the new consent screen works well!
 
     const predicate = async (shouldClick = false) => {
@@ -288,6 +290,28 @@ const waiter = async (predicate, options = {}) => {
         }
     };
 
+    /**
+     * Puts the CONSENT Cookie into the session
+     */
+    const updateCookies = async () => {
+        if (session) {
+            const cookies = await page.cookies(url);
+            // Without changing the domain, apify won't find the cookie later.
+            // Changing the domain can duplicate cookies in the saved session state, so only the necessary cookie is saved here.
+            if (cookies) {
+                let consentCookie = cookies.filter(cookie => cookie.name=="CONSENT")[0];
+                // overwrite the pending cookie to make sure, we don't set the pending cookie when Apify is fixed
+                session.setPuppeteerCookies([{... consentCookie}], "https://www.google.com/");
+                if (consentCookie) {
+                    consentCookie.domain = "www.google.com"
+                }
+                session.setPuppeteerCookies([consentCookie], "https://www.google.com/");
+            }
+        } else {
+            log.warning("Session is undefined -> consent screen cookies not saved")
+        }
+    }
+
     await waiter(predicate, {
         timeout: 60000,
         pollInterval: 500,
@@ -295,6 +319,9 @@ const waiter = async (predicate, options = {}) => {
         successMessage: `Approved consent screen on URL: ${url}`,
     });
     await predicate(true);
+    if (persistCookiesPerSession) {
+        await updateCookies();
+    }
 };
 
 module.exports = {

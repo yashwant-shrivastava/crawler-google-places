@@ -30,6 +30,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @property {number} [maxConcurrency]
  * @property {Apify.LaunchPuppeteerFunction} launchPuppeteerFunction
  * @property {boolean} useSessionPool
+ * @property {boolean} persistCookiesPerSession
  * @property {number} pageLoadTimeoutSec
  * @property {number} handlePageTimeoutSecs
  * @property {number} maxRequestRetries
