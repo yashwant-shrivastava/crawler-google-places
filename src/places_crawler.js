@@ -118,7 +118,7 @@ const setUpCrawler = ({ crawlerOptions, scrapingOptions, stats, errorSnapshotter
     return new Apify.PuppeteerCrawler({
         // We have to strip this otherwise SDK complains
         ...options,
-        gotoFunction: async ({ request, page }) => {
+        gotoFunction: async ({ request, page, session }) => {
             // @ts-ignore
             // eslint-disable-next-line no-underscore-dangle
             await page._client.send('Emulation.clearDeviceMetricsOverride');
@@ -146,7 +146,8 @@ const setUpCrawler = ({ crawlerOptions, scrapingOptions, stats, errorSnapshotter
                     // @ts-ignore
                     request.userData.waitingForConsent = true;
                     await page.waitForTimeout(5000);
-                    await waitAndHandleConsentScreen(page, request.url);
+                    const { persistCookiesPerSession } = options;
+                    await waitAndHandleConsentScreen(page, request.url, persistCookiesPerSession, session);
                     // @ts-ignore
                     request.userData.waitingForConsent = false;
                     log.warning('Consent screen approved! We can continue scraping');

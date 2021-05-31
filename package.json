@@ -6,6 +6,7 @@
     "scripts": {
         "test-local": "mocha --file ./test/crawler.local.js",
         "test-platform": "mocha --file ./test/crawler.platform.js",
+        "postinstall": "patch-package",
         "start": "node ./src/main.js"
     },
     "repository": {
@@ -25,7 +26,8 @@
     "homepage": "https://github.com/drobnikj/crawler-google-places#readme",
     "dependencies": {
         "@turf/turf": "^5.1.6",
-        "apify": "^0.22.2"
+        "apify": "0.22.5",
+        "patch-package": "^6.4.7"
     },
     "devDependencies": {
         "@types/jquery": "^3.5.5",

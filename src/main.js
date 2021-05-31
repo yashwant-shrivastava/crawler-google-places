@@ -227,6 +227,7 @@ Apify.main(async () => {
             });
         },
         useSessionPool: true,
+        persistCookiesPerSession: true,
         // This is just passed to gotoFunction
         pageLoadTimeoutSec,
         // long timeout, because of long infinite scroll
