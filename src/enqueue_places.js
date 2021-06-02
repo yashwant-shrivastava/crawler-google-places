@@ -8,11 +8,10 @@ const Stats = require('./stats'); // eslint-disable-line no-unused-vars
 const PlacesCache = require('./stats'); // eslint-disable-line no-unused-vars
 
 const { sleep, log } = Apify.utils;
-const { PLACE_TITLE_SEL } = require('./consts');
+const { PLACE_TITLE_SEL, NEXT_BUTTON_SELECTOR, NO_RESULT_XPATH } = require('./consts');
 const { waitForGoogleMapLoader, parseSearchPlacesResponseBody, parseZoomFromUrl } = require('./utils');
 const { checkInPolygon } = require('./polygon');
 
-const NEXT_BUTTON_SELECTOR = '[jsaction="pane.paginationSection.nextPage"]';
 const SEARCH_WAIT_TIME_MS = 30000;
 const CHECK_LOAD_OUTCOMES_EVERY_MS = 500;
 const PLACES_PER_PAGE = 20;
@@ -110,8 +109,8 @@ const waitForSearchResults = async (page) => {
             return { isBadQuery: true };
         }
 
-        const hasNoResults = await page.$('[class *= "section-no-result"');
-        if (hasNoResults) {
+        const hasNoResults = await page.$x(NO_RESULT_XPATH);
+        if (hasNoResults.length > 0) {
             return { hasNoResults: true };
         }
 
@@ -120,9 +119,7 @@ const waitForSearchResults = async (page) => {
             return { isDetailPage: true };
         }
 
-        const isNextPaginationDisabled = await page.evaluate((nextButtonSel) => {
-            return !!$(nextButtonSel).attr('disabled');
-        }, NEXT_BUTTON_SELECTOR);
+        const isNextPaginationDisabled = await page.$(`${NEXT_BUTTON_SELECTOR}:disabled`);
         if (isNextPaginationDisabled) {
             return { isNextPaginationDisabled: true };
         }
