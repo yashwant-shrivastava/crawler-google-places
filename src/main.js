@@ -119,6 +119,11 @@ Apify.main(async () => {
             }
         } else if (searchStringsArray) {
             for (const searchString of searchStringsArray) {
+                // Sometimes users accidentally pass empty strings
+                if (typeof searchString !== 'string' || !searchString.trim()) {
+                    log.warning(`WRONG INPUT: Search "${searchString}" is not a valid search, skipping`);
+                    continue;
+                }
                 // TODO: walker is not documented!!! We should figure out if it is useful at all
                 if (walker) {
                     const walkerGeneratedRequests = createStartRequestsWithWalker({ walker, searchString });
