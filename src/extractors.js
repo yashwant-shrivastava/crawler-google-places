@@ -505,7 +505,7 @@ module.exports.extractImages = async ({ page, maxImages }) => {
         for (; ;) {
             // TODO: Debug infiniteScroll properly, it can get stuck in there sometimes, for now just adding a race
             await Promise.race([
-                infiniteScroll(page, pageBottom, '.section-scrollbox.scrollable-y', 1),
+                infiniteScroll(page, pageBottom, '.section-scrollbox', 1),
                 Apify.utils.sleep(20000),
             ]);
             imageUrls = await page.evaluate(() => {
