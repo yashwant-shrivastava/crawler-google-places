@@ -50,9 +50,16 @@ const parsePaginationResult = (result, isAdvertisement) => {
         state: addressDetail[5],
         countryCode: addressDetail[6],
     } : undefined;
+
+    const coordsArr = place[9];
+    // TODO: Very rarely place[9] is empty, figure out why
+    const coords = coordsArr
+        ? { lat: fixFloatNumber(coordsArr[2]), lng: fixFloatNumber(coordsArr[3]) }
+        : { lat: null, lng: null };
+    
     return {
         placeId: place[78],
-        coords: { lat: fixFloatNumber(place[9][2]), lng: fixFloatNumber(place[9][3]) },
+        coords,
         addressParsed,
         isAdvertisement,
     };
