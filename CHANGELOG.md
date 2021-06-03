@@ -1,3 +1,8 @@
+## 2021-06-03
+*Fixes*
+- Fix handling of search pages without results
+- Skip empty searches that sometimes users accidentally post
+
 ## 2021-05-25
 *Features*
 - Added orderBy attribute to result scrape
