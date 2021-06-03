@@ -197,25 +197,26 @@ module.exports.extractPeopleAlsoSearch = async ({ page }) => {
 module.exports.extractAdditionalInfo = async ({ page }) => {
     let result;
     log.debug('[PLACE]: Scraping additional info.');
-    await page.waitForSelector('button.section-editorial', { timeout: 5000 }).catch(() => {
+    await page.waitForSelector('button[jsaction*="pane.attributes.expand"]', { timeout: 5000 }).catch(() => {
     });
-    const button = await page.$('button.section-editorial');
+    const button = await page.$('button[jsaction*="pane.attributes.expand"]');
     if (button) {
         try {
             await button.click({ delay: 200 });
-            await page.waitForSelector('.section-attribute-group', { timeout: 30000 });
+            await page.waitForSelector('ul[role="region"]', { timeout: 30000 });
             result = await page.evaluate(() => {
                 /** @type {{[key: string]: any[]}} */
                 const innerResult = {};
-                $('.section-attribute-group').each((_, section) => {
-                    const key = $(section).find('.section-attribute-group-title').text().trim();
+                $('ul[role="region"]').each((_, section) => {
+                    const key = $(section).find('div[class*="subtitle"]').text().trim();
                     /** @type {{[key: string]: boolean}[]} */
                     const values = [];
-                    $(section).find('[class*="section-attribute-group-container"] .section-attribute-group-item').each((_i, sub) => {
+                    $(section).find('li').each((_i, sub) => {
                         /** @type {{[key: string]: boolean}} */
                         const res = {};
                         const title = $(sub).text().trim();
-                        const isChecked = $(sub).find('.section-attribute-group-item-icon').length > 0;
+                        const isChecked = $(sub).find('img[src*=check_black]').length > 0;
+
                         // @ts-ignore
                         res[title] = isChecked;
                         values.push(res);
