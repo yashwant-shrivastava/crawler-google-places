@@ -197,8 +197,7 @@ module.exports.extractPeopleAlsoSearch = async ({ page }) => {
 module.exports.extractAdditionalInfo = async ({ page }) => {
     let result;
     log.debug('[PLACE]: Scraping additional info.');
-    await page.waitForSelector('button[jsaction*="pane.attributes.expand"]', { timeout: 5000 }).catch(() => {
-    });
+    await page.waitForSelector('button[jsaction*="pane.attributes.expand"]', { timeout: 5000 }).catch(() => {});
     const button = await page.$('button[jsaction*="pane.attributes.expand"]');
     if (button) {
         try {
@@ -231,7 +230,36 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
             await navigateBack(page, 'additional info');
         }
     } else {
-        log.warning(`Could not find button to get to additional data, skipping - ${page.url()}`);
+        try {
+            const hotel_avail_amenities = await page.$$eval('div:not([aria-disabled=true]) > span.hotel-amenity-name',
+            (elements) => {
+                return elements.map((element) => {
+                    return element.textContent ? element.textContent.trim() : ''
+                });
+            }
+            );
+            const hotel_disabled_amenities = await page.$$eval('div[aria-disabled=true] > span.hotel-amenity-name',
+            (elements) => {
+                return elements.map((element) => {
+                    return element.textContent ? element.textContent.trim() : ''
+                });
+            }
+            );
+            if (hotel_avail_amenities.length > 0) {
+                const values = [];
+                for (let name of hotel_avail_amenities) {                
+                    values.push({[name]: true})
+                }
+                for (let name of hotel_disabled_amenities) {                
+                    values.push({[name]: false})
+                }
+                return { "Amenities": values };
+            } else {
+                log.warning(`Could not get additional data, skipping - ${page.url()}`);
+            }
+        } catch (e) {
+            log.info(`[PLACE]: ${e}Additional info not parsed`);
+        }
     }
     return result;
 };
