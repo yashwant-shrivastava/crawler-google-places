@@ -127,7 +127,11 @@ module.exports.extractOpeningHours = async ({ page }) => {
     const openingHoursSel = '.section-open-hours-container.section-open-hours-container-hoverable';
     const openingHoursSelAlt = '.section-open-hours-container.section-open-hours';
     const openingHoursSelAlt2 = '.section-open-hours-container';
-    const openingHoursEl = (await page.$(openingHoursSel)) || (await page.$(openingHoursSelAlt)) || (await page.$(openingHoursSelAlt2));
+    const openingHoursSelAlt3 = '[jsaction*=openhours]+[class*=open]';
+    const openingHoursEl = (await page.$(openingHoursSel))
+        || (await page.$(openingHoursSelAlt))
+        || (await page.$(openingHoursSelAlt2))
+        || (await page.$(openingHoursSelAlt3));
     if (openingHoursEl) {
         const openingHoursText = await page.evaluate((openingHoursElem) => {
             return openingHoursElem.getAttribute('aria-label');
