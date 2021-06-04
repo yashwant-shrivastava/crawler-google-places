@@ -232,18 +232,18 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
     } else {
         try {
             const hotel_avail_amenities = await page.$$eval('div:not([aria-disabled=true]) > span.hotel-amenity-name',
-            (elements) => {
-                return elements.map((element) => {
-                    return element.textContent ? element.textContent.trim() : ''
-                });
-            }
+                (elements) => {
+                    return elements.map((element) => {
+                        return element.textContent ? element.textContent.trim() : ''
+                    });
+                }
             );
             const hotel_disabled_amenities = await page.$$eval('div[aria-disabled=true] > span.hotel-amenity-name',
-            (elements) => {
-                return elements.map((element) => {
-                    return element.textContent ? element.textContent.trim() : ''
-                });
-            }
+               (elements) => {
+                    return elements.map((element) => {
+                        return element.textContent ? element.textContent.trim() : ''
+                    });
+                }
             );
             if (hotel_avail_amenities.length > 0) {
                 const values = [];
