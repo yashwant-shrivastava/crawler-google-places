@@ -230,35 +230,31 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
             await navigateBack(page, 'additional info');
         }
     } else {
-        try {
-            const hotel_avail_amenities = await page.$$eval('div:not([aria-disabled=true]) > span.hotel-amenity-name',
-                (elements) => {
-                    return elements.map((element) => {
-                        return element.textContent ? element.textContent.trim() : ''
-                    });
-                }
-            );
-            const hotel_disabled_amenities = await page.$$eval('div[aria-disabled=true] > span.hotel-amenity-name',
-               (elements) => {
-                    return elements.map((element) => {
-                        return element.textContent ? element.textContent.trim() : ''
-                    });
-                }
-            );
-            if (hotel_avail_amenities.length > 0) {
-                const values = [];
-                for (let name of hotel_avail_amenities) {                
-                    values.push({[name]: true})
-                }
-                for (let name of hotel_disabled_amenities) {                
-                    values.push({[name]: false})
-                }
-                return { "Amenities": values };
-            } else {
-                log.warning(`Could not get additional data, skipping - ${page.url()}`);
+        const hotel_avail_amenities = await page.$$eval('div:not([aria-disabled=true]) > span.hotel-amenity-name',
+            (elements) => {
+                return elements.map((element) => {
+                    return element.textContent ? element.textContent.trim() : ''
+                });
             }
-        } catch (e) {
-            log.info(`[PLACE]: ${e}Additional info not parsed`);
+        );
+        const hotel_disabled_amenities = await page.$$eval('div[aria-disabled=true] > span.hotel-amenity-name',
+            (elements) => {
+                return elements.map((element) => {
+                    return element.textContent ? element.textContent.trim() : ''
+                });
+            }
+        );
+        if (hotel_avail_amenities.length > 0) {
+            const values = [];
+            for (let name of hotel_avail_amenities) {                
+                values.push({[name]: true})
+            }
+            for (let name of hotel_disabled_amenities) {                
+                values.push({[name]: false})
+            }
+            return { "Amenities": values };
+        } else {
+            log.warning(`Didn't find additional data, skipping - ${page.url()}`);
         }
     }
     return result;
