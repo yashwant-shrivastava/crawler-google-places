@@ -1,5 +1,12 @@
 ## 2021-06-03
 *Fixes*
+(hopefully last fixes after the layout change)
+- Scraping all images per place works again 
+- Fixed `additionalInfo`
+- Fixed `openiningHours`
+
+## 2021-06-03
+*Fixes*
 - Fix handling of search pages without results
 - Skip empty searches that sometimes users accidentally post
 
