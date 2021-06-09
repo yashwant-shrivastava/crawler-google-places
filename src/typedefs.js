@@ -115,6 +115,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
 /**
  * @typedef GeolocationOptions
  * @property {string | undefined} city
+ * @property {string | undefined} county
  * @property {string | undefined} state
  * @property {string | undefined} country
  * @property {string | undefined} postalCode
@@ -142,7 +143,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * }} SearchResultOutcome
  */
 
- 
+
 
 /**
  * @typedef {{

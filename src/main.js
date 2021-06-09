@@ -31,7 +31,7 @@ Apify.main(async () => {
         // Search and Start URLs
         startUrls, searchStringsArray,
         // Geolocation
-        lat, lng, country, state, city, postalCode, zoom = 10, polygon,
+        lat, lng, country, state, county, city, postalCode, zoom = 10, polygon,
         // browser and request options
         pageLoadTimeoutSec = 60, useChrome = false, maxConcurrency, maxPagesPerBrowser = 1, maxPageRetries = 6,
         // Misc
@@ -80,6 +80,7 @@ Apify.main(async () => {
             zoom,
             country,
             state,
+            county,
             city,
             postalCode,
             polygon,

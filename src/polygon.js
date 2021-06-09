@@ -86,15 +86,16 @@ function getPolygons(geoJson, distanceKilometers = 5) {
  * @param {typedefs.GeolocationOptions} options
  */
 async function getGeolocation(options) {
-    const { city, state, country, postalCode } = options;
+    const { city, state, country, postalCode, county } = options;
     const cityString = (city || '').trim().replace(/\s+/g, '+');
     const stateString = (state || '').trim().replace(/\s+/g, '+');
+    const countyString = (county || '').trim().replace(/\s+/g, '+');
     const countryString = (country || '').trim().replace(/\s+/g, '+');
     const postalCodeString = (postalCode || '').trim().replace(/\s+/g, '+');
 
     // TODO when get more results? Currently only first match is returned!
     const res = await Apify.utils.requestAsBrowser({
-        url: encodeURI(`https://nominatim.openstreetmap.org/search?country=${countryString}&state=${stateString}&city=${cityString}&postalcode=${postalCodeString}&format=json&polygon_geojson=1&limit=1&polygon_threshold=0.005`),
+        url: encodeURI(`https://nominatim.openstreetmap.org/search?country=${countryString}&state=${stateString}&county=${countyString}&city=${cityString}&postalcode=${postalCodeString}&format=json&polygon_geojson=1&limit=1&polygon_threshold=0.005`),
         headers: { referer: 'http://google.com' },
     });
     // @ts-ignore

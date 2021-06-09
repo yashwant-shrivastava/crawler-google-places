@@ -281,6 +281,12 @@
             "description": "Set a state where the search should be performed, e.g. 'Massachusetts', 'England', 'Berlin', etc. For a more accurate search, set city or lat + lng.",
             "editor": "textfield"
         },
+        "county": {
+            "title": "County",
+            "type": "string",
+            "description": "Set the county where the search should be performed, e.g. 'washington'. For more accurate search, set state, city or lat + lng.",
+            "editor": "textfield"
+        },
         "city": {
             "title": "City",
             "type": "string",
