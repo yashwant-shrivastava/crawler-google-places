@@ -14,7 +14,8 @@
             "title": "Search Terms",
             "type": "array",
             "description": "Array of strings to be searched. It is also possible to fill in Google Place IDs in the format place_id:ChIJp4JiUCNP0xQR1JaSjpW_Hms. Setting geolocation input fields is more accurate than including location in the search string.",
-            "editor": "stringList"
+            "editor": "stringList",
+            "prefill": ["restaurant"]
         },
         "maxCrawledPlaces": {
             "title": "Max crawled places",
