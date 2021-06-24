@@ -56,7 +56,7 @@ const parsePaginationResult = (result, isAdvertisement) => {
     const coords = coordsArr
         ? { lat: fixFloatNumber(coordsArr[2]), lng: fixFloatNumber(coordsArr[3]) }
         : { lat: null, lng: null };
-    
+
     return {
         placeId: place[78],
         coords,
@@ -175,7 +175,7 @@ const parseReviewFromResponseBody = (responseBody, reviewsTranslation) => {
         results = stringifyGoogleXrhResponse(stringBody);
     } catch (e) {
         return { error: e.message };
-    } 
+    }
     if (!results || !results[2]) {
         return { currentReviews };
     }
@@ -274,8 +274,8 @@ const waiter = async (predicate, options = {}) => {
     // TODO: Test if the new consent screen works well!
 
     const predicate = async (shouldClick = false) => {
-        // handling consent page (usually shows up on startup)
-        const consentButton = await page.$('[action*="https://consent.google.com/"] button');
+        // handling consent page (usually shows up on startup), handles non .com domains
+        const consentButton = await page.$('[action^="https://consent.google"] button');
         if (consentButton) {
             if (shouldClick) {
                 await Promise.all([
