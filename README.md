@@ -7,13 +7,44 @@
 - [Results](#results)
 - [Usage on Apify platform and locally](#usage-on-apify-platform-and-locally)
 - [How the search works](#how-the-search-works)
-- [Using country, state and city parameters](#using-country-state-and-city-parameters)
+- [Using country, state, city and postal code parameters](#using-country-state-and-city-parameters)
 - [Personal data](#personal-data)
 - [Changelog](#changelog)
 <!-- toc end -->
 
 ## Features
-This Google Maps crawler will enable you to get more data from Google Places than the official [Google Maps Places API](https://developers.google.com/places/web-service/search).
+This Google Maps crawler will enable you to get more data from Google Places than the official [Google Maps Places API](https://developers.google.com/places/web-service/search). The scraper supports extraction of this data for each place:
+
+- Title, subtitle, category, place ID and URL
+- Address, location, plus code and exact coordinates
+- Phone and website if available
+- Temporarily or permanently closed status
+- Popular times - histogram & live occupancy
+- Average rating (`totalScore`), reviews count and reviews distribution
+- List of images (optional)
+- List of detailed characteristics (`additionalInfo`, optional)
+- Opening hours (optional)
+- People also search (optional)
+
+The scraper also supports scraping of all reviews with detailed information:
+- Review text
+- Published date
+- Stars
+- Review ID & URL
+- Response from owner - text and published date
+
+Personal data extraction about reviewers has to be explicitly enabled in input (see [Personal data section](#personal-data)):
+- Reviewer name
+- Reviewer ID & URL
+- Reviewer number of reviews
+- Is local guide
+
+The Google Maps Scraper also provides other very useful features:
+- Geolocation - Enables scraping whole country, state, city or postal code (integration with Nomatim Maps API)
+- Language & translation settings
+- Reviews sorting
+- Proxy configuration
+- Browser & scraping configuration
 
 ## Advantages over Google Maps API
 The official Google Maps Places API is an adequate option for many use cases, but this scraper can provide:
@@ -51,7 +82,7 @@ You can force the scraper to access places only from a specific country. We reco
 
 ## Manual Polygon
 
-The easiest way to use Google Maps scraper is to provide `country`, `state` or `city` input parameters. But in rare cases your location might not be found or you want to customize it. In that case you can use manual polygon for the creation of start URLs. It should have the following GeoJSON structure from the [Nominatim Api](https://nominatim.openstreetmap.org)
+The easiest way to use Google Maps scraper is to provide `country`, `state`, `city` or `postalCode` input parameters. But in rare cases your location might not be found or you want to customize it. In that case you can use manual polygon for the creation of start URLs. It should have the following GeoJSON structure from the [Nominatim Api](https://nominatim.openstreetmap.org)
 ([here for the example of Cambridge in Great Britain](https://nominatim.openstreetmap.org/search?country=united%20kingdom&state=&city=cambridge&postalcode=&format=json&polygon_geojson=1&limit=1&polygon_threshold=0.005))
 
 ## Results
