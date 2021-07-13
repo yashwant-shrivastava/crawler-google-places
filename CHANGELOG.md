@@ -1,3 +1,6 @@
+## 2021-07-13
+- Added `county` to geolocation options
+
 ## 2021-06-03
 *Fixes*
 (hopefully last fixes after the layout change)

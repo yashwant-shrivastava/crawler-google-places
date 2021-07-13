@@ -7,7 +7,7 @@
 - [Results](#results)
 - [Usage on Apify platform and locally](#usage-on-apify-platform-and-locally)
 - [How the search works](#how-the-search-works)
-- [Using country, state, city and postal code parameters](#using-country-state-and-city-parameters)
+- [Using country, state, county, city and postal code parameters](#using-country-state-county-city-and-postal-code-parameters)
 - [Personal data](#personal-data)
 - [Changelog](#changelog)
 <!-- toc end -->
@@ -40,7 +40,7 @@ Personal data extraction about reviewers has to be explicitly enabled in input (
 - Is local guide
 
 The Google Maps Scraper also provides other very useful features:
-- Geolocation - Enables scraping whole country, state, city or postal code (integration with Nomatim Maps API)
+- Geolocation - Enables scraping whole country, state, county, city or postal code (integration with Nomatim Maps API)
 - Language & translation settings
 - Reviews sorting
 - Proxy configuration
@@ -82,7 +82,7 @@ You can force the scraper to access places only from a specific country. We reco
 
 ## Manual Polygon
 
-The easiest way to use Google Maps scraper is to provide `country`, `state`, `city` or `postalCode` input parameters. But in rare cases your location might not be found or you want to customize it. In that case you can use manual polygon for the creation of start URLs. It should have the following GeoJSON structure from the [Nominatim Api](https://nominatim.openstreetmap.org)
+The easiest way to use Google Maps scraper is to provide `country`, `state`, `county`, `city` or `postalCode` input parameters. But in rare cases your location might not be found or you want to customize it. In that case you can use manual polygon for the creation of start URLs. It should have the following GeoJSON structure from the [Nominatim Api](https://nominatim.openstreetmap.org)
 ([here for the example of Cambridge in Great Britain](https://nominatim.openstreetmap.org/search?country=united%20kingdom&state=&city=cambridge&postalcode=&format=json&polygon_geojson=1&limit=1&polygon_threshold=0.005))
 
 ## Results
@@ -276,10 +276,10 @@ There is one feature of Google Maps that is sometimes not desirable. As you prog
 
 - Limit `maxCrawledPlaces` - This is the simplest option, but you usually don't know how many places there are, so it isn't that useful.
 - Use the `maxAutomaticZoomOut` parameter to stop searching once Google zooms out too far. It counts how far it zoomed out from the first page. Keep in mind that `zoom: 1` is the whole world and `zoom: 21` is a tiny street. So you usually want `maxAutomaticZoomOut` to be between `0` and `5`.
-- Use `country`, `state`, `city` parameters.
+- Use `country`, `state`, `county`, `city` & `postalCode` parameters.
 
-## Using country, state and city parameters
-You can only use `country` or `country` + `state` or `country` + `state` + `city`. The scraper uses [nominatim maps](https://nominatim.org/) to find a location polygon and then splits that into multiple searches that cover the whole area. You should play around with the `zoom` number to find the ideal granularity for searches. Too small a zoom level will find only the most famous places over a large area, too big a zoom level will lead to overlapping places and will consume a huge number of CUs. We recommend a number between 10 and 15.
+## Using country, state, county, city and postal code parameters
+You can only use any combination of the geolocation parameters: `country`, `state`, `county`, `city` & `postalCode`. The scraper uses [nominatim maps](https://nominatim.org/) to find a location polygon and then splits that into multiple searches that cover the whole area. You should play around with the `zoom` number to find the ideal granularity for searches. Too small a zoom level will find only the most famous places over a large area, too big a zoom level will lead to overlapping places and will consume a huge number of CUs. We recommend a number between 10 and 15.
 
 #### Warning: Don't use too big a zoom level (17+) with country, state, city parameters
 
