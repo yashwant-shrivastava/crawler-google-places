@@ -206,15 +206,15 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
     if (button) {
         try {
             await button.click({ delay: 200 });
-            await page.waitForSelector('ul[role="region"]', { timeout: 30000 });
+            await page.waitForSelector('div[class*="subtitle"]', { timeout: 30000 });
             result = await page.evaluate(() => {
                 /** @type {{[key: string]: any[]}} */
                 const innerResult = {};
-                $('ul[role="region"]').each((_, section) => {
+                $('div[role="region"]').each((_, section) => {
                     const key = $(section).find('div[class*="subtitle"]').text().trim();
                     /** @type {{[key: string]: boolean}[]} */
                     const values = [];
-                    $(section).find('li').each((_i, sub) => {
+                    $(section).find('div[aria-label]').each((_i, sub) => {
                         /** @type {{[key: string]: boolean}} */
                         const res = {};
                         const title = $(sub).text().trim();
@@ -250,10 +250,10 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
         );
         if (hotel_avail_amenities.length > 0) {
             const values = [];
-            for (let name of hotel_avail_amenities) {                
+            for (let name of hotel_avail_amenities) {
                 values.push({[name]: true})
             }
-            for (let name of hotel_disabled_amenities) {                
+            for (let name of hotel_disabled_amenities) {
                 values.push({[name]: false})
             }
             return { "Amenities": values };
