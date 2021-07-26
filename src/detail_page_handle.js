@@ -1,7 +1,7 @@
 const Apify = require('apify'); // eslint-disable-line no-unused-vars
 const Puppeteer = require('puppeteer'); // eslint-disable-line
 
-const { ScrapingOptions, AddressParsed, PlaceUserData } = require('./typedefs'); // eslint-disable-line no-unused-vars
+const { ScrapingOptions, PlaceUserData } = require('./typedefs'); // eslint-disable-line no-unused-vars
 const ErrorSnapshotter = require('./error-snapshotter'); // eslint-disable-line no-unused-vars
 const Stats = require('./stats'); // eslint-disable-line no-unused-vars
 
@@ -10,7 +10,6 @@ const {
     extractAdditionalInfo, extractReviews, extractImages
 } = require('./extractors');
 const { DEFAULT_TIMEOUT, PLACE_TITLE_SEL } = require('./consts');
-const { checkInPolygon } = require('./polygon');
 const { waitForGoogleMapLoader } = require('./utils');
 
 const { log } = Apify.utils;
@@ -51,11 +50,7 @@ module.exports.handlePlaceDetail = async (options) => {
     }
 
     // Add info from listing page
-    // TODO: Address should be parsed from place JSON so it works on direct places
-    const { rank, searchPageUrl, addressParsed, isAdvertisement } = /** @type {PlaceUserData} */ (request.userData);
-
-    // Adding addressParsed there so it is nicely together in JSON
-    const pageData = await extractPageData({ page, addressParsed });
+    const { rank, searchPageUrl, isAdvertisement } = /** @type {PlaceUserData} */ (request.userData);
 
     // Extract gps from URL
     // We need to URL will be change, it happened asynchronously
@@ -72,7 +67,7 @@ module.exports.handlePlaceDetail = async (options) => {
 
     // NOTE: This is empty for certain types of direct URLs
     // Search and place IDs work fine
-    const reviewsJson = await page.evaluate(() => {
+    const jsonData = await page.evaluate(() => {
         try {
             // @ts-ignore
             return JSON.parse(APP_INITIALIZATION_STATE[3][6].replace(`)]}'`, ''))[6];
@@ -80,9 +75,11 @@ module.exports.handlePlaceDetail = async (options) => {
         }
     });
 
+    const pageData = await extractPageData({ page, jsonData });
+
     const orderBy = (() => {
         try {
-            return reviewsJson[75][0][0][2].map((i) => {
+            return jsonData[75][0][0][2].map((i) => {
                 return { name: i[0][0], url: i[1][2][0] }
             });
         } catch (e) {
@@ -90,8 +87,8 @@ module.exports.handlePlaceDetail = async (options) => {
         }
     })();
 
-    let totalScore = reviewsJson && reviewsJson[4] ? reviewsJson[4][7] : null;
-    let reviewsCount = reviewsJson && reviewsJson[4] ? reviewsJson[4][8] : 0;
+    let totalScore = jsonData?.[4]?.[7] || null;
+    let reviewsCount = jsonData?.[4]?.[8] || 0;
 
     // We fallback to HTML (might be good to do only)
     if (!totalScore) {
@@ -105,7 +102,7 @@ module.exports.handlePlaceDetail = async (options) => {
             .replace(/[^0-9]+/g, '')) || 0);
     }
 
-    // TODO: Add a backup and figure out why some direct start URLs don't load reviewsJson
+    // TODO: Add a backup and figure out why some direct start URLs don't load jsonData
     // direct place IDs are fine
     const reviewsDistributionDefault = {
         oneStar: 0,
@@ -117,14 +114,14 @@ module.exports.handlePlaceDetail = async (options) => {
 
     let reviewsDistribution = reviewsDistributionDefault;
 
-    if (reviewsJson) {
-        if (reviewsJson[52] && Array.isArray(reviewsJson[52][3])) {
-            const [oneStar, twoStar, threeStar, fourStar, fiveStar] = reviewsJson[52][3];
+    if (jsonData) {
+        if (Array.isArray(jsonData?.[52]?.[3])) {
+            const [oneStar, twoStar, threeStar, fourStar, fiveStar] = jsonData[52][3];
             reviewsDistribution = { oneStar, twoStar, threeStar, fourStar, fiveStar };
         }
     }
 
-    const defaultReviewsJson = reviewsJson && reviewsJson[52] && reviewsJson[52][0];
+    const defaultReviewsJson = jsonData?.[52]?.[0];
 
     const detail = {
         ...pageData,

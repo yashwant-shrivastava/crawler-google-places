@@ -10,6 +10,7 @@
 - [Using country, state, county, city and postal code parameters](#using-country-state-county-city-and-postal-code-parameters)
 - [Personal data](#personal-data)
 - [Changelog](#changelog)
+- [Contributions](#contributions)
 <!-- toc end -->
 
 ## Features
@@ -288,3 +289,10 @@ Reviews can contain personal data such as a name, profile image and even a revie
 
 ## Changelog
 This scraper is under active development. We are always implementing new features and fixing bugs. If you would like to see a new feature, please submit an issue on GitHub. Check [CHANGELOG.md](https://github.com/drobnikj/crawler-google-places/blob/master/CHANGELOG.md) for a list of recent updates
+
+## Contributions
+We are very happy for any issues or pull requests created by community.
+
+Special thanks to:
+[mattiashtd](https://github.com/mattiashtd)
+[zzbazza](https://github.com/zzbazza)

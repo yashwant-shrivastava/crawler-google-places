@@ -1,6 +1,5 @@
 const Apify = require('apify');
-const Puppeteer = require('puppeteer'); // eslint-disable-line
-const { PlacePaginationData, Review } = require('./typedefs'); // eslint-disable-line
+const Puppeteer = require('puppeteer');
 
 const { DEFAULT_TIMEOUT } = require('./consts');
 
@@ -11,7 +10,7 @@ const { log } = Apify.utils;
  * @param {Puppeteer.Page} page
  * @return {Promise<void>}
  */
-const waitForGoogleMapLoader = async (page) => {
+module.exports.waitForGoogleMapLoader = async (page) => {
     if (await page.$('#searchbox')) {
         // @ts-ignore
         await page.waitForFunction(() => !document.querySelector('#searchbox')
@@ -21,170 +20,8 @@ const waitForGoogleMapLoader = async (page) => {
     await page.waitForFunction(() => !document.querySelector('.loading-pane-section-loading'), { timeout: DEFAULT_TIMEOUT });
 };
 
-/** @param {string} googleResponseString */
-const stringifyGoogleXrhResponse = (googleResponseString) => {
-    return JSON.parse(googleResponseString.replace(')]}\'', ''));
-};
-
 /** @param {number} float */
-const fixFloatNumber = (float) => Number(float.toFixed(7));
-
-/**
- * @param {any} result
- * @param {boolean} isAdvertisement
-*/
-const parsePaginationResult = (result, isAdvertisement) => {
-    // index 14 has detailed data about each place
-    const detailInfoIndex = isAdvertisement ? 15 : 14;
-    const place = result[detailInfoIndex];
-    if (!place) {
-        return;
-    }
-    // Some places don't have any address
-    const addressDetail = place[183] ? place[183][1] : undefined;
-    const addressParsed = addressDetail ?  {
-        neighborhood: addressDetail[1],
-        street: addressDetail[2],
-        city: addressDetail[3],
-        postalCode: addressDetail[4],
-        state: addressDetail[5],
-        countryCode: addressDetail[6],
-    } : undefined;
-
-    const coordsArr = place[9];
-    // TODO: Very rarely place[9] is empty, figure out why
-    const coords = coordsArr
-        ? { lat: fixFloatNumber(coordsArr[2]), lng: fixFloatNumber(coordsArr[3]) }
-        : { lat: null, lng: null };
-
-    return {
-        placeId: place[78],
-        coords,
-        addressParsed,
-        isAdvertisement,
-    };
-}
-
-/**
- * Response from google xhr is kind a weird. Mix of array of array.
- * This function parse places from the response body.
- * @param {Buffer} responseBodyBuffer
- * @return {PlacePaginationData[]}
- */
-const parseSearchPlacesResponseBody = (responseBodyBuffer) => {
-    /** @type {PlacePaginationData[]} */
-    const placePaginationData = [];
-    const jsonString = responseBodyBuffer
-        .toString('utf-8')
-        .replace('/*""*/', '');
-    const jsonObject = JSON.parse(jsonString);
-    const data = stringifyGoogleXrhResponse(jsonObject.d);
-
-    // We are paring ads but seems Google is not showing them to the scraper right now
-    const ads = (data[2] && data[2][1] && data[2][1][0]) || [];
-
-    ads.forEach((/** @type {any} */ ad) => {
-        const placeData = parsePaginationResult(ad, true);
-        if (placeData) {
-            placePaginationData.push(placeData);
-        } else {
-            log.warning(`[SEARCH]: Cannot find place data for advertisement in search.`)
-        }
-    })
-
-    /** @type {any} Too complex to type out*/
-    let organicResults = data[0][1];
-    // If the search goes to search results, the first one is not a place
-    // If the search goes to a place directly, the first one is that place
-    if (organicResults.length > 1) {
-        organicResults = organicResults.slice(1)
-    }
-    organicResults.forEach((/** @type {any} */ result ) => {
-        const placeData = parsePaginationResult(result, false);
-        if (placeData) {
-            placePaginationData.push(placeData);
-        } else {
-            log.warning(`[SEARCH]: Cannot find place data in search.`)
-        }
-    });
-    return placePaginationData;
-};
-
-/**
- * Parses review from a single review array json Google format
- * @param {any} jsonArray
- * @param {string} reviewsTranslation
- * @return {Review}
- */
-const parseReviewFromJson = (jsonArray, reviewsTranslation) => {
-    let text = jsonArray[3];
-
-    // Optionally remove translation
-    // TODO: Perhaps the text is differentiated in the JSON
-    if (typeof text === 'string' && reviewsTranslation !== 'originalAndTranslated') {
-        const splitReviewText = text.split('\n\n(Original)\n');
-
-        if (reviewsTranslation === 'onlyOriginal') {
-            // Fallback if there is no translation
-            text = splitReviewText[1] || splitReviewText[0];
-        } else if (reviewsTranslation === 'onlyTranslated') {
-            text = splitReviewText[0];
-        }
-        text = text.replace('(Translated by Google)', '').replace('\n\n(Original)\n', '').trim();
-    }
-
-    return {
-        name: jsonArray[0][1],
-        text,
-        publishAt: jsonArray[1],
-        publishedAtDate: new Date(jsonArray[27]).toISOString(),
-        likesCount: jsonArray[15],
-        reviewId: jsonArray[10],
-        reviewUrl: jsonArray[18],
-        reviewerId: jsonArray[6],
-        reviewerUrl: jsonArray[0][0],
-        reviewerNumberOfReviews: jsonArray[12] && jsonArray[12][1] && jsonArray[12][1][1],
-        isLocalGuide: jsonArray[12] && jsonArray[12][1] && Array.isArray(jsonArray[12][1][0]),
-        // On some places google shows reviews from other services like booking
-        // There isn't stars but rating for this places reviews
-        stars: jsonArray[4] || null,
-        // Trip advisor
-        rating: jsonArray[25] ? jsonArray[25][1] : null,
-        responseFromOwnerDate: jsonArray[9] && jsonArray[9][3]
-            ? new Date(jsonArray[9][3]).toISOString()
-            : null,
-        responseFromOwnerText: jsonArray[9] ? jsonArray[9][1] : null,
-    };
-}
-
-/**
- * Response from google xhr is kind a weird. Mix of array of array.
- * This function parse reviews from the response body.
- * @param {Buffer | string} responseBody
- * @param {string} reviewsTranslation
- * @return [place]
- */
-const parseReviewFromResponseBody = (responseBody, reviewsTranslation) => {
-    /** @type {Review[]} */
-    const currentReviews = [];
-    const stringBody = typeof responseBody === 'string'
-        ? responseBody
-        : responseBody.toString('utf-8');
-    let results;
-    try {
-        results = stringifyGoogleXrhResponse(stringBody);
-    } catch (e) {
-        return { error: e.message };
-    }
-    if (!results || !results[2]) {
-        return { currentReviews };
-    }
-    results[2].forEach((/** @type {any} */ jsonArray) => {
-        const review = parseReviewFromJson(jsonArray, reviewsTranslation);
-        currentReviews.push(review);
-    });
-    return { currentReviews };
-};
+module.exports.fixFloatNumber = (float) => Number(float.toFixed(7));
 
 /**
  * Method scrolls page to xpos, ypos.
@@ -192,7 +29,7 @@ const parseReviewFromResponseBody = (responseBody, reviewsTranslation) => {
  * @param {string} selectorToScroll
  * @param {number} scrollToHeight
  */
-const scrollTo = async (page, selectorToScroll, scrollToHeight) => {
+module.exports.scrollTo = async (page, selectorToScroll, scrollToHeight) => {
     try {
         await page.waitForSelector(selectorToScroll);
     } catch (e) {
@@ -205,13 +42,13 @@ const scrollTo = async (page, selectorToScroll, scrollToHeight) => {
 };
 
 /** @param {string} url */
-const parseZoomFromUrl = (url) => {
+module.exports.parseZoomFromUrl = (url) => {
     const zoomMatch = url.match(/@[0-9.-]+,[0-9.-]+,([0-9.]+)z/);
     return zoomMatch ? Number(zoomMatch[1]) : null;
 };
 
 /** @param {string[]} imageUrls */
-const enlargeImageUrls = (imageUrls) => {
+module.exports.enlargeImageUrls = (imageUrls) => {
     // w1920-h1080
     const FULL_RESOLUTION = {
         width: 1920,
@@ -264,13 +101,15 @@ const waiter = async (predicate, options = {}) => {
     }
 };
 
+module.exports.waiter = waiter;
+
 /**
  * @param {Puppeteer.Page} page
  * @param {string} url
  * @param {boolean} persistCookiesPerSession
  * @param {Apify.Session | undefined} session
  */
- const waitAndHandleConsentScreen = async (page, url, persistCookiesPerSession, session) => {
+module.exports.waitAndHandleConsentScreen = async (page, url, persistCookiesPerSession, session) => {
     // TODO: Test if the new consent screen works well!
 
     const predicate = async (shouldClick = false) => {
@@ -329,16 +168,4 @@ const waiter = async (predicate, options = {}) => {
     if (persistCookiesPerSession) {
         await updateCookies();
     }
-};
-
-module.exports = {
-    waitForGoogleMapLoader,
-    parseSearchPlacesResponseBody,
-    parseReviewFromResponseBody,
-    parseReviewFromJson,
-    scrollTo,
-    parseZoomFromUrl,
-    enlargeImageUrls,
-    waiter,
-    waitAndHandleConsentScreen,
 };

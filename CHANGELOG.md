@@ -1,3 +1,7 @@
+## 2021-07-26
+*Fixes*
+- Address is now parsed correctly into components even when you supply direct place IDs
+
 ## 2021-07-13
 - Added `county` to geolocation options
 

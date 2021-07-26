@@ -1,23 +1,184 @@
+/* eslint-env jquery */
 const Apify = require('apify');
 const Puppeteer = require('puppeteer'); // eslint-disable-line
 
-const {AddressParsed, Review, PersonalDataOptions} = require('./typedefs')
+const {AddressParsed, Review, PersonalDataOptions, PlacePaginationData} = require('./typedefs');
 
 const { PLACE_TITLE_SEL, BACK_BUTTON_SEL } = require('./consts');
-const { waitForGoogleMapLoader, parseReviewFromResponseBody,
-    scrollTo, enlargeImageUrls, parseReviewFromJson, waiter } = require('./utils');
+const { waitForGoogleMapLoader, fixFloatNumber, enlargeImageUrls, waiter } = require('./utils');
 const infiniteScroll = require('./infinite_scroll');
 
-/* eslint-env jquery */
 const { log, sleep } = Apify.utils;
 
 /**
+ * TODO: There is much of this data in the JSON
+ * @param {any} placeData
+ * @param {boolean} isAdvertisement
+*/
+const parseJsonResult = (placeData, isAdvertisement) => {
+    if (!placeData) {
+        return;
+    }
+    // Some places don't have any address
+    const addressDetail = placeData[183]?.[1];
+    const addressParsed = {
+        neighborhood: addressDetail?.[1],
+        street: addressDetail?.[2],
+        city: addressDetail?.[3],
+        postalCode: addressDetail?.[4],
+        state: addressDetail?.[5],
+        countryCode: addressDetail?.[6],
+    };
+
+    const coordsArr = placeData[9];
+    // TODO: Very rarely place[9] is empty, figure out why
+    const coords = coordsArr
+        ? { lat: fixFloatNumber(coordsArr[2]), lng: fixFloatNumber(coordsArr[3]) }
+        : { lat: null, lng: null };
+
+    return {
+        placeId: placeData[78],
+        coords,
+        addressParsed,
+        isAdvertisement,
+    };
+}
+
+/**
+ * Response from google xhr is kind a weird. Mix of array of array.
+ * This function parse places from the response body.
+ * @param {Buffer} responseBodyBuffer
+ * @return {PlacePaginationData[]}
+ */
+ module.exports.parseSearchPlacesResponseBody = (responseBodyBuffer) => {
+    /** @type {PlacePaginationData[]} */
+    const placePaginationData = [];
+    const jsonString = responseBodyBuffer
+        .toString('utf-8')
+        .replace('/*""*/', '');
+    const jsonObject = JSON.parse(jsonString);
+    const data = stringifyGoogleXrhResponse(jsonObject.d);
+
+    // We are paring ads but seems Google is not showing them to the scraper right now
+    const ads = (data[2] && data[2][1] && data[2][1][0]) || [];
+
+    ads.forEach((/** @type {any} */ ad) => {
+        const placeData = parseJsonResult(ad[15], true);
+        if (placeData) {
+            placePaginationData.push(placeData);
+        } else {
+            log.warning(`[SEARCH]: Cannot find place data for advertisement in search.`)
+        }
+    })
+
+    /** @type {any} Too complex to type out*/
+    let organicResults = data[0][1];
+    // If the search goes to search results, the first one is not a place
+    // If the search goes to a place directly, the first one is that place
+    if (organicResults.length > 1) {
+        organicResults = organicResults.slice(1)
+    }
+    organicResults.forEach((/** @type {any} */ result ) => {
+        const placeData = parseJsonResult(result[14], false);
+        if (placeData) {
+            placePaginationData.push(placeData);
+        } else {
+            log.warning(`[SEARCH]: Cannot find place data in search.`)
+        }
+    });
+    return placePaginationData;
+};
+
+/**
+ * Parses review from a single review array json Google format
+ * @param {any} jsonArray
+ * @param {string} reviewsTranslation
+ * @return {Review}
+ */
+ const parseReviewFromJson = (jsonArray, reviewsTranslation) => {
+    let text = jsonArray[3];
+
+    // Optionally remove translation
+    // TODO: Perhaps the text is differentiated in the JSON
+    if (typeof text === 'string' && reviewsTranslation !== 'originalAndTranslated') {
+        const splitReviewText = text.split('\n\n(Original)\n');
+
+        if (reviewsTranslation === 'onlyOriginal') {
+            // Fallback if there is no translation
+            text = splitReviewText[1] || splitReviewText[0];
+        } else if (reviewsTranslation === 'onlyTranslated') {
+            text = splitReviewText[0];
+        }
+        text = text.replace('(Translated by Google)', '').replace('\n\n(Original)\n', '').trim();
+    }
+
+    return {
+        name: jsonArray[0][1],
+        text,
+        publishAt: jsonArray[1],
+        publishedAtDate: new Date(jsonArray[27]).toISOString(),
+        likesCount: jsonArray[15],
+        reviewId: jsonArray[10],
+        reviewUrl: jsonArray[18],
+        reviewerId: jsonArray[6],
+        reviewerUrl: jsonArray[0][0],
+        reviewerNumberOfReviews: jsonArray[12] && jsonArray[12][1] && jsonArray[12][1][1],
+        isLocalGuide: jsonArray[12] && jsonArray[12][1] && Array.isArray(jsonArray[12][1][0]),
+        // On some places google shows reviews from other services like booking
+        // There isn't stars but rating for this places reviews
+        stars: jsonArray[4] || null,
+        // Trip advisor
+        rating: jsonArray[25] ? jsonArray[25][1] : null,
+        responseFromOwnerDate: jsonArray[9] && jsonArray[9][3]
+            ? new Date(jsonArray[9][3]).toISOString()
+            : null,
+        responseFromOwnerText: jsonArray[9] ? jsonArray[9][1] : null,
+    };
+}
+
+/** @param {string} googleResponseString */
+const stringifyGoogleXrhResponse = (googleResponseString) => {
+    return JSON.parse(googleResponseString.replace(')]}\'', ''));
+};
+
+/**
+ * Response from google xhr is kind a weird. Mix of array of array.
+ * This function parse reviews from the response body.
+ * @param {Buffer | string} responseBody
+ * @param {string} reviewsTranslation
+ * @return [place]
+ */
+const parseReviewFromResponseBody = (responseBody, reviewsTranslation) => {
+    /** @type {Review[]} */
+    const currentReviews = [];
+    const stringBody = typeof responseBody === 'string'
+        ? responseBody
+        : responseBody.toString('utf-8');
+    let results;
+    try {
+        results = stringifyGoogleXrhResponse(stringBody);
+    } catch (e) {
+        return { error: e.message };
+    }
+    if (!results || !results[2]) {
+        return { currentReviews };
+    }
+    results[2].forEach((/** @type {any} */ jsonArray) => {
+        const review = parseReviewFromJson(jsonArray, reviewsTranslation);
+        currentReviews.push(review);
+    });
+    return { currentReviews };
+};
+
+/**
+ * We combine page and rich JSON data
  * @param {{
  *    page: Puppeteer.Page,
- *    addressParsed: AddressParsed | undefined,
+ *    jsonData: any,
  * }} options
  */
-module.exports.extractPageData = async ({ page, addressParsed }) => {
+module.exports.extractPageData = async ({ page, jsonData }) => {
+    const jsonResult = parseJsonResult(jsonData, false);
     return page.evaluate((placeTitleSel, addressParsed) => {
         const address = $('[data-section-id="ad"] .section-info-line').text().trim();
         const addressAlt = $("button[data-tooltip*='address']").text().trim();
@@ -44,7 +205,7 @@ module.exports.extractPageData = async ({ page, addressParsed }) => {
             categoryName: $('[jsaction="pane.rating.category"]').text().trim(),
             address: address || addressAlt || addressAlt2 || null,
             locatedIn: secondaryAddressLine || secondaryAddressLineAlt || secondaryAddressLineAlt2 || null,
-            ...addressParsed || {},
+            ...addressParsed,
             plusCode: $('[data-section-id="ol"] .widget-pane-link').text().trim()
                 || $("button[data-tooltip*='plus code']").text().trim()
                 || $("button[data-item-id*='oloc']").text().trim() || null,
@@ -56,7 +217,7 @@ module.exports.extractPageData = async ({ page, addressParsed }) => {
             temporarilyClosed,
             permanentlyClosed,
         };
-    }, PLACE_TITLE_SEL, addressParsed);
+    }, PLACE_TITLE_SEL, jsonResult?.addressParsed || {});
 };
 
 /**
