@@ -5,11 +5,12 @@ const querystring = require('querystring');
 const Puppeteer = require('puppeteer'); // eslint-disable-line
 const { SearchResultOutcome, ScrapingOptions } = require('./typedefs'); // eslint-disable-line no-unused-vars
 const Stats = require('./stats'); // eslint-disable-line no-unused-vars
-const PlacesCache = require('./stats'); // eslint-disable-line no-unused-vars
+const PlacesCache = require('./places_cache'); // eslint-disable-line no-unused-vars
 
 const { sleep, log } = Apify.utils;
 const { PLACE_TITLE_SEL, NEXT_BUTTON_SELECTOR, NO_RESULT_XPATH } = require('./consts');
-const { waitForGoogleMapLoader, parseSearchPlacesResponseBody, parseZoomFromUrl } = require('./utils');
+const { waitForGoogleMapLoader, parseZoomFromUrl } = require('./utils');
+const { parseSearchPlacesResponseBody } = require('./extractors');
 const { checkInPolygon } = require('./polygon');
 
 const SEARCH_WAIT_TIME_MS = 30000;
@@ -145,7 +146,7 @@ const waitForSearchResults = async (page) => {
  *  scrapingOptions: ScrapingOptions,
  * }} options
  */
-const enqueueAllPlaceDetails = async ({
+module.exports.enqueueAllPlaceDetails = async ({
                                           page,
                                           searchString,
                                           requestQueue,
@@ -240,5 +241,3 @@ const enqueueAllPlaceDetails = async ({
         pagesScraped++;
     }
 };
-
-module.exports = { enqueueAllPlaceDetails };

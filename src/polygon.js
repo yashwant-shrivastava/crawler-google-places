@@ -34,7 +34,7 @@ function coordinatesFromBoundingBox(boundingbox) {
  * @param { GeoJson } geo
  * @param {typedefs.Coordinates} coordinates
  */
-function checkInPolygon(geo, coordinates) {
+module.exports.checkInPolygon = (geo, coordinates) => {
     const point = turf.point([coordinates.lng, coordinates.lat]);
     let included = false;
     const polygons = getPolygons(geo.geojson);
@@ -85,7 +85,7 @@ function getPolygons(geoJson, distanceKilometers = 5) {
 /**
  * @param {typedefs.GeolocationOptions} options
  */
-async function getGeolocation(options) {
+module.exports.getGeolocation = async (options) => {
     const { city, state, country, postalCode, county } = options;
     const cityString = (city || '').trim().replace(/\s+/g, '+');
     const stateString = (state || '').trim().replace(/\s+/g, '+');
@@ -123,7 +123,7 @@ function distanceByZoom(lat, zoom) {
  * @param {number} zoom
  * @returns {Promise<*[]|*>} Array of points
  */
-async function findPointsInPolygon(location, zoom) {
+module.exports.findPointsInPolygon = async (location, zoom) => {
     let { geojson, boundingbox } = location;
 
     // If there are no coordinates, we will construct them from bounding box
@@ -190,7 +190,3 @@ async function findPointsInPolygon(location, zoom) {
     }
     return points;
 }
-
-exports.getGeolocation = getGeolocation;
-exports.checkInPolygon = checkInPolygon;
-exports.findPointsInPolygon = findPointsInPolygon;

@@ -2,10 +2,10 @@
 const Apify = require('apify');
 const Puppeteer = require('puppeteer'); // eslint-disable-line
 
-const {AddressParsed, Review, PersonalDataOptions, PlacePaginationData} = require('./typedefs');
+const {Review, PersonalDataOptions, PlacePaginationData} = require('./typedefs');
 
-const { PLACE_TITLE_SEL, BACK_BUTTON_SEL } = require('./consts');
-const { waitForGoogleMapLoader, fixFloatNumber, enlargeImageUrls, waiter } = require('./utils');
+const { PLACE_TITLE_SEL } = require('./consts');
+const { waitForGoogleMapLoader, fixFloatNumber, enlargeImageUrls, navigateBack } = require('./utils');
 const infiniteScroll = require('./infinite_scroll');
 
 const { log, sleep } = Apify.utils;
@@ -453,48 +453,6 @@ const removePersonalDataFromReviews = (reviews, personalDataOptions) => {
         }
     }
     return reviews;
-}
-
-/**
- * Navigates back to the details page
- *
- * @param {Puppeteer.Page} page
- * @param {string} pageLabel label for the current page for error messages
- */
-const navigateBack = async (page, pageLabel) => {
-    const title = await page.$(PLACE_TITLE_SEL);
-    if (title) {
-        log.info('[PLACE]: We are still on the details page -> no back navigation needed');
-        return;
-    }
-    const backButtonPresent = async () => {
-        const backButton = await page.$(BACK_BUTTON_SEL);
-        return backButton != null;
-    }
-    await waiter(backButtonPresent, {
-        timeout: 2000,
-        pollInterval: 500,
-        timeoutErrorMeesage: `Waiting for backButton on ${pageLabel} page ran into a timeout after 2s on URL: ${page.url()}`,
-    });
-    const navigationSucceeded = async () => {
-        const backButton = await page.$(BACK_BUTTON_SEL);
-        if (backButton) {
-            await backButton.evaluate((backButtonNode) => {
-                if (backButtonNode instanceof HTMLElement) {
-                    backButtonNode.click();
-                }
-            });
-        }
-        const title = await page.$(PLACE_TITLE_SEL);
-        if (title) {
-            return true;
-        }
-    }
-    await waiter(navigationSucceeded, {
-        timeout: 10000,
-        pollInterval: 500,
-        timeoutErrorMeesage: `Waiting for back navigation on ${pageLabel} page ran into a timeout after 10s on URL: ${page.url()}`,
-    });
 }
 
 /**

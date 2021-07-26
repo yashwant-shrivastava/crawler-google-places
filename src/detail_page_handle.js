@@ -1,5 +1,5 @@
 const Apify = require('apify'); // eslint-disable-line no-unused-vars
-const Puppeteer = require('puppeteer'); // eslint-disable-line
+const Puppeteer = require('puppeteer'); // eslint-disable-line no-unused-vars
 
 const { ScrapingOptions, PlaceUserData } = require('./typedefs'); // eslint-disable-line no-unused-vars
 const ErrorSnapshotter = require('./error-snapshotter'); // eslint-disable-line no-unused-vars

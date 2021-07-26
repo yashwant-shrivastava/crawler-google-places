@@ -2,6 +2,8 @@
 *Fixes*
 - Address is now parsed correctly into components even when you supply direct place IDs
 
+- Migrated code from `apify` 0.22.5 to 1.3.1
+
 ## 2021-07-13
 - Added `county` to geolocation options
 

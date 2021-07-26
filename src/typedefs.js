@@ -26,9 +26,9 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @typedef CrawlerOptions
  * @property {Apify.RequestQueue} requestQueue
  * @property {Apify.ProxyConfiguration} [proxyConfiguration]
- * @property {Apify.PuppeteerPoolOptions} puppeteerPoolOptions
+ * @property {any} browserPoolOptions
  * @property {number} [maxConcurrency]
- * @property {Apify.LaunchPuppeteerFunction} launchPuppeteerFunction
+ * @property {Apify.PuppeteerLaunchContext} launchContext
  * @property {boolean} useSessionPool
  * @property {boolean} persistCookiesPerSession
  * @property {number} pageLoadTimeoutSec
@@ -43,6 +43,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @property {string[]} [searchStringsArray]
  * @property {string} [lat]
  * @property {string} [lng]
+ * @property {string} [county]
  * @property {string} [country]
  * @property {string} [state]
  * @property {string} [city]

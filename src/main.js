@@ -186,14 +186,6 @@ Apify.main(async () => {
         log.warning('Actor was restarted, skipping search step because it was already done...');
     }
 
-    /**
-     * @type {Apify.PuppeteerPoolOptions}}
-     */
-    const puppeteerPoolOptions = {
-        useIncognitoPages: true,
-        maxOpenPagesPerInstance: maxPagesPerBrowser,
-    };
-
     const proxyConfiguration = await Apify.createProxyConfiguration(proxyConfig);
 
     /** @type {typedefs.CrawlerOptions} */
@@ -201,37 +193,7 @@ Apify.main(async () => {
         requestQueue,
         // @ts-ignore
         proxyConfiguration,
-        puppeteerPoolOptions,
         maxConcurrency,
-        launchPuppeteerFunction: (options) => {
-            return Apify.launchPuppeteer({
-                ...options,
-                // @ts-ignore The SDK types don't understand Puppeteer options
-                headless,
-                useChrome,
-                args: [
-                    // @ts-ignore
-                    ...(options.args ? options.args : {}),
-                    // this is needed to access cross-domain iframes
-                    '--disable-web-security',
-                    '--disable-features=IsolateOrigins,site-per-process',
-                    `--lang=${language}`, // force language at browser level
-                ],
-                stealth: useStealth,
-                stealthOptions: {
-                    addLanguage: false,
-                    addPlugins: false,
-                    emulateConsoleDebug: false,
-                    emulateWebGL: false,
-                    hideWebDriver: true,
-                    emulateWindowFrame: false,
-                    hackPermissions: false,
-                    mockChrome: false,
-                    mockDeviceMemory: false,
-                    mockChromeInIframe: false,
-                },
-            });
-        },
         useSessionPool: true,
         persistCookiesPerSession: true,
         // This is just passed to gotoFunction
@@ -239,6 +201,35 @@ Apify.main(async () => {
         // long timeout, because of long infinite scroll
         handlePageTimeoutSecs: 30 * 60,
         maxRequestRetries: maxPageRetries,
+        // NOTE: Before 1.0, there was useIncognitoPages: true, let's hope it was not needed
+        browserPoolOptions: {
+            maxOpenPagesPerBrowser: maxPagesPerBrowser,
+        },
+        launchContext: {
+            useChrome,
+            stealth: useStealth,
+            stealthOptions: {
+                addLanguage: false,
+                addPlugins: false,
+                emulateConsoleDebug: false,
+                emulateWebGL: false,
+                hideWebDriver: true,
+                emulateWindowFrame: false,
+                hackPermissions: false,
+                mockChrome: false,
+                mockDeviceMemory: false,
+                mockChromeInIframe: false,
+            },
+            launchOptions: {
+                headless,
+                args: [
+                    // this is needed to access cross-domain iframes
+                    '--disable-web-security',
+                    '--disable-features=IsolateOrigins,site-per-process',
+                    `--lang=${language}`, // force language at browser level
+                ],
+            } 
+        },
     };
 
     /** @type {PersonalDataOptions} */

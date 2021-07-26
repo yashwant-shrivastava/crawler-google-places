@@ -17,16 +17,14 @@ const { injectJQuery, blockRequests } = Apify.utils.puppeteer;
 /**
  * @param {{
  *  scrapingOptions: typedefs.ScrapingOptions,
- *  crawlerOptions: typedefs.CrawlerOptions,
  *  stats: Stats,
  *  errorSnapshotter: ErrorSnapshotter,
- *  pageContext: Apify.PuppeteerHandlePageInputs,
+ *  pageContext: any,
  * }} options
  */
-const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, crawlerOptions, stats, errorSnapshotter }) => {
-    const { request, page, puppeteerPool, session, autoscaledPool } = pageContext;
+const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, stats, errorSnapshotter }) => {
+    const { request, page, session, crawler } = pageContext;
     const { maxCrawledPlaces, multiplier } = scrapingOptions;
-    const { requestQueue } = crawlerOptions;
 
     const { label, searchString } = /** @type {{ label: string, searchString: string }} */ (request.userData);
 
@@ -58,7 +56,7 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, crawle
                 async () => enqueueAllPlaceDetails({
                     page,
                     searchString,
-                    requestQueue,
+                    requestQueue: crawler.requestQueue,
                     request,
                     stats,
                     scrapingOptions,
@@ -91,14 +89,13 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, crawle
                 // @ts-ignore
                 const { cleanItemCount } = await dataset.getInfo();
                 if (cleanItemCount >= maxCrawledPlaces * multiplier) {
-                    await autoscaledPool.abort();
+                    await crawler.autoscaledPool.abort();
                 }
             }
         }
         stats.ok();
     } catch (err) {
         session.retire();
-        await puppeteerPool.retire(page.browser());
         throw err;
     }
 };
@@ -112,13 +109,13 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, crawle
  *  errorSnapshotter: ErrorSnapshotter,
  * }} options
  */
-const setUpCrawler = ({ crawlerOptions, scrapingOptions, stats, errorSnapshotter }) => {
+module.exports.setUpCrawler = ({ crawlerOptions, scrapingOptions, stats, errorSnapshotter }) => {
     const { maxImages, language } = scrapingOptions;
     const { pageLoadTimeoutSec, ...options } = crawlerOptions;
     return new Apify.PuppeteerCrawler({
         // We have to strip this otherwise SDK complains
         ...options,
-        gotoFunction: async ({ request, page, session }) => {
+        preNavigationHooks: [async ({ request, page, session }, gotoOptions) => {
             // @ts-ignore
             // eslint-disable-next-line no-underscore-dangle
             await page._client.send('Emulation.clearDeviceMetricsOverride');
@@ -154,11 +151,8 @@ const setUpCrawler = ({ crawlerOptions, scrapingOptions, stats, errorSnapshotter
                 }
             });
 
-            // domcontent loaded should be fine, at least for place page
-            const result = await page.goto(request.url, { timeout: pageLoadTimeoutSec * 1000 });
-
-            return result;
-        },
+            gotoOptions.timeout = pageLoadTimeoutSec * 1000;
+        }],
         handlePageFunction: async (pageContext) => {
             await errorSnapshotter.tryWithSnapshot(
                 pageContext.page,
@@ -184,5 +178,3 @@ const setUpCrawler = ({ crawlerOptions, scrapingOptions, stats, errorSnapshotter
         },
     });
 };
-
-module.exports = { setUpCrawler };

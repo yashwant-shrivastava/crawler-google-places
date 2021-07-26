@@ -4,7 +4,7 @@ const { checkInPolygon } = require('./polygon');
 const cachedPlacesName = 'Places-cached-locations';
 const { Coordinates, CachedPlace, GeoJson } = require('./typedefs');
 
-const PlacesCache = class PlacesCache {
+module.exports = class PlacesCache {
     cachePlaces;
     allPlaces = {};
     isLoaded = false;
@@ -135,5 +135,3 @@ const PlacesCache = class PlacesCache {
         return arr;
     }
 };
-
-module.exports = PlacesCache;
