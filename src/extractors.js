@@ -367,7 +367,7 @@ module.exports.extractAdditionalInfo = async ({ page }) => {
     if (button) {
         try {
             await button.click({ delay: 200 });
-            await page.waitForSelector('div[class*="subtitle"]', { timeout: 30000 });
+            await page.waitForSelector(PLACE_TITLE_SEL, { timeout: 30000, hidden: true });
             result = await page.evaluate(() => {
                 /** @type {{[key: string]: any[]}} */
                 const innerResult = {};
