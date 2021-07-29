@@ -258,6 +258,18 @@ A single place result looks like this:
 }
 ```
 
+### Adjusting output format
+Apify platform allows you to choose from many dataset formats but also to restructure the output itself.
+
+#### One review per row
+Normally, each result item contains data about a single place. Each item is displayed as one row in tabulated formats. There is a lot of data about each place so the tabulated formats gets very messy and hard to analyze. Fortunately, there is a remedy.
+
+For example, if you need to analyze reviews, you can configure the download to only contain data you need and adjust the row/column format. This is how to get a list of reviews with a place title one review per row:
+ Copy the download link in a format you need, paste it to a different tab and add `&unwind=reviews&fields=reviews,title` to the end of the link URL and then press Enter to download it. `unwind=reviews` means that each review will be on its own row. `fields=reviews,title` means that only reviews nad title will be downloaded, skipping the other data. Otherwise, the output would be very big but there is no problem if you don't use `fields` at all. 
+
+The whole download link for e.g. CSV would look like this (just with fullfilled dataset ID):
+https://api.apify.com/v2/datasets/DATASET_ID/items?clean=true&format=csv&attachment=true&unwind=reviews&fields=reviews,title
+
 ## Usage on Apify platform and locally
 If you want to run the actor on the [Apify platform](https://apify.com), you need to have at least a few proxy IPs to avoid being blocked by Google. You can use your free Apify Proxy trial or you can subscribe to one of [Apify's subscription plans](https://apify.com/pricing).
 
