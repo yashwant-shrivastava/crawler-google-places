@@ -1,3 +1,10 @@
+## 2021-08-06
+*Fixes*
+- `maxCrawledPlaces` now compares to total sum of all places
+
+*Features*
+- Added `maxCrawledPlacesPerSearch` to limit max places per search term or search URL
+
 ## 2021-07-26
 *Fixes*
 - Address is now parsed correctly into components even when you supply direct place IDs

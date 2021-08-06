@@ -12,6 +12,7 @@ const { getGeolocation, findPointsInPolygon } = require('./polygon');
  *  county: string | undefined,
  *  city: string | undefined,
  *  postalCode: string | undefined,
+ *  polygon: any | undefined,
  * }} options
  */
 exports.prepareSearchUrls = async ({ lat, lng, zoom, country, state,county , city, postalCode, polygon }) => {

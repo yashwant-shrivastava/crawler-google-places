@@ -4,15 +4,18 @@ const { checkInPolygon } = require('./polygon');
 const cachedPlacesName = 'Places-cached-locations';
 const { Coordinates, CachedPlace, GeoJson } = require('./typedefs');
 
+// Only used for Heyrick customer, enabled by input
+// TODO: Re-evaluate if we should not remove this
 module.exports = class PlacesCache {
     cachePlaces;
     allPlaces = {};
     isLoaded = false;
 
     /**
-     * @param {boolean} cachePlaces
-     * @param {string} cacheKey
-     * @param {boolean} useCachedPlaces
+     * @param options 
+     * @property {boolean} cachePlaces
+     * @property {string} cacheKey
+     * @property {boolean} useCachedPlaces
      */
     constructor({ cachePlaces = false, cacheKey, useCachedPlaces }) {
         this.cachePlaces = cachePlaces;

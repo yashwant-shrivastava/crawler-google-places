@@ -79,7 +79,7 @@ module.exports.handlePlaceDetail = async (options) => {
 
     const orderBy = (() => {
         try {
-            return jsonData[75][0][0][2].map((i) => {
+            return jsonData[75][0][0][2].map((/** @type {any} */ i) => {
                 return { name: i[0][0], url: i[1][2][0] }
             });
         } catch (e) {

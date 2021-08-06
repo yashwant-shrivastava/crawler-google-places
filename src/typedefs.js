@@ -1,5 +1,19 @@
 const Apify = require('apify'); // eslint-disable-line no-unused-vars
 
+const Stats = require('./stats'); // eslint-disable-line no-unused-vars
+const ErrorSnapshotter = require('./error-snapshotter'); // eslint-disable-line no-unused-vars
+const PlacesCache = require('./places_cache'); // eslint-disable-line no-unused-vars
+const MaxCrawledPlacesTracker = require('./max-crawled-places'); // eslint-disable-line no-unused-vars
+
+/**
+ * Options for the scraping process
+ * @typedef HelperClasses
+ * @property {Stats} stats
+ * @property {ErrorSnapshotter} errorSnapshotter
+ * @property {MaxCrawledPlacesTracker} maxCrawledPlacesTracker
+ * @property {PlacesCache} placesCache
+ */
+
 /**
  * Options for the scraping process
  * @typedef ScrapingOptions
@@ -9,13 +23,12 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @property {number} maxReviews
  * @property {number} maxImages
  * @property {number} [maxCrawledPlaces]
+ * @property {number} [maxCrawledPlacesPerSearch]
  * @property {number} [maxAutomaticZoomOut]
  * @property {boolean} exportPlaceUrls
  * @property {boolean} additionalInfo
- * @property {PlacesCache} placesCache
  * @property {string} reviewsSort
  * @property {string} language
- * @property {number} multiplier
  * @property {object} geo
  * @property {string} reviewsTranslation
  * @property {PersonalDataOptions} personalDataOptions
@@ -69,6 +82,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @property {boolean} [exportPlaceUrls]
  * @property {boolean} [additionalInfo]
  * @property {number} [maxCrawledPlaces]
+ * @property {number} [maxCrawledPlacesPerSearch]
  * @property {number} [maxAutomaticZoomOut]
  * @property {boolean} [cachePlaces]
  * @property {boolean} [useCachedPlaces]

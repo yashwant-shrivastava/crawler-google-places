@@ -7,6 +7,7 @@ const placesCrawler = require('./places_crawler');
 const Stats = require('./stats');
 const ErrorSnapshotter = require('./error-snapshotter');
 const PlacesCache = require('./places_cache');
+const MaxCrawledPlacesTracker = require('./max-crawled-places');
 const { prepareSearchUrls } = require('./search');
 const { createStartRequestsWithWalker } = require('./walker');
 const { makeInputBackwardsCompatible, validateInput } = require('./input-validation');
@@ -17,12 +18,6 @@ const { log } = Apify.utils;
 
 Apify.main(async () => {
     const input = /** @type {typedefs.Input} */ (await Apify.getValue('INPUT'));
-
-    const stats = new Stats();
-    await stats.initialize(Apify.events);
-
-    const errorSnapshotter = new ErrorSnapshotter();
-    await errorSnapshotter.initialize(Apify.events);
 
     makeInputBackwardsCompatible(input);
     validateInput(input);
@@ -41,7 +36,8 @@ Apify.main(async () => {
 
         // Scraping options
         includeHistogram = false, includeOpeningHours = false, includePeopleAlsoSearch = false,
-        maxReviews = 5, maxImages = 1, exportPlaceUrls = false, additionalInfo = false, maxCrawledPlaces,
+        maxReviews = 5, maxImages = 1, exportPlaceUrls = false, additionalInfo = false,
+        maxCrawledPlaces = 99999999, maxCrawledPlacesPerSearch = maxCrawledPlaces,
         maxAutomaticZoomOut, reviewsSort = 'mostRelevant', reviewsTranslation = 'originalAndTranslated',
 
         // Fields used by Heyrick only, not present in the schema (too narrow use-case for now)
@@ -57,10 +53,20 @@ Apify.main(async () => {
         log.setLevel(log.LEVELS.DEBUG);
     }
 
-    // Only used for Heyrick
-    // By default, this is not used and thr functions are no-op
+    // Initializing all the supportive classes in this block
+
+    const stats = new Stats();
+    await stats.initialize(Apify.events);
+
+    const errorSnapshotter = new ErrorSnapshotter();
+    await errorSnapshotter.initialize(Apify.events);
+
+    // Only used for Heyrick. By default, this is not used and the functions are no-ops
     const placesCache = new PlacesCache({ cachePlaces, cacheKey, useCachedPlaces });
-    await placesCache.initialize()
+    await placesCache.initialize();
+
+    const maxCrawledPlacesTracker = new MaxCrawledPlacesTracker(maxCrawledPlaces, maxCrawledPlacesPerSearch);
+    await maxCrawledPlacesTracker.initialize(Apify.events);
 
     // Requests that are used in the queue, we persist them to skip this step after migration
     const startRequests = /** @type {Apify.RequestOptions[]} */ (await Apify.getValue('START-REQUESTS')) || [];
@@ -110,11 +116,10 @@ Apify.main(async () => {
                         + 'Please use URLs with /maps/search or /maps/place or contact support@apify.com to add a new format');
                     log.warning(`Happened for provided URL: ${req.url}`);
                 } else {
-                    // TODO: Seems we don't work on place details???
-                    const isPlace = req.url.includes('/maps/place/')
+                    const isPlace = req.url.includes('/maps/place/');
                     startRequests.push({
                         ...req,
-                        userData: { label: isPlace ? 'detail' : 'startUrl', searchString: null },
+                        userData: { label: isPlace ? 'detail' : 'startUrl', searchString: null, baseUrl: req.url },
                     });
                 }
             }
@@ -145,7 +150,7 @@ Apify.main(async () => {
                         uniqueKey: placeId,
                         userData: { label: 'detail', searchString },
                     });
-                } else {
+                } else if (startUrlSearches) {
                     // For each search, we use the geolocated URLs
                     for (const startUrlSearch of startUrlSearches) {
                         startRequests.push({
@@ -159,7 +164,7 @@ Apify.main(async () => {
 
             // use cached place ids for geolocation
             for (const placeId of placesCache.placesInPolygon(geo, maxCrawledPlaces, searchStringsArray)) {
-                const searchString = searchStringsArray.filter(x => placesCache.place(placeId).keywords.includes(x))[0];
+                const searchString = searchStringsArray.filter(x => placesCache.place(placeId)?.keywords.includes(x))[0];
                 startRequests.push({
                     url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${placeId}`,
                     uniqueKey: placeId,
@@ -172,7 +177,14 @@ Apify.main(async () => {
         console.dir(startRequests.map((r) => r.url).slice(0, 10));
 
         for (const request of startRequests) {
-            await requestQueue.addRequest(request);
+            if (request.userData?.label === 'detail') {
+                // TODO: Here we enqueue place details so we need to check for maxCrawledPlaces
+                if (!maxCrawledPlacesTracker.setEnqueued()) {
+                    log.warning(`Reached maxCrawledPlaces ${maxCrawledPlaces}, not enqueueing any more`);
+                    break;
+                }
+            }
+            await requestQueue.addRequest(request);            
         }
 
         await Apify.setValue('START-REQUESTS', startRequests);
@@ -241,19 +253,24 @@ Apify.main(async () => {
     /** @type {typedefs.ScrapingOptions} */
     const scrapingOptions = {
         includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
-        maxReviews, maxImages, exportPlaceUrls, additionalInfo, maxCrawledPlaces,
-        maxAutomaticZoomOut, placesCache, reviewsSort, language,
-        multiplier: startRequests.length || 1, // workaround for the maxCrawledPlaces when using multiple queries/startUrls
+        maxReviews, maxImages, exportPlaceUrls, additionalInfo,
+        maxAutomaticZoomOut, reviewsSort, language,
         geo, reviewsTranslation,
         personalDataOptions,
     };
 
+    /** @type {typedefs.HelperClasses} */
+    const helperClasses = {
+        stats, errorSnapshotter, maxCrawledPlacesTracker, placesCache,
+    };
+
     // Create and run crawler
-    const crawler = placesCrawler.setUpCrawler({ crawlerOptions, scrapingOptions, stats, errorSnapshotter });
+    const crawler = placesCrawler.setUpCrawler({ crawlerOptions, scrapingOptions, helperClasses });
 
     await crawler.run();
     await stats.saveStats();
     await placesCache.savePlaces();
+    await maxCrawledPlacesTracker.persist();
 
     log.info('Scraping finished!');
 });

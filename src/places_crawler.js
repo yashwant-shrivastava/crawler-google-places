@@ -2,8 +2,6 @@
 const Apify = require('apify');
 
 const typedefs = require('./typedefs'); // eslint-disable-line no-unused-vars
-const Stats = require('./stats'); // eslint-disable-line no-unused-vars
-const ErrorSnapshotter = require('./error-snapshotter'); // eslint-disable-line no-unused-vars
 
 const { enqueueAllPlaceDetails } = require('./enqueue_places');
 const { handlePlaceDetail } = require('./detail_page_handle');
@@ -16,15 +14,14 @@ const { injectJQuery, blockRequests } = Apify.utils.puppeteer;
 
 /**
  * @param {{
- *  scrapingOptions: typedefs.ScrapingOptions,
- *  stats: Stats,
- *  errorSnapshotter: ErrorSnapshotter,
  *  pageContext: any,
+ *  scrapingOptions: typedefs.ScrapingOptions,
+ *  helperClasses: typedefs.HelperClasses
  * }} options
  */
-const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, stats, errorSnapshotter }) => {
+const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, helperClasses }) => {
     const { request, page, session, crawler } = pageContext;
-    const { maxCrawledPlaces, multiplier } = scrapingOptions;
+    const { stats, errorSnapshotter, maxCrawledPlacesTracker } = helperClasses;
 
     const { label, searchString } = /** @type {{ label: string, searchString: string }} */ (request.userData);
 
@@ -50,6 +47,10 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, stats,
             throw `[${logLabel}]: Got CAPTCHA on page, retrying --- ${searchString || ''} ${request.url}`;
         }
         if (label === 'startUrl') {
+            if (!maxCrawledPlacesTracker.canEnqueueMore(searchString || request.url)) {
+                // No need to log anything here as it was already logged for this search
+                return;
+            }
             log.info(`[${logLabel}]: Start enqueuing places details for search --- ${searchString || ''} ${request.url}`);
             await errorSnapshotter.tryWithSnapshot(
                 page,
@@ -58,7 +59,7 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, stats,
                     searchString,
                     requestQueue: crawler.requestQueue,
                     request,
-                    stats,
+                    helperClasses,
                     scrapingOptions,
                 }),
             );
@@ -79,19 +80,6 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, stats,
                 errorSnapshotter,
                 stats,
             });
-
-            // TODO: Rework this terrible thing :)
-            // when using polygon search multiple start urls are used. Therefore more links are added to request queue,
-            // there is also good possibility that some of places will be out of desired polygon, so we do not check number of queued places,
-            // only number of places with correct geolocation
-            if (maxCrawledPlaces && maxCrawledPlaces !== 0) {
-                const dataset = await Apify.openDataset();
-                // @ts-ignore
-                const { cleanItemCount } = await dataset.getInfo();
-                if (cleanItemCount >= maxCrawledPlaces * multiplier) {
-                    await crawler.autoscaledPool.abort();
-                }
-            }
         }
         stats.ok();
     } catch (err) {
@@ -105,13 +93,13 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, stats,
  * @param {{
  *  crawlerOptions: typedefs.CrawlerOptions,
  *  scrapingOptions: typedefs.ScrapingOptions,
- *  stats: Stats,
- *  errorSnapshotter: ErrorSnapshotter,
+ *  helperClasses: typedefs.HelperClasses,
  * }} options
  */
-module.exports.setUpCrawler = ({ crawlerOptions, scrapingOptions, stats, errorSnapshotter }) => {
+module.exports.setUpCrawler = ({ crawlerOptions, scrapingOptions, helperClasses }) => {
     const { maxImages, language } = scrapingOptions;
     const { pageLoadTimeoutSec, ...options } = crawlerOptions;
+    const { stats, errorSnapshotter } = helperClasses;
     return new Apify.PuppeteerCrawler({
         // We have to strip this otherwise SDK complains
         ...options,
@@ -156,7 +144,7 @@ module.exports.setUpCrawler = ({ crawlerOptions, scrapingOptions, stats, errorSn
         handlePageFunction: async (pageContext) => {
             await errorSnapshotter.tryWithSnapshot(
                 pageContext.page,
-                async () => handlePageFunctionExtended({ pageContext, scrapingOptions, crawlerOptions, stats, errorSnapshotter }),
+                async () => handlePageFunctionExtended({ pageContext, scrapingOptions, helperClasses }),
             );
         },
         handleFailedRequestFunction: async ({ request, error }) => {
