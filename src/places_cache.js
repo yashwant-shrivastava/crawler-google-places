@@ -2,7 +2,7 @@ const Apify = require('apify');
 const { utils: { log } } = Apify;
 const { checkInPolygon } = require('./polygon');
 const cachedPlacesName = 'Places-cached-locations';
-const { Coordinates, CachedPlace, GeoJson } = require('./typedefs');
+const typedefs = require('./typedefs');
 
 // Only used for Heyrick customer, enabled by input
 // TODO: Re-evaluate if we should not remove this
@@ -69,7 +69,7 @@ module.exports = class PlacesCache {
     /**
      * Add place to cache
      * @param {string} placeId
-     * @param {Coordinates} location
+     * @param {typedefs.Coordinates} location
      * @param {string} keyword
      */
     addLocation(placeId, location, keyword) {
@@ -81,7 +81,7 @@ module.exports = class PlacesCache {
 
     /**
      * @param {string} placeId
-     * @returns {null|CachedPlace}
+     * @returns {null|typedefs.CachedPlace}
      */
     place(placeId) {
         if (!this.cachePlaces || !this.allPlaces[placeId]) return null;
@@ -92,7 +92,7 @@ module.exports = class PlacesCache {
 
     /**
      * @param {string} placeId
-     * @returns {Coordinates|null}
+     * @returns {typedefs.Coordinates|null}
      */
     getLocation(placeId) {
         if (!this.cachePlaces || !this.place(placeId)) return null;
@@ -119,7 +119,7 @@ module.exports = class PlacesCache {
 
     /**
      * Find places for specific polygon a keywords.
-     * @param {GeoJson} geo
+     * @param {typedefs.GeoJson} geo
      * @param {number} maxCrawledPlaces
      * @param {string[]} keywords
      * @returns {string[]}
