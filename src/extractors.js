@@ -117,7 +117,7 @@ const parseJsonResult = (placeData, isAdvertisement) => {
         text,
         publishAt: jsonArray[1],
         publishedAtDate: new Date(jsonArray[27]).toISOString(),
-        likesCount: jsonArray[15],
+        likesCount: jsonArray[16],
         reviewId: jsonArray[10],
         reviewUrl: jsonArray[18],
         reviewerId: jsonArray[6],
