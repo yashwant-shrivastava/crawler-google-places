@@ -99,9 +99,18 @@ Apify.main(async () => {
             if (searchStringsArray) {
                 log.warning('\n\n------\nUsing Start URLs disables search. You can use either search or Start URLs.\n------\n');
             }
-            const rlist = await Apify.openRequestList('STARTURLS', startUrls);
+            // Apify has a tendency to strip part of URL for uniqueKey for Google Maps URLs
+            const updatedStartUrls = startUrls.map((request) => ({
+                ...request,
+                uniqueKey: request.url,
+            }));
+            // We do this trick with request list to automaticaly work for requestsFromUrl
+            const rlist = await Apify.openRequestList('STARTURLS', updatedStartUrls);
             let req;
-            while (req = await rlist.fetchNextRequest()) { // eslint-disable-line no-cond-assign
+            while (req = await rlist.fetchNextRequest()) {
+                // We have to do this here again if requestsFromUrl were used
+                req.uniqueKey = req.url;
+
                 if (!req.url) {
                     log.warning('There is no valid URL for this request:');
                     console.dir(req);
