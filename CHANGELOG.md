@@ -1,6 +1,7 @@
 ## 2021-08-12
 *Fixes*
 - Fixed problem that `startUrls` was not picking up all provided URLs sometimes (due to automatic `uniqueKey` resolution)
+- `likesCount` in reviews
 
 ## 2021-08-06
 *Fixes*
