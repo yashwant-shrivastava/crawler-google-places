@@ -14,7 +14,7 @@
 <!-- toc end -->
 
 ## Features
-This Google Maps crawler will enable you to get more data from Google Places than the official [Google Maps Places API](https://developers.google.com/places/web-service/search). The scraper supports extraction of this data for each place:
+This Google Maps crawler will enable you to get more data from Google Places than the official [Google Maps Places API](https://developers.google.com/places/web-service/search). Read our step-by-step guide on [how to scrape Google Maps](https://blog.apify.com/how-to-scrape-data-from-google-maps/)
 
 - Title, subtitle, category, place ID and URL
 - Address, location, plus code and exact coordinates
