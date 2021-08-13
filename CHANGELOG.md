@@ -1,3 +1,45 @@
+## 2021-08-12
+*Fixes*
+- Fixed problem that `startUrls` was not picking up all provided URLs sometimes (due to automatic `uniqueKey` resolution)
+- `likesCount` in reviews
+
+## 2021-08-06
+*Fixes*
+- `maxCrawledPlaces` now compares to total sum of all places
+
+*Features*
+- Added `maxCrawledPlacesPerSearch` to limit max places per search term or search URL
+
+## 2021-07-26
+*Fixes*
+- Address is now parsed correctly into components even when you supply direct place IDs
+
+- Migrated code from `apify` 0.22.5 to 1.3.1
+
+## 2021-07-13
+- Added `county` to geolocation options
+
+## 2021-06-03
+*Fixes*
+(hopefully last fixes after the layout change)
+- Scraping all images per place works again 
+- Fixed `additionalInfo`
+- Fixed `openiningHours`
+
+## 2021-06-03
+*Fixes*
+- Fix handling of search pages without results
+- Skip empty searches that sometimes users accidentally post
+
+## 2021-05-25
+*Features*
+- Added orderBy attribute to result scrape
+
+## 2021-05-18
+*Fixes*
+- Fully or partially fixed consent screen issues
+- Should also help with `Failed to set the 'innerHTML' property on 'Element': This document requires 'TrustedHTML' assignment.` which is caused by injecting JQuery into constent screen
+
 ## 2021-04-29
 *Fixes*
 - Fixed `reviewsTranslation`
@@ -24,7 +66,7 @@
 
 *Features*
 - Added `reviewsDistribution`
-- Added `publishedAtDate` (exact date), `responseFromOwnerDate` and `responseFromOwnerText `for each review 
+- Added `publishedAtDate` (exact date), `responseFromOwnerDate` and `responseFromOwnerText `for each review
 
 ## 2021-03-10
 Fixes:

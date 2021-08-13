@@ -1,5 +1,19 @@
 const Apify = require('apify'); // eslint-disable-line no-unused-vars
 
+const Stats = require('./stats'); // eslint-disable-line no-unused-vars
+const ErrorSnapshotter = require('./error-snapshotter'); // eslint-disable-line no-unused-vars
+const PlacesCache = require('./places_cache'); // eslint-disable-line no-unused-vars
+const MaxCrawledPlacesTracker = require('./max-crawled-places'); // eslint-disable-line no-unused-vars
+
+/**
+ * Options for the scraping process
+ * @typedef HelperClasses
+ * @property {Stats} stats
+ * @property {ErrorSnapshotter} errorSnapshotter
+ * @property {MaxCrawledPlacesTracker} maxCrawledPlacesTracker
+ * @property {PlacesCache} placesCache
+ */
+
 /**
  * Options for the scraping process
  * @typedef ScrapingOptions
@@ -9,13 +23,12 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @property {number} maxReviews
  * @property {number} maxImages
  * @property {number} [maxCrawledPlaces]
+ * @property {number} [maxCrawledPlacesPerSearch]
  * @property {number} [maxAutomaticZoomOut]
  * @property {boolean} exportPlaceUrls
  * @property {boolean} additionalInfo
- * @property {PlacesCache} placesCache
  * @property {string} reviewsSort
  * @property {string} language
- * @property {number} multiplier
  * @property {object} geo
  * @property {string} reviewsTranslation
  * @property {PersonalDataOptions} personalDataOptions
@@ -26,10 +39,11 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @typedef CrawlerOptions
  * @property {Apify.RequestQueue} requestQueue
  * @property {Apify.ProxyConfiguration} [proxyConfiguration]
- * @property {Apify.PuppeteerPoolOptions} puppeteerPoolOptions
+ * @property {any} browserPoolOptions
  * @property {number} [maxConcurrency]
- * @property {Apify.LaunchPuppeteerFunction} launchPuppeteerFunction
+ * @property {Apify.PuppeteerLaunchContext} launchContext
  * @property {boolean} useSessionPool
+ * @property {boolean} persistCookiesPerSession
  * @property {number} pageLoadTimeoutSec
  * @property {number} handlePageTimeoutSecs
  * @property {number} maxRequestRetries
@@ -42,6 +56,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @property {string[]} [searchStringsArray]
  * @property {string} [lat]
  * @property {string} [lng]
+ * @property {string} [county]
  * @property {string} [country]
  * @property {string} [state]
  * @property {string} [city]
@@ -67,6 +82,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * @property {boolean} [exportPlaceUrls]
  * @property {boolean} [additionalInfo]
  * @property {number} [maxCrawledPlaces]
+ * @property {number} [maxCrawledPlacesPerSearch]
  * @property {number} [maxAutomaticZoomOut]
  * @property {boolean} [cachePlaces]
  * @property {boolean} [useCachedPlaces]
@@ -114,6 +130,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
 /**
  * @typedef GeolocationOptions
  * @property {string | undefined} city
+ * @property {string | undefined} county
  * @property {string | undefined} state
  * @property {string | undefined} country
  * @property {string | undefined} postalCode
@@ -141,7 +158,7 @@ const Apify = require('apify'); // eslint-disable-line no-unused-vars
  * }} SearchResultOutcome
  */
 
- 
+
 
 /**
  * @typedef {{

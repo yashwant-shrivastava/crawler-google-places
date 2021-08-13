@@ -34,7 +34,7 @@ function coordinatesFromBoundingBox(boundingbox) {
  * @param { GeoJson } geo
  * @param {typedefs.Coordinates} coordinates
  */
-function checkInPolygon(geo, coordinates) {
+module.exports.checkInPolygon = (geo, coordinates) => {
     const point = turf.point([coordinates.lng, coordinates.lat]);
     let included = false;
     const polygons = getPolygons(geo.geojson);
@@ -85,16 +85,17 @@ function getPolygons(geoJson, distanceKilometers = 5) {
 /**
  * @param {typedefs.GeolocationOptions} options
  */
-async function getGeolocation(options) {
-    const { city, state, country, postalCode } = options;
+module.exports.getGeolocation = async (options) => {
+    const { city, state, country, postalCode, county } = options;
     const cityString = (city || '').trim().replace(/\s+/g, '+');
     const stateString = (state || '').trim().replace(/\s+/g, '+');
+    const countyString = (county || '').trim().replace(/\s+/g, '+');
     const countryString = (country || '').trim().replace(/\s+/g, '+');
     const postalCodeString = (postalCode || '').trim().replace(/\s+/g, '+');
 
     // TODO when get more results? Currently only first match is returned!
     const res = await Apify.utils.requestAsBrowser({
-        url: encodeURI(`https://nominatim.openstreetmap.org/search?country=${countryString}&state=${stateString}&city=${cityString}&postalcode=${postalCodeString}&format=json&polygon_geojson=1&limit=1&polygon_threshold=0.005`),
+        url: encodeURI(`https://nominatim.openstreetmap.org/search?country=${countryString}&state=${stateString}&county=${countyString}&city=${cityString}&postalcode=${postalCodeString}&format=json&polygon_geojson=1&limit=1&polygon_threshold=0.005`),
         headers: { referer: 'http://google.com' },
     });
     // @ts-ignore
@@ -122,7 +123,7 @@ function distanceByZoom(lat, zoom) {
  * @param {number} zoom
  * @returns {Promise<*[]|*>} Array of points
  */
-async function findPointsInPolygon(location, zoom) {
+module.exports.findPointsInPolygon = async (location, zoom) => {
     let { geojson, boundingbox } = location;
 
     // If there are no coordinates, we will construct them from bounding box
@@ -189,7 +190,3 @@ async function findPointsInPolygon(location, zoom) {
     }
     return points;
 }
-
-exports.getGeolocation = getGeolocation;
-exports.checkInPolygon = checkInPolygon;
-exports.findPointsInPolygon = findPointsInPolygon;

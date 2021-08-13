@@ -7,6 +7,7 @@ const placesCrawler = require('./places_crawler');
 const Stats = require('./stats');
 const ErrorSnapshotter = require('./error-snapshotter');
 const PlacesCache = require('./places_cache');
+const MaxCrawledPlacesTracker = require('./max-crawled-places');
 const { prepareSearchUrls } = require('./search');
 const { createStartRequestsWithWalker } = require('./walker');
 const { makeInputBackwardsCompatible, validateInput } = require('./input-validation');
@@ -18,12 +19,6 @@ const { log } = Apify.utils;
 Apify.main(async () => {
     const input = /** @type {typedefs.Input} */ (await Apify.getValue('INPUT'));
 
-    const stats = new Stats();
-    await stats.initialize(Apify.events);
-
-    const errorSnapshotter = new ErrorSnapshotter();
-    await errorSnapshotter.initialize(Apify.events);
-
     makeInputBackwardsCompatible(input);
     validateInput(input);
 
@@ -31,7 +26,7 @@ Apify.main(async () => {
         // Search and Start URLs
         startUrls, searchStringsArray,
         // Geolocation
-        lat, lng, country, state, city, postalCode, zoom = 10, polygon,
+        lat, lng, country, state, county, city, postalCode, zoom = 10, polygon,
         // browser and request options
         pageLoadTimeoutSec = 60, useChrome = false, maxConcurrency, maxPagesPerBrowser = 1, maxPageRetries = 6,
         // Misc
@@ -41,7 +36,8 @@ Apify.main(async () => {
 
         // Scraping options
         includeHistogram = false, includeOpeningHours = false, includePeopleAlsoSearch = false,
-        maxReviews = 5, maxImages = 1, exportPlaceUrls = false, additionalInfo = false, maxCrawledPlaces,
+        maxReviews = 5, maxImages = 1, exportPlaceUrls = false, additionalInfo = false,
+        maxCrawledPlaces = 99999999, maxCrawledPlacesPerSearch = maxCrawledPlaces,
         maxAutomaticZoomOut, reviewsSort = 'mostRelevant', reviewsTranslation = 'originalAndTranslated',
 
         // Fields used by Heyrick only, not present in the schema (too narrow use-case for now)
@@ -57,10 +53,20 @@ Apify.main(async () => {
         log.setLevel(log.LEVELS.DEBUG);
     }
 
-    // Only used for Heyrick
-    // By default, this is not used and thr functions are no-op
+    // Initializing all the supportive classes in this block
+
+    const stats = new Stats();
+    await stats.initialize(Apify.events);
+
+    const errorSnapshotter = new ErrorSnapshotter();
+    await errorSnapshotter.initialize(Apify.events);
+
+    // Only used for Heyrick. By default, this is not used and the functions are no-ops
     const placesCache = new PlacesCache({ cachePlaces, cacheKey, useCachedPlaces });
-    await placesCache.initialize()
+    await placesCache.initialize();
+
+    const maxCrawledPlacesTracker = new MaxCrawledPlacesTracker(maxCrawledPlaces, maxCrawledPlacesPerSearch);
+    await maxCrawledPlacesTracker.initialize(Apify.events);
 
     // Requests that are used in the queue, we persist them to skip this step after migration
     const startRequests = /** @type {Apify.RequestOptions[]} */ (await Apify.getValue('START-REQUESTS')) || [];
@@ -80,6 +86,7 @@ Apify.main(async () => {
             zoom,
             country,
             state,
+            county,
             city,
             postalCode,
             polygon,
@@ -92,9 +99,18 @@ Apify.main(async () => {
             if (searchStringsArray) {
                 log.warning('\n\n------\nUsing Start URLs disables search. You can use either search or Start URLs.\n------\n');
             }
-            const rlist = await Apify.openRequestList('STARTURLS', startUrls);
+            // Apify has a tendency to strip part of URL for uniqueKey for Google Maps URLs
+            const updatedStartUrls = startUrls.map((request) => ({
+                ...request,
+                uniqueKey: request.url,
+            }));
+            // We do this trick with request list to automaticaly work for requestsFromUrl
+            const rlist = await Apify.openRequestList('STARTURLS', updatedStartUrls);
             let req;
-            while (req = await rlist.fetchNextRequest()) { // eslint-disable-line no-cond-assign
+            while (req = await rlist.fetchNextRequest()) {
+                // We have to do this here again if requestsFromUrl were used
+                req.uniqueKey = req.url;
+
                 if (!req.url) {
                     log.warning('There is no valid URL for this request:');
                     console.dir(req);
@@ -109,16 +125,20 @@ Apify.main(async () => {
                         + 'Please use URLs with /maps/search or /maps/place or contact support@apify.com to add a new format');
                     log.warning(`Happened for provided URL: ${req.url}`);
                 } else {
-                    // TODO: Seems we don't work on place details???
-                    const isPlace = req.url.includes('/maps/place/')
+                    const isPlace = req.url.includes('/maps/place/');
                     startRequests.push({
                         ...req,
-                        userData: { label: isPlace ? 'detail' : 'startUrl', searchString: null },
+                        userData: { label: isPlace ? 'detail' : 'startUrl', searchString: null, baseUrl: req.url },
                     });
                 }
             }
         } else if (searchStringsArray) {
             for (const searchString of searchStringsArray) {
+                // Sometimes users accidentally pass empty strings
+                if (typeof searchString !== 'string' || !searchString.trim()) {
+                    log.warning(`WRONG INPUT: Search "${searchString}" is not a valid search, skipping`);
+                    continue;
+                }
                 // TODO: walker is not documented!!! We should figure out if it is useful at all
                 if (walker) {
                     const walkerGeneratedRequests = createStartRequestsWithWalker({ walker, searchString });
@@ -139,7 +159,7 @@ Apify.main(async () => {
                         uniqueKey: placeId,
                         userData: { label: 'detail', searchString },
                     });
-                } else {
+                } else if (startUrlSearches) {
                     // For each search, we use the geolocated URLs
                     for (const startUrlSearch of startUrlSearches) {
                         startRequests.push({
@@ -153,7 +173,7 @@ Apify.main(async () => {
 
             // use cached place ids for geolocation
             for (const placeId of placesCache.placesInPolygon(geo, maxCrawledPlaces, searchStringsArray)) {
-                const searchString = searchStringsArray.filter(x => placesCache.place(placeId).keywords.includes(x))[0];
+                const searchString = searchStringsArray.filter(x => placesCache.place(placeId)?.keywords.includes(x))[0];
                 startRequests.push({
                     url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${placeId}`,
                     uniqueKey: placeId,
@@ -166,7 +186,14 @@ Apify.main(async () => {
         console.dir(startRequests.map((r) => r.url).slice(0, 10));
 
         for (const request of startRequests) {
-            await requestQueue.addRequest(request);
+            if (request.userData?.label === 'detail') {
+                // TODO: Here we enqueue place details so we need to check for maxCrawledPlaces
+                if (!maxCrawledPlacesTracker.setEnqueued()) {
+                    log.warning(`Reached maxCrawledPlaces ${maxCrawledPlaces}, not enqueueing any more`);
+                    break;
+                }
+            }
+            await requestQueue.addRequest(request);            
         }
 
         await Apify.setValue('START-REQUESTS', startRequests);
@@ -180,14 +207,6 @@ Apify.main(async () => {
         log.warning('Actor was restarted, skipping search step because it was already done...');
     }
 
-    /**
-     * @type {Apify.PuppeteerPoolOptions}}
-     */
-    const puppeteerPoolOptions = {
-        useIncognitoPages: true,
-        maxOpenPagesPerInstance: maxPagesPerBrowser,
-    };
-
     const proxyConfiguration = await Apify.createProxyConfiguration(proxyConfig);
 
     /** @type {typedefs.CrawlerOptions} */
@@ -195,43 +214,43 @@ Apify.main(async () => {
         requestQueue,
         // @ts-ignore
         proxyConfiguration,
-        puppeteerPoolOptions,
         maxConcurrency,
-        launchPuppeteerFunction: (options) => {
-            return Apify.launchPuppeteer({
-                ...options,
-                // @ts-ignore The SDK types don't understand Puppeteer options
-                headless,
-                useChrome,
-                args: [
-                    // @ts-ignore
-                    ...(options.args ? options.args : {}),
-                    // this is needed to access cross-domain iframes
-                    '--disable-web-security',
-                    '--disable-features=IsolateOrigins,site-per-process',
-                    `--lang=${language}`, // force language at browser level
-                ],
-                stealth: useStealth,
-                stealthOptions: {
-                    addLanguage: false,
-                    addPlugins: false,
-                    emulateConsoleDebug: false,
-                    emulateWebGL: false,
-                    hideWebDriver: true,
-                    emulateWindowFrame: false,
-                    hackPermissions: false,
-                    mockChrome: false,
-                    mockDeviceMemory: false,
-                    mockChromeInIframe: false,
-                },
-            });
-        },
         useSessionPool: true,
+        persistCookiesPerSession: true,
         // This is just passed to gotoFunction
         pageLoadTimeoutSec,
         // long timeout, because of long infinite scroll
         handlePageTimeoutSecs: 30 * 60,
         maxRequestRetries: maxPageRetries,
+        // NOTE: Before 1.0, there was useIncognitoPages: true, let's hope it was not needed
+        browserPoolOptions: {
+            maxOpenPagesPerBrowser: maxPagesPerBrowser,
+        },
+        launchContext: {
+            useChrome,
+            stealth: useStealth,
+            stealthOptions: {
+                addLanguage: false,
+                addPlugins: false,
+                emulateConsoleDebug: false,
+                emulateWebGL: false,
+                hideWebDriver: true,
+                emulateWindowFrame: false,
+                hackPermissions: false,
+                mockChrome: false,
+                mockDeviceMemory: false,
+                mockChromeInIframe: false,
+            },
+            launchOptions: {
+                headless,
+                args: [
+                    // this is needed to access cross-domain iframes
+                    '--disable-web-security',
+                    '--disable-features=IsolateOrigins,site-per-process',
+                    `--lang=${language}`, // force language at browser level
+                ],
+            } 
+        },
     };
 
     /** @type {PersonalDataOptions} */
@@ -243,19 +262,24 @@ Apify.main(async () => {
     /** @type {typedefs.ScrapingOptions} */
     const scrapingOptions = {
         includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
-        maxReviews, maxImages, exportPlaceUrls, additionalInfo, maxCrawledPlaces,
-        maxAutomaticZoomOut, placesCache, reviewsSort, language,
-        multiplier: startRequests.length || 1, // workaround for the maxCrawledPlaces when using multiple queries/startUrls
+        maxReviews, maxImages, exportPlaceUrls, additionalInfo,
+        maxAutomaticZoomOut, reviewsSort, language,
         geo, reviewsTranslation,
         personalDataOptions,
     };
 
+    /** @type {typedefs.HelperClasses} */
+    const helperClasses = {
+        stats, errorSnapshotter, maxCrawledPlacesTracker, placesCache,
+    };
+
     // Create and run crawler
-    const crawler = placesCrawler.setUpCrawler({ crawlerOptions, scrapingOptions, stats, errorSnapshotter });
+    const crawler = placesCrawler.setUpCrawler({ crawlerOptions, scrapingOptions, helperClasses });
 
     await crawler.run();
     await stats.saveStats();
     await placesCache.savePlaces();
+    await maxCrawledPlacesTracker.persist();
 
     log.info('Scraping finished!');
 });
