@@ -22,7 +22,6 @@
             "type": "integer",
             "description": "Maximum number of places you scrape per whole run. If you want to scrape all available, set this to `9999999`.",
             "prefill": 20,
-            "default": 20,
             "minimum": 0
         },
         "maxCrawledPlacesPerSearch": {
