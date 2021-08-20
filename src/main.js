@@ -100,10 +100,18 @@ Apify.main(async () => {
                 log.warning('\n\n------\nUsing Start URLs disables search. You can use either search or Start URLs.\n------\n');
             }
             // Apify has a tendency to strip part of URL for uniqueKey for Google Maps URLs
-            const updatedStartUrls = startUrls.map((request) => ({
-                ...request,
-                uniqueKey: request.url,
-            }));
+            const updatedStartUrls = startUrls.map((request) => {
+                if (typeof request === 'string') {
+                    return {
+                        url: request,
+                        uniqueKey: request
+                    }
+                }
+                return {
+                    ...request,
+                    uniqueKey: request.url,
+                }
+            });
             // We do this trick with request list to automaticaly work for requestsFromUrl
             const rlist = await Apify.openRequestList('STARTURLS', updatedStartUrls);
             let req;
@@ -193,7 +201,7 @@ Apify.main(async () => {
                     break;
                 }
             }
-            await requestQueue.addRequest(request);            
+            await requestQueue.addRequest(request);
         }
 
         await Apify.setValue('START-REQUESTS', startRequests);
@@ -249,7 +257,7 @@ Apify.main(async () => {
                     '--disable-features=IsolateOrigins,site-per-process',
                     `--lang=${language}`, // force language at browser level
                 ],
-            } 
+            }
         },
     };
 
