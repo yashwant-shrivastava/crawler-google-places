@@ -61,6 +61,7 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, helper
                     request,
                     helperClasses,
                     scrapingOptions,
+                    crawler,
                 }),
             );
 
@@ -79,6 +80,8 @@ const handlePageFunctionExtended = async ({ pageContext, scrapingOptions, helper
                 scrapingOptions,
                 errorSnapshotter,
                 stats,
+                maxCrawledPlacesTracker,
+                crawler,
             });
         }
         stats.ok();
@@ -104,8 +107,15 @@ module.exports.setUpCrawler = ({ crawlerOptions, scrapingOptions, helperClasses 
         // We have to strip this otherwise SDK complains
         ...options,
         preNavigationHooks: [async ({ request, page, session }, gotoOptions) => {
+            // TODO: Figure out how to drain the queue from only requests for search strings
+            // that reached maxCrawledPlacesPerSearch
+            // https://github.com/drobnikj/crawler-google-places/issues/171
+            /*
+                if (!maxCrawledPlacesTracker.canScrapeMore(request.userData.searchString)) {
+                    
+                }
+            */
             // @ts-ignore
-            // eslint-disable-next-line no-underscore-dangle
             await page._client.send('Emulation.clearDeviceMetricsOverride');
             // This blocks images so we have to skip it
             if (!maxImages) {

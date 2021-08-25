@@ -29,12 +29,13 @@ const CHECK_LOAD_OUTCOMES_EVERY_MS = 500;
  *   placesCache: PlacesCache,
  *   stats: Stats,
  *   maxCrawledPlacesTracker: MaxCrawledPlacesTracker,
+ *   crawler: Apify.PuppeteerCrawler,
  * }} options
  * @return {(response: Puppeteer.Response) => Promise<void>}
  */
 const enqueuePlacesFromResponse = (options) => {
     const { page, requestQueue, searchString, request, exportPlaceUrls, geo,
-        placesCache, stats, maxCrawledPlacesTracker } = options;
+        placesCache, stats, maxCrawledPlacesTracker, crawler } = options;
     return async (response) => {
         const url = response.url();
         if (url.match(/google\.[a-z.]+\/search/)) {
@@ -54,9 +55,20 @@ const enqueuePlacesFromResponse = (options) => {
                 index++;
                 const rank = ((pageNumber - 1) * 20) + (index + 1);
                 if (exportPlaceUrls) {
+                    if (!maxCrawledPlacesTracker.canScrapeMore()) {
+                        return;
+                    }
+                    const shouldScrapeMore = maxCrawledPlacesTracker.setScraped();
                     await Apify.pushData({
                         url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${placePaginationData.placeId}`,
                     });
+                    if (!shouldScrapeMore) {
+                        log.warning(`[SEARCH]: Finishing scraping because we reached maxCrawledPlaces `
+                            // + `currently: ${maxCrawledPlacesTracker.enqueuedPerSearch[searchKey]}(for this search)/${maxCrawledPlacesTracker.enqueuedTotal}(total) `
+                            + `--- ${searchString} - ${request.url}`);
+                        await crawler.autoscaledPool?.abort();
+                        return;
+                    }
                 } else {
                     // TODO: Refactor this once we get rid of the caching
                     const coordinates = placePaginationData.coords || placesCache.getLocation(placePaginationData.placeId);
@@ -157,6 +169,7 @@ const waitForSearchResults = async (page) => {
  *  request: Apify.Request,
  *  helperClasses: typedefs.HelperClasses,
  *  scrapingOptions: typedefs.ScrapingOptions,
+ *  crawler: Apify.PuppeteerCrawler,
  * }} options
  */
 module.exports.enqueueAllPlaceDetails = async ({
@@ -164,6 +177,7 @@ module.exports.enqueueAllPlaceDetails = async ({
                                           searchString,
                                           requestQueue,
                                           request,
+                                          crawler,
                                           scrapingOptions,
                                           helperClasses,
                                       }) => {
@@ -180,6 +194,7 @@ module.exports.enqueueAllPlaceDetails = async ({
         placesCache,
         stats,
         maxCrawledPlacesTracker,
+        crawler,
     }));
     // there is no searchString when startUrls are used
     if (searchString) {
@@ -224,7 +239,7 @@ module.exports.enqueueAllPlaceDetails = async ({
         }
 
         if (!maxCrawledPlacesTracker.canEnqueueMore(searchString || request.url)) {
-            // no need to log here because it is logged already in enqueuePlacesFromResponse
+            // no need to log here because it is logged already in 
             return;
         }
 

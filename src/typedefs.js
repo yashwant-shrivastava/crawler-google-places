@@ -220,4 +220,14 @@ const MaxCrawledPlacesTracker = require('./max-crawled-places'); // eslint-disab
  * }} GeoJson
  */
 
+/**
+ *  @typedef {{
+ * enqueuedTotal: number,
+ * enqueuedPerSearch: Object.<string, number>,
+ * scrapedTotal: number,
+ * scrapedPerSearch: Object.<string, number>,
+ * }} MaxCrawledPlacesState}
+ *
+ */ 
+
 module.exports = {};
