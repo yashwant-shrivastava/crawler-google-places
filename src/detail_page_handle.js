@@ -1,7 +1,7 @@
 const Apify = require('apify'); // eslint-disable-line no-unused-vars
 const Puppeteer = require('puppeteer'); // eslint-disable-line no-unused-vars
 
-const { ScrapingOptions, PlaceUserData } = require('./typedefs'); // eslint-disable-line no-unused-vars
+const { ScrapingOptions, PlaceUserData, MaxCrawledPlacesTracker } = require('./typedefs'); // eslint-disable-line no-unused-vars
 const ErrorSnapshotter = require('./error-snapshotter'); // eslint-disable-line no-unused-vars
 const Stats = require('./stats'); // eslint-disable-line no-unused-vars
 
@@ -23,11 +23,14 @@ const { log } = Apify.utils;
  *  scrapingOptions: ScrapingOptions,
  *  errorSnapshotter: ErrorSnapshotter,
  *  stats: Stats,
+ *  maxCrawledPlacesTracker: MaxCrawledPlacesTracker,
+ *  crawler: Apify.PuppeteerCrawler,
  * }} options
  */
 module.exports.handlePlaceDetail = async (options) => {
     const {
-        page, request, searchString, session, scrapingOptions, errorSnapshotter, stats,
+        page, request, searchString, session, scrapingOptions, errorSnapshotter,
+        stats, maxCrawledPlacesTracker, crawler
     } = options;
     const {
         includeHistogram, includeOpeningHours, includePeopleAlsoSearch,
@@ -161,7 +164,15 @@ module.exports.handlePlaceDetail = async (options) => {
         orderBy,
     };
 
+    
     await Apify.pushData(detail);
     stats.places();
     log.info(`[PLACE]: Place scraped successfully --- ${url}`);
+    const shouldScrapeMore = maxCrawledPlacesTracker.setScraped();
+    if (!shouldScrapeMore) {
+        log.warning(`[SEARCH]: Finishing scraping because we reached maxCrawledPlaces `
+            // + `currently: ${maxCrawledPlacesTracker.enqueuedPerSearch[searchKey]}(for this search)/${maxCrawledPlacesTracker.enqueuedTotal}(total) `
+            + `--- ${searchString} - ${request.url}`);
+        crawler.autoscaledPool?.abort();
+    }
 };
