@@ -1,3 +1,7 @@
+## 2021-08-25
+*Fixes*
+- Fixed `maxCrawledPlaces` not finishing quickly for large country-wise searches. `maxCrawledPlacesPerSearch` still has this problem
+
 ## 2021-08-12
 *Fixes*
 - Fixed problem that `startUrls` was not picking up all provided URLs sometimes (due to automatic `uniqueKey` resolution)
