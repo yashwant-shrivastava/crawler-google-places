@@ -1,3 +1,12 @@
+## 2021-09-01
+*Fixes*
+- Fixed `placeId` extraction that was broken for some inputs
+
+*Features*
+- Added option to input URLs with CID (Google My Business Listing ID) to start URLs, e.g. https://maps.google.com/?cid=12640514468890456789
+- Added `cid` to output
+
+
 ## 2021-08-25
 *Fixes*
 - Fixed `maxCrawledPlaces` not finishing quickly for large country-wise searches. `maxCrawledPlacesPerSearch` still has this problem

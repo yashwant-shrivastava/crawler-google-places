@@ -78,6 +78,13 @@ module.exports.handlePlaceDetail = async (options) => {
         }
     });
 
+    // Enable to debug data parsed from JSONs - DON'T FORGET TO REMOVE BEFORE PUSHING!
+    /*
+    await Apify.setValue('APP-OPTIONS', await page.evaluate(() => APP_OPTIONS ))
+    await Apify.setValue('APP_INIT_STATE', await page.evaluate(() => APP_INITIALIZATION_STATE ));
+    await Apify.setValue('JSON-DATA', jsonData);
+    */    
+
     const pageData = await extractPageData({ page, jsonData });
 
     const orderBy = (() => {
@@ -126,12 +133,20 @@ module.exports.handlePlaceDetail = async (options) => {
 
     const defaultReviewsJson = jsonData?.[52]?.[0];
 
+    let cid;
+    const cidHexSplit = jsonData?.[10]?.split(':');
+    if (cidHexSplit && cidHexSplit[1]) {
+        // Hexadecimal to decimal. We have to use BigInt because JS Number does not have enough precision
+        cid = BigInt(cidHexSplit[1]).toString();
+    }
+
     const detail = {
         ...pageData,
         totalScore,
         isAdvertisement,
         rank,
-        placeId: request.uniqueKey,
+        placeId: jsonData?.[78] || request.uniqueKey,
+        cid,
         url,
         searchPageUrl,
         searchString,
