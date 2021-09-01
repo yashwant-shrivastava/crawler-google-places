@@ -11,6 +11,8 @@ const MaxCrawledPlacesTracker = require('./max-crawled-places');
 const { prepareSearchUrls } = require('./search');
 const { createStartRequestsWithWalker } = require('./walker');
 const { makeInputBackwardsCompatible, validateInput } = require('./input-validation');
+const { REGEXES } = require('./consts');
+
 const { log } = Apify.utils;
 
 // NOTE: This scraper is mostly typed with Typescript lint.
@@ -114,8 +116,11 @@ Apify.main(async () => {
             });
             // We do this trick with request list to automaticaly work for requestsFromUrl
             const rlist = await Apify.openRequestList('STARTURLS', updatedStartUrls);
-            let req;
-            while (req = await rlist.fetchNextRequest()) {
+            for (;;) {
+                const req = await rlist.fetchNextRequest();
+                if (!req) {
+                    break;
+                }
                 // We have to do this here again if requestsFromUrl were used
                 req.uniqueKey = req.url;
 
@@ -126,14 +131,15 @@ Apify.main(async () => {
                     log.warning('ATTENTION! URLs starting with "https://www.google.com/search" '
                         + 'are not supported! Please transform your URL to start with "https://www.google.com/maps"');
                     log.warning(`Happened for provided URL: ${req.url}`);
-                } else if (!/google\.[a-z.]+\/maps\/(search|place)\//.test(req.url)) {
+                } else if (!Object.values(REGEXES).some((regex) => regex.test(req.url))) {
                     // allows only search and place urls
                     log.warning('ATTENTION! URL you provided is not '
                         + 'recognized as a valid Google Maps URL. '
-                        + 'Please use URLs with /maps/search or /maps/place or contact support@apify.com to add a new format');
+                        + 'Please use URLs with /maps/search, /maps/place, google.com?cid=number or contact support@apify.com to add a new format');
                     log.warning(`Happened for provided URL: ${req.url}`);
                 } else {
-                    const isPlace = req.url.includes('/maps/place/');
+                    const isPlace = [REGEXES.PLACE_URL_NORMAL, REGEXES.PLACE_URL_CID]
+                        .some((regex) => regex.test(req.url))
                     startRequests.push({
                         ...req,
                         userData: { label: isPlace ? 'detail' : 'startUrl', searchString: null, baseUrl: req.url },

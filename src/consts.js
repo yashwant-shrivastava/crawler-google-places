@@ -8,3 +8,9 @@ exports.BACK_BUTTON_SEL = 'button[jsaction*=back], button[aria-label="Back"]';
 exports.NEXT_BUTTON_SELECTOR = '[jsaction="pane.paginationSection.nextPage"]';
 
 exports.NO_RESULT_XPATH = '//div[contains(text(), "No results found")]';
+
+exports.REGEXES = {
+    PLACE_URL_NORMAL: /google\.[a-z.]+\/maps\/place/,
+    PLACE_URL_CID: /google\.[a-z.]+.+cid=\d+(&|\b)/,
+    SEARCH_URL_NORMAL: /google\.[a-z.]+\/maps\/search/,
+}
