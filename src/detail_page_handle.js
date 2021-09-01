@@ -79,11 +79,11 @@ module.exports.handlePlaceDetail = async (options) => {
     });
 
     // Enable to debug data parsed from JSONs - DON'T FORGET TO REMOVE BEFORE PUSHING!
-    
+    /*
     await Apify.setValue('APP-OPTIONS', await page.evaluate(() => APP_OPTIONS ))
     await Apify.setValue('APP_INIT_STATE', await page.evaluate(() => APP_INITIALIZATION_STATE ));
     await Apify.setValue('JSON-DATA', jsonData);
-    
+    */    
 
     const pageData = await extractPageData({ page, jsonData });
 
