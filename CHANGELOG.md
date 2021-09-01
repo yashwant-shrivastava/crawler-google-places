@@ -1,6 +1,7 @@
 ## 2021-09-01
 *Fixes*
 - Fixed `placeId` extraction that was broken for some inputs
+- Fixed missing `imageUrls`
 
 *Features*
 - Added option to input URLs with CID (Google My Business Listing ID) to start URLs, e.g. https://maps.google.com/?cid=12640514468890456789

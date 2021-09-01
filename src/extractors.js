@@ -659,9 +659,9 @@ module.exports.extractImages = async ({ page, maxImages }) => {
             imageUrls = await page.evaluate(() => {
                 /** @type {string[]} */
                 const urls = [];
-                $('.gallery-image-high-res').each(function () {
+                $('[data-photo-index]').each((i, el) => {
                     // @ts-ignore
-                    const urlMatch = $(this).attr('style').match(/url\("(.*)"\)/);
+                    const urlMatch = $(el).find('div').eq(0).attr('style').match(/url\("(.*)"\)/);
                     if (!urlMatch) return;
                     let imageUrl = urlMatch[1];
                     if (imageUrl[0] === '/') imageUrl = `https:${imageUrl}`;
