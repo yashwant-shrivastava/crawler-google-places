@@ -38,7 +38,7 @@ Apify.main(async () => {
 
         // Scraping options
         includeHistogram = false, includeOpeningHours = false, includePeopleAlsoSearch = false,
-        maxReviews = 5, maxImages = 1, exportPlaceUrls = false, additionalInfo = false,
+        maxReviews = 0, maxImages = 1, exportPlaceUrls = false, additionalInfo = false,
         maxCrawledPlaces = 99999999, maxCrawledPlacesPerSearch = maxCrawledPlaces,
         maxAutomaticZoomOut, reviewsSort = 'mostRelevant', reviewsTranslation = 'originalAndTranslated',
 
