@@ -1,3 +1,7 @@
+## 2021-09-07
+**Breaking fix**
+- If you did not pass `maxReviews` in the input at all (`undefined`), it scraped 5 reviews as default. That was against the input schema description so it is now fixed to scrape 0 reviews in those cases.
+
 ## 2021-09-01
 *Fixes*
 - Fixed `placeId` extraction that was broken for some inputs
