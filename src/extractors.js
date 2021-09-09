@@ -475,7 +475,7 @@ const removePersonalDataFromReviews = (reviews, personalDataOptions) => {
  */
 module.exports.extractReviews = async ({ page, reviewsCount,
     maxReviews, reviewsSort, reviewsTranslation, defaultReviewsJson, personalDataOptions }) => {
-
+    log.debug(`We are starting with ${defaultReviewsJson.length} default reviews`);
     /** Returned at the last line @type {Review[]} */
     let reviews = [];
 
