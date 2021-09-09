@@ -579,9 +579,10 @@ module.exports.extractReviews = async ({ page, reviewsCount,
             */
             log.info(`[PLACE]: Extracting reviews: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
             let reviewUrl = reviewsResponse.url();
+            log.debug(`Base review URL: ${reviewUrl}`);
 
             reviewUrl = reviewUrl.replace(/!3e\d/, `!3e${reviewSortOptions[reviewsSort] + 1}`);
-
+            log.debug(`Review URL after sorting: ${reviewUrl}`);
             // TODO: We capture the first batch, this should not start from 0 I think
             // Make sure that we star review from 0, setting !1i0
             reviewUrl = reviewUrl.replace(/!1i\d+/, '!1i0');
