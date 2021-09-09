@@ -595,6 +595,7 @@ module.exports.extractReviews = async ({ page, reviewsCount,
             };
 
             while (reviews.length < maxReviews) {
+                log.debug(`Doing request for reviews on URL: ${reviewUrl}`);
                 // Request in browser context to use proxy as in browser
                 const responseBody = await page.evaluate(async (url) => {
                     const response = await fetch(url);
