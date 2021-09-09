@@ -96,6 +96,7 @@ const parseJsonResult = (placeData, isAdvertisement) => {
  * @return {Review}
  */
  const parseReviewFromJson = (jsonArray, reviewsTranslation) => {
+     log.debug(`Starting to parse review`);
     let text = jsonArray[3];
 
     // Optionally remove translation
@@ -158,15 +159,19 @@ const parseReviewFromResponseBody = (responseBody, reviewsTranslation) => {
     try {
         results = stringifyGoogleXrhResponse(stringBody);
     } catch (e) {
+        log.debug(`Got error from parsing response: ${e.message}`);
         return { error: e.message };
     }
     if (!results || !results[2]) {
+        log.debug(`Did not found correct reviews format`);
         return { currentReviews };
     }
+    log.debug(`Got ${results[2].length} reviews in results[2]`);
     results[2].forEach((/** @type {any} */ jsonArray) => {
         const review = parseReviewFromJson(jsonArray, reviewsTranslation);
         currentReviews.push(review);
     });
+    log.debug(`Returning ${currentReviews.length} reviews`);
     return { currentReviews };
 };
 
