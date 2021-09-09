@@ -475,6 +475,7 @@ const removePersonalDataFromReviews = (reviews, personalDataOptions) => {
  */
 module.exports.extractReviews = async ({ page, reviewsCount,
     maxReviews, reviewsSort, reviewsTranslation, defaultReviewsJson, personalDataOptions }) => {
+    await Apify.utils.puppeteer.saveSnapshot(page, { key: 'REVIEWS-START' })
     log.debug(`We are starting with ${defaultReviewsJson.length} default reviews`);
     /** Returned at the last line @type {Review[]} */
     let reviews = [];
@@ -568,6 +569,9 @@ module.exports.extractReviews = async ({ page, reviewsCount,
                 // scrollTo(page, '.section-scrollbox.scrollable-y', 10000),
             ]);
 
+            await Apify.utils.puppeteer.saveSnapshot(page, { key: 'REVIEWS-AFTER-CLICK' })
+
+
             // We skip these baceause they are loaded again when we click on all reviews
             // Keeping them for reference as we might wanna use these and start with bigger offset
             // to save one API call
@@ -619,6 +623,9 @@ module.exports.extractReviews = async ({ page, reviewsCount,
                 log.info(`[PLACE]: Extracting reviews: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
                 reviewUrl = increaseLimitInUrl(reviewUrl);
             }
+
+            await Apify.utils.puppeteer.saveSnapshot(page, { key: 'REVIEWS-END' })
+
             log.info(`[PLACE]: Reviews extraction finished: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
             await navigateBack(page, 'reviews');
         }
@@ -689,3 +696,7 @@ module.exports.extractImages = async ({ page, maxImages }) => {
 
     return enlargeImageUrls(resultImageUrls);
 };
+
+// https://www.google.com/maps/preview/review/listentitiesreviews?authuser=0&hl=de&gl=us&pb=!1m2!1y5158925358218079371!2y15868538258371962189!2m2!1i0!2i10!3e1!4m5!3b1!4b1!5b1!6b1!7b1!5m2!1sH3I6YcSyDIyx5NoP2LOH0As!7e81
+// https://www.google.com/maps/preview/review/listentitiesreviews?authuser=0&hl=de&gl=us&pb=!1m2!1y5158925358218079371!2y15868538258371962189!2m2!1i0!2i10!3e1!4m5!3b1!4b1!5b1!6b1!7b1!5m2!1sfXI6YaTYAdKm_Qa91Yf4BA!7e81
+// https://www.google.com/maps/preview/review/listentitiesreviews?authuser=0&hl=de&gl=us&pb=!1m2!1y5158925358218079371!2y15868538258371962189!2m2!1i0!2i10!3e1!4m5!3b1!4b1!5b1!6b1!7b1!5m2!1s1nI6YcqpHorWavb7uqAD!7e81
