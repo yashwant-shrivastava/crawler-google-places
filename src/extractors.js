@@ -590,9 +590,9 @@ module.exports.extractReviews = async ({ page, reviewsCount, request,
         if (reviews.length < targetReviewsCount) {
             // MOTE: We don't want to get into infinite loop or fail the request completely
             if (request.retryCount < 2) {
-                throw `Google served us less reviews than it should (${reviews}/${targetReviewsCount}). Retrying the whole page`;
+                throw `Google served us less reviews than it should (${reviews.length}/${targetReviewsCount}). Retrying the whole page`;
             } else {
-                log.warning(`Google served us less reviews than it should (${reviews}/${targetReviewsCount})`);
+                log.warning(`Google served us less reviews than it should (${reviews.length}}/${targetReviewsCount})`);
             }
         }
         log.info(`[PLACE]: Reviews extraction finished: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
