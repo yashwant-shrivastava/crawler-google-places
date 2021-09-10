@@ -460,6 +460,7 @@ const removePersonalDataFromReviews = (reviews, personalDataOptions) => {
  * @param {{
  *    page: Puppeteer.Page,
  *    reviewsCount: number,
+ *    request: Apify.Request,
  *    maxReviews: number,
  *    reviewsSort: string,
  *    reviewsTranslation: string,
@@ -468,15 +469,21 @@ const removePersonalDataFromReviews = (reviews, personalDataOptions) => {
  * }} options
  * @returns {Promise<Review[]>}
  */
-module.exports.extractReviews = async ({ page, reviewsCount,
+module.exports.extractReviews = async ({ page, reviewsCount, request,
     maxReviews, reviewsSort, reviewsTranslation, defaultReviewsJson, personalDataOptions }) => {
 
+    // How many we should scrape (otherwise we retry)
+    const targetReviewsCount = Math.min(reviewsCount, maxReviews);
     /** Returned at the last line @type {Review[]} */
     let reviews = [];
 
+    if (targetReviewsCount === 0) {
+        return [];
+    }
+
     // If we already have all reviews from the page as default ones, we can finish
     // Just need to sort appropriately manually
-    if (reviewsCount > 0 && defaultReviewsJson && defaultReviewsJson.length >= reviewsCount) {
+    if (defaultReviewsJson.length >= targetReviewsCount) {
         reviews = defaultReviewsJson
             .map((defaultReviewJson) => parseReviewFromJson(defaultReviewJson, reviewsTranslation));
         // mostRelevant is default
@@ -497,10 +504,10 @@ module.exports.extractReviews = async ({ page, reviewsCount,
         log.info(`[PLACE]: Reviews extraction finished: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
     } else {
         // Standard scrolling
+        // We don't use default reviews if we gonna scroll.
+        // Scrolling is fast anyway so we can easily do it from scratch
         const reviewsButtonSel = 'button[jsaction="pane.reviewChart.moreReviews"]';
 
-        // TODO: We can probably safely remove this for reviewsCount == 0
-        // Will keep it now as a double check
         try {
             await page.waitForSelector(reviewsButtonSel, { timeout: 15000 });
         } catch (e) {
@@ -521,100 +528,75 @@ module.exports.extractReviews = async ({ page, reviewsCount,
             }
         });
 
-        // TODO: Scrape default reviews (will allow us to extract 10 reviews by default without additional clicking)
-        if (reviewsCount && typeof maxReviews === 'number' && maxReviews > 0) {
-            await page.waitForSelector(reviewsButtonSel);
-            // await page.click(reviewsButtonSel);
+        await page.waitForSelector(reviewsButtonSel);
 
-            /** @type {{[key: string]: number}} */
-            const reviewSortOptions = {
-                mostRelevant: 0,
-                newest: 1,
-                highestRanking: 2,
-                lowestRanking: 3,
-            };
+        /** @type {{[key: string]: number}} */
+        const reviewSortOptions = {
+            mostRelevant: 0,
+            newest: 1,
+            highestRanking: 2,
+            lowestRanking: 3,
+        };
 
-            // This is unnecessary as we can sort via URL manipulation
-            // TODO: Remove later, should not be needed
-            /*
-            const sortPromise1 = async () => {
-                try {
-                    await page.click('button[data-value="Sort"], [class*=dropdown-icon]');
-                    await sleep(1000);
-                    for (let i = 0; i < reviewSortOptions[reviewsSort]; i += 1) {
-                        await page.keyboard.press('ArrowDown');
-                        await sleep(500);
-                    }
-                    await page.keyboard.press('Enter');
-                } catch (e) {
-                    log.debug('[PLACE]: Unable to sort reviews!');
-                }
-            };
-            */
+        await sleep(500);
+        const [reviewsResponse] = await Promise.all([
+            page.waitForResponse((response) => response.url().includes('preview/review/listentitiesreviews')),
+            page.click(reviewsButtonSel),
+        ]);
 
-            await sleep(500);
-            const [reviewsResponse] = await Promise.all([
-                page.waitForResponse((response) => response.url().includes('preview/review/listentitiesreviews')),
-                page.click(reviewsButtonSel)
-                // sortPromise1(),
-                // This is here to work around the default setting not giving us any XHR
-                // TODO: Rework this
+        log.info(`[PLACE]: Extracting reviews: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
+        let reviewUrl = reviewsResponse.url();
 
-                // scrollTo(page, '.section-scrollbox.scrollable-y', 10000),
-            ]);
+        // We start "manual scrolling requests" from scratch because of sorting
+        reviewUrl = reviewUrl.replace(/!3e\d/, `!3e${reviewSortOptions[reviewsSort] + 1}`);
 
-            // We skip these baceause they are loaded again when we click on all reviews
-            // Keeping them for reference as we might wanna use these and start with bigger offset
-            // to save one API call
-            /*
-            const reviewResponseBody = await reviewsResponse.buffer();
-            const reviewsFirst = parseReviewFromResponseBody(reviewResponseBody);
-            reviews.push(...reviewsFirst);
-            reviews = reviews.slice(0, maxReviews);
-            */
-            log.info(`[PLACE]: Extracting reviews: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
-            let reviewUrl = reviewsResponse.url();
+        // TODO: We capture the first batch, this should not start from 0 I think
+        // Make sure that we star review from 0, setting !1i0
+        reviewUrl = reviewUrl.replace(/!1i\d+/, '!1i0');
 
-            reviewUrl = reviewUrl.replace(/!3e\d/, `!3e${reviewSortOptions[reviewsSort] + 1}`);
+        /** @param {string} url */
+        const increaseLimitInUrl = (url) => {
+            // @ts-ignore
+            const numberString = reviewUrl.match(/!1i(\d+)/)[1];
+            const number = parseInt(numberString, 10);
+            return url.replace(/!1i\d+/, `!1i${number + 10}`);
+        };
 
-            // TODO: We capture the first batch, this should not start from 0 I think
-            // Make sure that we star review from 0, setting !1i0
-            reviewUrl = reviewUrl.replace(/!1i\d+/, '!1i0');
-
-            /** @param {string} url */
-            const increaseLimitInUrl = (url) => {
-                // @ts-ignore
-                const numberString = reviewUrl.match(/!1i(\d+)/)[1];
-                const number = parseInt(numberString, 10);
-                return url.replace(/!1i\d+/, `!1i${number + 10}`);
-            };
-
-            while (reviews.length < maxReviews) {
-                // Request in browser context to use proxy as in browser
-                const responseBody = await page.evaluate(async (url) => {
-                    const response = await fetch(url);
-                    return response.text();
-                }, reviewUrl);
-                const { currentReviews, error } = parseReviewFromResponseBody(responseBody, reviewsTranslation);
-                if (error) {
-                    // This means that invalid response were returned
-                    // I think can happen if the review count changes
-                    log.warning(`Invalid response returned for reviews. `
-                    + `This might be caused by updated review count. The reviews should be scraped correctly. ${page.url()}`);
-                    log.warning(error);
-                    break;
-                }
-                if (currentReviews.length === 0) {
-                    break;
-                }
-                reviews.push(...currentReviews);
-                reviews = reviews.slice(0, maxReviews);
-                log.info(`[PLACE]: Extracting reviews: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
-                reviewUrl = increaseLimitInUrl(reviewUrl);
+        while (reviews.length < targetReviewsCount) {
+            // Request in browser context to use proxy as in browser
+            const responseBody = await page.evaluate(async (url) => {
+                const response = await fetch(url);
+                return response.text();
+            }, reviewUrl);
+            const { currentReviews, error } = parseReviewFromResponseBody(responseBody, reviewsTranslation);
+            if (error) {
+                // This means that invalid response were returned
+                // I think can happen if the review count changes
+                log.warning(`Invalid response returned for reviews. `
+                + `This might be caused by updated review count. The reviews should be scraped correctly. ${page.url()}`);
+                log.warning(error);
+                break;
             }
-            log.info(`[PLACE]: Reviews extraction finished: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
-            await navigateBack(page, 'reviews');
+            if (currentReviews.length === 0) {
+                break;
+            }
+            reviews.push(...currentReviews);
+            reviews = reviews.slice(0, maxReviews);
+            log.info(`[PLACE]: Extracting reviews: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
+            reviewUrl = increaseLimitInUrl(reviewUrl);
         }
+        // NOTE: Sometimes for unknown reason, Google gives less reviews and in different order
+        // TODO: Find a cause!!! All requests URLs look the same otherwise
+        if (reviews.length < targetReviewsCount) {
+            // MOTE: We don't want to get into infinite loop or fail the request completely
+            if (request.retryCount < 2) {
+                throw `Google served us less reviews than it should (${reviews}/${targetReviewsCount}). Retrying the whole page`;
+            } else {
+                log.warning(`Google served us less reviews than it should (${reviews}/${targetReviewsCount})`);
+            }
+        }
+        log.info(`[PLACE]: Reviews extraction finished: ${reviews.length}/${reviewsCount} --- ${page.url()}`);
+        await navigateBack(page, 'reviews');
     }
     reviews = reviews.slice(0, maxReviews);
     return removePersonalDataFromReviews(reviews, personalDataOptions);
