@@ -161,6 +161,7 @@ module.exports.handlePlaceDetail = async (options) => {
         reviews: await errorSnapshotter.tryWithSnapshot(
             page,
             async () => extractReviews({
+                request,
                 page,
                 reviewsCount,
                 maxReviews,
