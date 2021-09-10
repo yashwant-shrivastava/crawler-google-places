@@ -1,3 +1,11 @@
+## 2021-09-10
+https://github.com/drobnikj/crawler-google-places/pull/185
+https://github.com/drobnikj/crawler-google-places/issues/181
+
+*Fixes*
+-  In like 10% cases, the reviews are in wrong order and there is less of them. We didn't find a root cause yet but we retry the page so the output gets corrected.
+
+
 ## 2021-09-07
 **Breaking fix**
 - If you did not pass `maxReviews` in the input at all (`undefined`), it scraped 5 reviews as default. That was against the input schema description so it is now fixed to scrape 0 reviews in those cases.
