@@ -191,11 +191,6 @@ module.exports.extractPageData = async ({ page, jsonData }) => {
             ? $('[data-section-id="pn0"].section-info-speak-numeral').attr('data-href').replace('tel:', '')
             : $("button[data-tooltip*='phone']").text().trim();
         const phoneAlt = $('button[data-item-id*=phone]').text().trim();
-        let temporarilyClosed = false;
-        let permanentlyClosed = false;
-        const altOpeningHoursText = $('[class*="section-info-hour-text"] [class*="section-info-text"]').text().trim();
-        if (altOpeningHoursText === 'Temporarily closed') temporarilyClosed = true;
-        else if (altOpeningHoursText === 'Permanently closed') permanentlyClosed = true;
 
         return {
             title: $(placeTitleSel).text().trim(),
@@ -214,8 +209,8 @@ module.exports.extractPageData = async ({ page, jsonData }) => {
                 : $("button[data-tooltip*='website']").text().trim()
                 || $("button[data-item-id*='authority']").text().trim() || null,
             phone: phone || phoneAlt || null,
-            temporarilyClosed,
-            permanentlyClosed,
+            // Wasn't able to find this in the JSON
+            temporarilyClosed: $('#pane').text().includes('Temporarily closed'),
         };
     }, PLACE_TITLE_SEL, jsonResult?.addressParsed || {});
 };
