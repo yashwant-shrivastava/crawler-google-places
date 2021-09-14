@@ -2,7 +2,7 @@
 const Apify = require('apify');
 const Puppeteer = require('puppeteer'); // eslint-disable-line
 
-const {Review, PersonalDataOptions, PlacePaginationData} = require('./typedefs');
+const {Review, PersonalDataOptions, PlacePaginationData, PopularTimesOutput} = require('./typedefs');
 
 const { PLACE_TITLE_SEL } = require('./consts');
 const { waitForGoogleMapLoader, fixFloatNumber, enlargeImageUrls, navigateBack } = require('./utils');
@@ -222,59 +222,43 @@ module.exports.extractPageData = async ({ page, jsonData }) => {
 
 /**
  * @param {{
- *    page: Puppeteer.Page
+ *    jsonData: any[]
  * }} options
  */
-module.exports.extractPopularTimes = async ({ page }) => {
-    const output = {};
-    // Include live popular times value
-    const popularTimesLiveRawValue = await page.evaluate(() => {
-        return $('.section-popular-times-live-value').attr('aria-label');
-    });
-    const popularTimesLiveRawText = await page.evaluate(() => $('.section-popular-times-live-description').text().trim());
-    output.popularTimesLiveText = popularTimesLiveRawText;
-    const popularTimesLivePercentMatch = popularTimesLiveRawValue ? popularTimesLiveRawValue.match(/(\d+)\s?%/) : null;
-    output.popularTimesLivePercent = popularTimesLivePercentMatch ? Number(popularTimesLivePercentMatch[1]) : null;
-
-    const histogramSel = '.section-popular-times';
-    if (await page.$(histogramSel)) {
-        output.popularTimesHistogram = await page.evaluate(() => {
-            /** @type {{[key: string]: any[]}} */
-            const graphs = {};
-            const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-            // Extract all days graphs
-            $('.section-popular-times-graph').each(function (i) {
-                const day = days[i];
-                graphs[day] = [];
-
-                /** @type {number | undefined} */
-                let graphStartFromHour;
-
-                // Finds where x axis starts
-                $(this).find('.section-popular-times-label').each(function (labelIndex) {
-                    if (graphStartFromHour) return;
-                    const hourText = $(this).text().trim();
-                    graphStartFromHour = hourText.includes('p')
-                        ? 12 + (parseInt(hourText, 10) - labelIndex)
-                        : parseInt(hourText, 10) - labelIndex;
-                });
-                // Finds values from y axis
-                $(this).find('.section-popular-times-bar').each(function (barIndex) {
-                    // @ts-ignore
-                    const occupancyMatch = $(this).attr('aria-label').match(/\d+(\s+)?%/);
-                    if (occupancyMatch && occupancyMatch.length) {
-                        // @ts-ignore
-                        const maybeHour = graphStartFromHour + barIndex;
-                        graphs[day].push({
-                            hour: maybeHour > 24 ? maybeHour - 24 : maybeHour,
-                            occupancyPercent: parseInt(occupancyMatch[0], 10),
-                        });
-                    }
-                });
-            });
-            return graphs;
-        });
+module.exports.extractPopularTimes = ({ jsonData }) => {
+    if (!jsonData) {
+        return {};
     }
+    const popularTimesData = jsonData[84];
+    if (!popularTimesData) {
+        return {};
+    }
+
+    /** @type {PopularTimesOutput} */
+    const output = {
+        // Live data are not present if it is outside opening hours now
+        popularTimesLiveText: popularTimesData[6] || null,
+        popularTimesLivePercent: popularTimesData[7]?.[1] || null,
+        popularTimesHistogram: {},
+    };
+
+    // Format of histogram we want for output is 
+    // { day: [{ hour, occupancyPercent}, ...], ...}
+
+    // Format Google has is 
+    // [day][1][hour] => [0] for hour, [1] for occupancy
+
+    const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+    /** @type {any[]} */
+    const daysData = popularTimesData[0];
+    daysData.forEach((dayData, i) => {
+        output.popularTimesHistogram[DAYS[i]] = [];
+        const hoursData = dayData[1];
+        for (const hourData of hoursData) {
+            const hourOutput = { hour: hourData[0], occupancyPercent: hourData[1] };
+            output.popularTimesHistogram[DAYS[i]].push(hourOutput) 
+        }
+    });
     return output;
 };
 

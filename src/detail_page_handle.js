@@ -68,6 +68,9 @@ module.exports.handlePlaceDetail = async (options) => {
 
     const coordinates = latMatch && lngMatch ? { lat: parseFloat(latMatch), lng: parseFloat(lngMatch) } : null;
 
+    // This huge JSON contains mostly everything, we still don't use it fully
+    // It seems to be stable over time
+    // Examples can be found in the /samples folder
     // NOTE: This is empty for certain types of direct URLs
     // Search and place IDs work fine
     const jsonData = await page.evaluate(() => {
@@ -152,7 +155,7 @@ module.exports.handlePlaceDetail = async (options) => {
         searchString,
         location: coordinates, // keeping backwards compatible even though coordinates is better name
         scrapedAt: new Date().toISOString(),
-        ...includeHistogram ? await extractPopularTimes({ page }) : {},
+        ...includeHistogram ? extractPopularTimes({ jsonData }) : {},
         openingHours: includeOpeningHours ? await extractOpeningHours({ page }) : undefined,
         peopleAlsoSearch: includePeopleAlsoSearch ? await extractPeopleAlsoSearch({ page }) : undefined,
         additionalInfo: additionalInfo ? await extractAdditionalInfo({ page }) : undefined,

@@ -226,8 +226,16 @@ const MaxCrawledPlacesTracker = require('./max-crawled-places'); // eslint-disab
  * enqueuedPerSearch: Object.<string, number>,
  * scrapedTotal: number,
  * scrapedPerSearch: Object.<string, number>,
- * }} MaxCrawledPlacesState}
+ * }} MaxCrawledPlacesState
  *
+ */ 
+
+/**
+ *  @typedef {{
+ * popularTimesLiveText: string,
+ * popularTimesLivePercent: number,
+ * popularTimesHistogram: Object.<string, Array<{ hour: number, occupancyPercent: 0 }>>,
+ * }} PopularTimesOutput
  */ 
 
 module.exports = {};
