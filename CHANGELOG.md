@@ -1,3 +1,7 @@
+## 2021-09-14
+*Fixes*
+- Fixed popular times live and histogram
+
 ## 2021-09-10
 https://github.com/drobnikj/crawler-google-places/pull/185
 https://github.com/drobnikj/crawler-google-places/issues/181
