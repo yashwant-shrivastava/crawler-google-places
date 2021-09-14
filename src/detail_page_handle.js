@@ -141,10 +141,11 @@ module.exports.handlePlaceDetail = async (options) => {
     if (cidHexSplit && cidHexSplit[1]) {
         // Hexadecimal to decimal. We have to use BigInt because JS Number does not have enough precision
         cid = BigInt(cidHexSplit[1]).toString();
-    }
+    }    
 
     const detail = {
         ...pageData,
+        permanentlyClosed: jsonData?.[203]?.[1]?.[4]?.[0] === 'Permanently closed',
         totalScore,
         isAdvertisement,
         rank,

@@ -210,3 +210,38 @@ module.exports.waitAndHandleConsentScreen = async (page, url, persistCookiesPerS
         await updateCookies();
     }
 };
+
+// 
+
+/**
+ * Only certain formats of place URLs will give the JSON with data
+ * Examples in /samples/URLS-PLACE.js
+ * https://www.google.com/maps/place/All+Bar+One+Waterloo/@51.5027459,-0.1196255,17z/data=!4m5!3m4!1s0x487604b8703e7371:0x4fa0bac2e4eea2de!8m2!3d51.5027724!4d-0.11729
+ * https://www.google.com/maps/place/All+Bar+One+Waterloo/@51.5031352,-0.1219012,17z/data=!3m1!5s0x487604c79a2ef535:0x6b1752373d1ab417!4m12!1m6!3m5!1s0x487604b900d26973:0x4291f3172409ea92!2slastminute.com+London+Eye!8m2!3d51.5032973!4d-0.1195537!3m4!1s0x487604b8703e7371:0x4fa0bac2e4eea2de!8m2!3d51.5027724!4d-0.11729
+ * @param {string} url 
+ * @returns {string}
+ */
+module.exports.normalizePlaceUrl = (url) => {
+    const match = url.match(/(.+\/data=)(.+)/);
+    if (!match) {
+        log.warning(`Cannot normalize place URL, didn't find data param --- ${url}`);
+        return url;
+    }
+    const [, basePart, dataPart] = match;
+    const hashPairs = dataPart.match(/\ds0x[0-9a-z]+:0x[0-9a-z]+/g);
+    if (!hashPairs || hashPairs.length === 0) {
+        log.warning(`Cannot normalize place URL, didn't find hash pairs --- ${url}`);
+        return url;
+    }
+    const lastHashPair = hashPairs[hashPairs.length - 1];
+    const lastHashPairSuffixRegex = new RegExp(`${lastHashPair}.+`);
+    const lastHashPairSuffixMatch = dataPart.match(lastHashPairSuffixRegex);
+    if (!lastHashPairSuffixMatch) {
+        log.warning(`Cannot normalize place URL, cannot find the suffix after hash pair --- ${url}`);
+        return url;
+    }
+    const firstDataPart = '!4m5!3m4!';
+    const normalized = `${basePart}${firstDataPart}${lastHashPairSuffixMatch}`;
+    log.debug(`Normalized Start URL: ${url} => ${normalized}`);
+    return normalized;
+}

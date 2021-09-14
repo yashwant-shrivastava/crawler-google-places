@@ -12,6 +12,7 @@ const { prepareSearchUrls } = require('./search');
 const { createStartRequestsWithWalker } = require('./walker');
 const { makeInputBackwardsCompatible, validateInput } = require('./input-validation');
 const { REGEXES } = require('./consts');
+const { normalizePlaceUrl } = require('./utils');
 
 const { log } = Apify.utils;
 
@@ -139,7 +140,11 @@ Apify.main(async () => {
                     log.warning(`Happened for provided URL: ${req.url}`);
                 } else {
                     const isPlace = [REGEXES.PLACE_URL_NORMAL, REGEXES.PLACE_URL_CID]
-                        .some((regex) => regex.test(req.url))
+                        .some((regex) => regex.test(req.url));
+                    // Only correct URL formats work properly (have JSON data)
+                    if (REGEXES.PLACE_URL_NORMAL.test(req.url)) {
+                        req.url = normalizePlaceUrl(req.url);
+                    }
                     startRequests.push({
                         ...req,
                         userData: { label: isPlace ? 'detail' : 'startUrl', searchString: null, baseUrl: req.url },

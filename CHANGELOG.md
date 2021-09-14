@@ -1,3 +1,8 @@
+## 2021-09-15
+*Fixes*
+- Fixed `temporarilyClosed` and `permanentlyClosed`
+- Added a step for normalizing input Start URLs because those with wrong format don't contain JSON data
+
 ## 2021-09-14
 *Fixes*
 - Fixed popular times live and histogram
