@@ -102,6 +102,7 @@ module.exports.handlePlaceDetail = async (options) => {
 
     let totalScore = jsonData?.[4]?.[7] || null;
     let reviewsCount = jsonData?.[4]?.[8] || 0;
+    let permanentlyClosed = (jsonData?.[203]?.[1]?.[4]?.[0] === 'Permanently closed');
 
     // We fallback to HTML (might be good to do only)
     if (!totalScore) {
@@ -113,6 +114,10 @@ module.exports.handlePlaceDetail = async (options) => {
         reviewsCount = await page.evaluate(() => Number($('button[jsaction="pane.reviewChart.moreReviews"]')
             .text()
             .replace(/[^0-9]+/g, '')) || 0);
+    }
+
+    if (!permanentlyClosed) {
+        permanentlyClosed = await page.evaluate(() => $('#pane').text().includes('Permanently closed'));
     }
 
     // TODO: Add a backup and figure out why some direct start URLs don't load jsonData
@@ -145,7 +150,7 @@ module.exports.handlePlaceDetail = async (options) => {
 
     const detail = {
         ...pageData,
-        permanentlyClosed: jsonData?.[203]?.[1]?.[4]?.[0] === 'Permanently closed',
+        permanentlyClosed,
         totalScore,
         isAdvertisement,
         rank,
