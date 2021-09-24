@@ -594,7 +594,7 @@ module.exports.extractImages = async ({ page, maxImages }) => {
 
     let resultImageUrls;
 
-    const mainImageSel = '.section-hero-header-image-hero-container';
+    const mainImageSel = '[jsaction="pane.heroHeaderImage.click"]';
     const mainImage = await page.waitForSelector(mainImageSel);
 
     if (maxImages === 1) {
