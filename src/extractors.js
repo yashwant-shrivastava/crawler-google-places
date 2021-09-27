@@ -595,7 +595,13 @@ module.exports.extractImages = async ({ page, maxImages }) => {
     let resultImageUrls;
 
     const mainImageSel = '[jsaction="pane.heroHeaderImage.click"]';
-    const mainImage = await page.waitForSelector(mainImageSel);
+    let mainImage;
+    try {
+        mainImage = await page.waitForSelector(mainImageSel);
+    } catch (e) {
+        log.warning(`Cannot find main image, skipping image extraction`);
+        return undefined;
+    }
 
     if (maxImages === 1) {
         // @ts-ignore

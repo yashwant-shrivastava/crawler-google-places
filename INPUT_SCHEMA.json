@@ -204,7 +204,7 @@
             "title": "Max Images (Slow for more than 1)",
             "type": "integer",
             "description": "Max number of images per place to scrape. If you fill in 0 or nothing, no images will be scraped. For all images, just put 99999",
-            "prefill": 1,
+            "prefill": 0,
             "unit": "images per place"
         },
         "includeHistogram": {
