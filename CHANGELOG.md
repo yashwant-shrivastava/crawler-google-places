@@ -1,3 +1,7 @@
+## 2021-09-27
+*Fixes*
+- Fixed image extraction & make it optional (it should not crash the whole scrape) 
+
 ## 2021-09-15
 *Fixes*
 - Fixed `temporarilyClosed` and `permanentlyClosed`
