@@ -1,3 +1,7 @@
+## 2021-10-07
+*Fixes*
+- Fixed `popularTimesHistogram` which caused crash on some pages
+
 ## 2021-09-27
 *Fixes*
 - Fixed image extraction & make it optional (it should not crash the whole scrape) 
