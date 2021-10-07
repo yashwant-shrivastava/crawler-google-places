@@ -249,9 +249,11 @@ module.exports.extractPopularTimes = ({ jsonData }) => {
     daysData.forEach((dayData, i) => {
         output.popularTimesHistogram[DAYS[i]] = [];
         const hoursData = dayData[1];
-        for (const hourData of hoursData) {
-            const hourOutput = { hour: hourData[0], occupancyPercent: hourData[1] };
-            output.popularTimesHistogram[DAYS[i]].push(hourOutput) 
+        if (Array.isArray(hoursData)) {
+            for (const hourData of hoursData) {
+                const hourOutput = { hour: hourData[0], occupancyPercent: hourData[1] };
+                output.popularTimesHistogram[DAYS[i]].push(hourOutput) 
+            }
         }
     });
     return output;
