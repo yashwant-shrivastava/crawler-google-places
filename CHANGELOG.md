@@ -1,4 +1,9 @@
 ## 2021-10-07
+*Features*
+- Added `menu` to output
+- Added `price` to output
+
+## 2021-10-07
 *Fixes*
 - Fixed `popularTimesHistogram` which caused crash on some pages
 
