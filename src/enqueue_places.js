@@ -112,6 +112,9 @@ const enqueuePlacesFromResponse = (options) => {
             }
             const numberOfAds = placesPaginationData.filter((item) => item.isAdvertisement).length;
             log.info(`[SEARCH]: Enqueued ${enqueued}/${placesPaginationData.length} places (correct location/total) + ${numberOfAds} ads --- ${page.url()}`)
+            return { isDataPage: true, enqueued }
+        } else {
+            return { isDataPage: false }
         }
     };
 };
@@ -184,7 +187,9 @@ module.exports.enqueueAllPlaceDetails = async ({
     const { geo, maxAutomaticZoomOut, exportPlaceUrls } = scrapingOptions;
     const { stats, placesCache, maxCrawledPlacesTracker } = helperClasses;
 
-    page.on('response', enqueuePlacesFromResponse({
+    let numberOfEmptyDataPages = 0;
+
+    const responseHandler = enqueuePlacesFromResponse({
         page,
         requestQueue,
         searchString,
@@ -195,7 +200,13 @@ module.exports.enqueueAllPlaceDetails = async ({
         stats,
         maxCrawledPlacesTracker,
         crawler,
-    }));
+    });
+
+    page.on('response', async (response) => {
+        const { isDataPage, enqueued } = await responseHandler(response);
+        if (isDataPage && enqueued === 0) { numberOfEmptyDataPages += 1; }
+    });
+
     // there is no searchString when startUrls are used
     if (searchString) {
         await page.waitForSelector('#searchboxinput', { timeout: 15000 });
@@ -210,6 +221,11 @@ module.exports.enqueueAllPlaceDetails = async ({
     const startZoom = /** @type {number} */ (parseZoomFromUrl(page.url()));
 
     for (;;) {
+        if (numberOfEmptyDataPages >= 5) {
+            log.warning(`[SEARCH]: Finishing search because it reached an empty data page (no more results) --- ${searchString} - ${request.url}`);
+            return;
+        }
+
         const {
             noOutcomeLoaded,
             isBadQuery,
