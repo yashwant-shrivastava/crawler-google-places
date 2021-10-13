@@ -21,6 +21,7 @@ Our unofficial Google Maps API enables you to extract all of the following data 
 - Title, subtitle, category, place ID, and URL
 - Address, location, plus code and exact coordinates
 - Phone and website if available
+- Menu and price if available
 - Temporarily or permanently closed status
 - Popular times - histogram & live occupancy
 - Average rating (`totalScore`), review count, and review distribution
@@ -88,6 +89,8 @@ The result for a single Google Place looks like this:
   "title": "The PUB Praha 2",
   "totalScore": 4,
   "categoryName": "Restaurant",
+  "price": "$$",
+  "menu": "thepub.cz",
   "address": "Hálkova 6, 120 00 Nové Město, Czechia",
   "locatedIn": "Azalea Square",
   "plusCode": "3CGH+F8 New Town, Prague, Czechia",
