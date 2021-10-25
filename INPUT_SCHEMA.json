@@ -320,10 +320,10 @@
         "zoom": {
             "title": "Viewport zoom level",
             "type": "integer",
-            "description": "Defines how detailed the scrape will be. A higher zoom level ensures that fewer known places are scraped, but will take more time to complete (with country/state/city) or extract smaller area (with lat + lng). Zoom 21 is a single street while zoom 1 is the whole planet. We recommend zoom 12-15 for most cases. You can test zoom by changing the number before 'z' in the URL: https://www.google.com/maps/@50.0860729,14.4135326,17z",
+            "description": "Defines how detailed the scrape will be. A higher zoom level goes deeper into scraping lesser known places, but will take more time to complete (with country/state/city) or extract smaller area (with lat + lng). Zoom 21 is a single street while zoom 1 is the whole planet. We recommend zoom 12-15 for most cases. You can test zoom by changing the number before 'z' in the URL: https://www.google.com/maps/@50.0860729,14.4135326,17z",
             "default": 12,
-            "minimum": 6,
-            "maximum": 17
+            "minimum": 1,
+            "maximum": 21
         },
         "maxAutomaticZoomOut": {
             "title": "Max automatic zoom out",
