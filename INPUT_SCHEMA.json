@@ -15,13 +15,13 @@
             "type": "array",
             "description": "Array of strings to be searched. It is also possible to fill in Google Place IDs in the format place_id:ChIJp4JiUCNP0xQR1JaSjpW_Hms. Setting geolocation input fields is more accurate than including location in the search string.",
             "editor": "stringList",
-            "prefill": ["restaurant"]
+            "prefill": ["restaurant New York"]
         },
         "maxCrawledPlaces": {
             "title": "Max crawled places",
             "type": "integer",
             "description": "Maximum number of places you scrape per whole run. If you want to scrape all available, set this to `9999999`.",
-            "prefill": 20,
+            "prefill": 10,
             "minimum": 0
         },
         "maxCrawledPlacesPerSearch": {
@@ -211,7 +211,7 @@
             "title": "Include popular times",
             "type": "boolean",
             "description": "If checked, the crawler scrapes popular times for all places. You can speed up crawling if you disable this.",
-            "default": true
+            "default": false
         },
         "includeOpeningHours": {
             "title": "Include opening hours",
