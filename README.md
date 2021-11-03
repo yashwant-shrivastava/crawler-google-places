@@ -87,25 +87,33 @@ The result for a single Google Place looks like this:
 ```jsonc
 {
   "title": "The PUB Praha 2",
-  "totalScore": 4,
-  "categoryName": "Restaurant",
+  "subTitle": null,
   "price": "$$",
   "menu": "thepub.cz",
+  "categoryName": "Restaurant",
   "address": "Hálkova 6, 120 00 Nové Město, Czechia",
-  "locatedIn": "Azalea Square",
-  "plusCode": "3CGH+F8 New Town, Prague, Czechia",
+  "locatedIn": null,
+  "neighborhood": "Hálkova 6",
+  "street": "Hálkova 6",
+  "city": "New Town",
+  "postalCode": "120 00",
+  "state": null,
+  "countryCode": "CZ",
+  "plusCode": "3CGH+F8 Prague 2, Czechia",
   "website": "thepub.cz",
-  "phone": "+420222940414",
+  "phone": "+420 222 940 414",
   "temporarilyClosed": false,
   "permanentlyClosed": false,
-  "rank": 1,
+  "totalScore": 4.1,
   "placeId": "ChIJXRQlXoyUC0cRq5R4OBRKKxU",
-  "url": "https://www.google.com/maps/place/The+PUB+Praha+2/@50.0761791,14.4261789,17z/data=!3m1!4b1!4m5!3m4!1s0x470b948c5e25145d:0x152b4a14387894ab!8m2!3d50.0761791!4d14.4283676",
+  "cid": "1525394349502272683",
+  "url": "https://www.google.com/maps/place/The+PUB+Praha+2/@50.0761791,14.4261789,17z/data=!3m1!4b1!4m5!3m4!1s0x470b948c5e25145d:0x152b4a14387894ab!8m2!3d50.0761842!4d14.4283668?hl=en",
+  "searchString": "place_id:ChIJXRQlXoyUC0cRq5R4OBRKKxU",
   "location": {
-    "lat": 50.0761791,
-    "lng": 14.4283676
+    "lat": 50.0761842,
+    "lng": 14.4283668
   },
-  "searchString": "pubs near prague 2",
+  "scrapedAt": "2021-11-03T10:48:11.449Z",
   "popularTimesLiveText": "25% busy at .; Not too busy",
   "popularTimesLivePercent": 25,
   "popularTimesHistogram": {
@@ -127,9 +135,9 @@ The result for a single Google Place looks like this:
         "hour": 9,
         "occupancyPercent": 0
       }
-      // ... (shortened)
+      // ... (more hours)
     ],
-    // ... (shortened)
+    // ... (more days)
   },
   "openingHours": [
     {
@@ -144,33 +152,46 @@ The result for a single Google Place looks like this:
       "day": "Wednesday",
       "hours": "11AM–2AM"
     },
-    // ... (shortened)
+    // ... (more days)
   ],
   "peopleAlsoSearch": [],
-  "reviewsCount": 698,
+  "reviewsCount": 866,
+  "reviewsDistribution": {
+    "oneStar": 65,
+    "twoStar": 38,
+    "threeStar": 96,
+    "fourStar": 245,
+    "fiveStar": 422
+  },
   "reviews": [
     {
-      "name": "Robert Nalepa",
-      "text": null,
-      "publishAt": "a day ago",
-      "likesCount": null,
-      "stars": 4
+      // Personal data only available if you explicitly choose that
+      // Please read the section about personal data protection
+      // Below personal details are not real
+      "name": "adam novak",
+      "text": "Great pub with really fun ambiance. Food and drinks are quite affordable and the setup is nice. Service was excellent (shoutout to Veronica, who checked in on us constantly). When our server was occupied, the other servers seemed happy to help!",
+      "publishAt": "a week ago",
+      "publishedAtDate": "2021-9-22T14:55:05.008Z",
+      "likesCount": 0,
+      "reviewId": "ChdDSUgdfgdfgdVJQ0FnSUNHN0tqV2lRRRAB",
+      "reviewUrl": "https://www.google.com/maps/reviews/data=!4m5!14m4!1m3!1m2!1s1dfgdfg923392!2s0x0:0x152dfgdfgd7894ab?hl=en-US",
+      "reviewerId": "11313123172212312323392",
+      "reviewerUrl": "https://www.google.com/maps/contrib/11311172323123123392?hl=en-US",
+      "reviewerNumberOfReviews": 35,
+      "isLocalGuide": true,
+      "stars": 5,
+      "rating": null,
+      "responseFromOwnerDate": null,
+      "responseFromOwnerText": null
     },
-    {
-      "name": "Martin Mudra",
-      "text": null,
-      "publishAt": "6 days ago",
-      "likesCount": null,
-      "stars": 4
-    },
-    // ... (shortened)
+    // ... (more reviews)
   ],
   "imageUrls": [
     "https://lh5.googleusercontent.com/p/AF1QipMQKrnbWNFed4bhBaMn_E1hf83ro3af1JT6BuPe=s508-k-no",
     "https://lh5.googleusercontent.com/p/AF1QipNVV1EkzaddM7UsE9bh0KgT5BFIRfvAwsRPVo0a=s516-k-no",
     "https://lh5.googleusercontent.com/p/AF1QipPDAjMIuulyFvHqTWCz_xeQhiDgretyMsHO6Rq_=s677-k-no",
     "https://lh5.googleusercontent.com/p/AF1QipOEsLwms2XreZ7_kzgH_As5SeTfS7jz32ctw5iY=s516-k-no",
-    // ... (shortened)
+    // ... (more images)
   ],
   "additionalInfo": {
     "Service options": [
