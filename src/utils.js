@@ -47,26 +47,6 @@ module.exports.parseZoomFromUrl = (url) => {
     return zoomMatch ? Number(zoomMatch[1]) : null;
 };
 
-/** @param {string[]} imageUrls */
-module.exports.enlargeImageUrls = (imageUrls) => {
-    // w1920-h1080
-    const FULL_RESOLUTION = {
-        width: 1920,
-        height: 1080,
-    };
-    return imageUrls.map((imageUrl) => {
-        const sizeMatch = imageUrl.match(/=s\d+/);
-        const widthHeightMatch = imageUrl.match(/=w\d+-h\d+/);
-        if (sizeMatch) {
-            return imageUrl.replace(sizeMatch[0], `=s${FULL_RESOLUTION.width}`);
-        }
-        if (widthHeightMatch) {
-            return imageUrl.replace(widthHeightMatch[0], `=w${FULL_RESOLUTION.width}-h${FULL_RESOLUTION.height}`);
-        }
-        return imageUrl;
-    });
-};
-
 /**
  * Waits until a predicate (funcion that returns bool) returns true
  *
@@ -104,44 +84,58 @@ module.exports.waiter = waiter;
 
 /**
  * Navigates back to the details page
+ * either by clicking back button or reloading the main page
  *
  * @param {Puppeteer.Page} page
  * @param {string} pageLabel label for the current page for error messages
+ * @param {string} placeUrl URL for hard reload
  */
-module.exports.navigateBack = async (page, pageLabel) => {
+module.exports.navigateBack = async (page, pageLabel, placeUrl) => {
     const title = await page.$(PLACE_TITLE_SEL);
     if (title) {
         log.info('[PLACE]: We are still on the details page -> no back navigation needed');
         return;
     }
-    const backButtonPresent = async () => {
-        const backButton = await page.$(BACK_BUTTON_SEL);
-        return backButton != null;
-    }
-    await waiter(backButtonPresent, {
-        timeout: 2000,
-        pollInterval: 500,
-        timeoutErrorMeesage: `Waiting for backButton on ${pageLabel} page ran into a timeout after 2s on URL: ${page.url()}`,
-    });
-    const navigationSucceeded = async () => {
-        const backButton = await page.$(BACK_BUTTON_SEL);
-        if (backButton) {
-            await backButton.evaluate((backButtonNode) => {
-                if (backButtonNode instanceof HTMLElement) {
-                    backButtonNode.click();
-                }
-            });
+    try {
+        const backButtonPresent = async () => {
+            const backButton = await page.$(BACK_BUTTON_SEL);
+            return backButton != null;
         }
-        const title = await page.$(PLACE_TITLE_SEL);
-        if (title) {
-            return true;
+        await waiter(backButtonPresent, {
+            timeout: 2000,
+            pollInterval: 500,
+            timeoutErrorMeesage: `Waiting for backButton on ${pageLabel} page ran into a timeout after 2s on URL: ${placeUrl}`,
+        });
+        const navigationSucceeded = async () => {
+            const backButton = await page.$(BACK_BUTTON_SEL);
+            if (backButton) {
+                await backButton.evaluate((backButtonNode) => {
+                    if (backButtonNode instanceof HTMLElement) {
+                        backButtonNode.click();
+                    }
+                });
+            }
+            const title = await page.$(PLACE_TITLE_SEL);
+            if (title) {
+                return true;
+            }
+        }
+        await waiter(navigationSucceeded, {
+            // timeout: 10000,
+            // pollInterval: 500,
+            timeoutErrorMeesage: `Waiting for back navigation on ${pageLabel} page ran into a timeout after 10s on URL: ${placeUrl}`,
+        });
+    } catch (e) {
+        // As a last resort, we just reload the main page
+        log.warning(`${e.message} - will hard reload the place page instead`);
+        try {
+            await page.goto(placeUrl);
+            await page.waitForSelector(PLACE_TITLE_SEL);
+            await Apify.utils.puppeteer.injectJQuery(page);
+        } catch (e) {
+            throw 'Reloading the page to navigate back failed, retrying whole request';
         }
     }
-    await waiter(navigationSucceeded, {
-        timeout: 10000,
-        pollInterval: 500,
-        timeoutErrorMeesage: `Waiting for back navigation on ${pageLabel} page ran into a timeout after 10s on URL: ${page.url()}`,
-    });
 }
 
 /**
@@ -245,3 +239,8 @@ module.exports.normalizePlaceUrl = (url) => {
     log.debug(`Normalized Start URL: ${url} => ${normalized}`);
     return normalized;
 }
+
+/** @param {string} googleResponseString */
+module.exports.stringifyGoogleXrhResponse = (googleResponseString) => {
+    return JSON.parse(googleResponseString.replace(')]}\'', ''));
+};

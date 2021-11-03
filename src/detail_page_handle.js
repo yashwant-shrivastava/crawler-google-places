@@ -1,14 +1,15 @@
 const Apify = require('apify'); // eslint-disable-line no-unused-vars
 const Puppeteer = require('puppeteer'); // eslint-disable-line no-unused-vars
+const MaxCrawledPlacesTracker = require('./max-crawled-places'); // eslint-disable-line no-unused-vars
 
-const { ScrapingOptions, PlaceUserData, MaxCrawledPlacesTracker } = require('./typedefs'); // eslint-disable-line no-unused-vars
+const { ScrapingOptions, PlaceUserData } = require('./typedefs'); // eslint-disable-line no-unused-vars
 const ErrorSnapshotter = require('./error-snapshotter'); // eslint-disable-line no-unused-vars
 const Stats = require('./stats'); // eslint-disable-line no-unused-vars
 
-const {
-    extractPageData, extractPopularTimes, extractOpeningHours, extractPeopleAlsoSearch,
-    extractAdditionalInfo, extractReviews, extractImages
-} = require('./extractors');
+const { extractPageData, extractPopularTimes, extractOpeningHours, extractPeopleAlsoSearch,
+    extractAdditionalInfo } = require('./extractors/general');
+const { extractImages } = require('./extractors/images');
+const { extractReviews } = require('./extractors/reviews');
 const { DEFAULT_TIMEOUT, PLACE_TITLE_SEL } = require('./consts');
 const { waitForGoogleMapLoader } = require('./utils');
 
@@ -148,6 +149,9 @@ module.exports.handlePlaceDetail = async (options) => {
         cid = BigInt(cidHexSplit[1]).toString();
     }    
 
+    // How many we should scrape (otherwise we retry)
+    const targetReviewsCount = Math.min(reviewsCount, maxReviews);
+
     const detail = {
         ...pageData,
         permanentlyClosed,
@@ -164,27 +168,36 @@ module.exports.handlePlaceDetail = async (options) => {
         ...includeHistogram ? extractPopularTimes({ jsonData }) : {},
         openingHours: includeOpeningHours ? await extractOpeningHours({ page }) : undefined,
         peopleAlsoSearch: includePeopleAlsoSearch ? await extractPeopleAlsoSearch({ page }) : undefined,
-        additionalInfo: additionalInfo ? await extractAdditionalInfo({ page }) : undefined,
+        additionalInfo: additionalInfo ? await extractAdditionalInfo({ page, placeUrl: url }) : undefined,
         reviewsCount,
         reviewsDistribution,
+        // IMPORTANT: The order of actions image -> reviews is important
+        // If you need to change it, you need to check the implementations
+        // and where the back buttons need to be 
+
+        // NOTE: Image URLs are quite rare for users to require
+        // In case the back button fails, we reload the page before reviews
+        imageUrls: await errorSnapshotter.tryWithSnapshot(
+            page,
+            async () => extractImages({ page, maxImages, targetReviewsCount, placeUrl: url }),
+            { name: 'Image extraction' },
+        ),
+        // NOTE: Reviews must be the last action on the detail page
+        // because the back button is always a little buggy (unless you fix it :) ).
+        // We want to close the page right after reviews are extracted
         reviews: await errorSnapshotter.tryWithSnapshot(
             page,
             async () => extractReviews({
                 request,
                 page,
                 reviewsCount,
-                maxReviews,
+                targetReviewsCount,
                 reviewsSort,
                 reviewsTranslation,
                 defaultReviewsJson,
                 personalDataOptions: scrapingOptions.personalDataOptions
             }),
             { name: 'Reviews extraction' },
-        ),
-        imageUrls: await errorSnapshotter.tryWithSnapshot(
-            page,
-            async () => extractImages({ page, maxImages }),
-            { name: 'Image extraction' },
         ),
         orderBy,
     };
