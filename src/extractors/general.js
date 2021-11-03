@@ -5,7 +5,7 @@ const Puppeteer = require('puppeteer'); // eslint-disable-line
 const { PlacePaginationData, PopularTimesOutput } = require('../typedefs');
 
 const { PLACE_TITLE_SEL } = require('../consts');
-const { waitForGoogleMapLoader, fixFloatNumber, navigateBack } = require('../utils');
+const { waitForGoogleMapLoader, fixFloatNumber, navigateBack, stringifyGoogleXrhResponse } = require('../utils');
 
 const { log } = Apify.utils;
 
