@@ -1,3 +1,7 @@
+## 2021-11-03
+*Fixes*
+- Improved reliability of scraping place detail, reviews and images (improving scrolling and back button interaction)
+
 ## 2021-10-13
 *Features*
 - Added `menu` to output
