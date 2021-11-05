@@ -280,10 +280,10 @@ module.exports.extractAdditionalInfo = async ({ page, placeUrl }) => {
                 /** @type {{[key: string]: any[]}} */
                 const innerResult = {};
                 $('div[role="region"]').each((_, section) => {
-                    const key = $(section).find('div[class*="subtitle"]').text().trim();
+                    const key = $(section).find('*[class*="subtitle"]').text().trim();
                     /** @type {{[key: string]: boolean}[]} */
                     const values = [];
-                    $(section).find('div[aria-label]').each((_i, sub) => {
+                    $(section).find('li:has(span[aria-label])').each((_i, sub) => {
                         /** @type {{[key: string]: boolean}} */
                         const res = {};
                         const title = $(sub).text().trim();
