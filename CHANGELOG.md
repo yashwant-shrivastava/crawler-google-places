@@ -1,3 +1,7 @@
+## 2021-11-05
+*Fixes*
+- Fixed new layout of `additionalInfo`
+
 ## 2021-11-03
 *Fixes*
 - Improved reliability of scraping place detail, reviews and images (improving scrolling and back button interaction)
