@@ -419,26 +419,6 @@
             "minimum": 0,
             "maximum": 100,
             "default": 1
-        },
-        "useChrome": {
-            "title": "Use Chrome",
-            "type": "boolean",
-            "description": "Uses full Chrome browser instead of Chromium. Be careful, it is not stable on some versions! Don't turn this on unless you know what you are doing.",
-            "default": false
-        },
-        "debug": {
-            "title": "Debug log",
-            "type": "boolean",
-            "description": "Debug messages will be included in the log.",
-            "default": false,
-            "sectionCaption": "Miscellaneous",
-            "sectionDescription": "Few additional settings that might be useful."
-        },
-        "useStealth": {
-            "title": "Use stealth",
-            "type": "boolean",
-            "description": "Enable stealth if you're not using Chrome. Use only if you know what you are doing.",
-            "default": false
         }
     },
     "required": ["proxyConfig"]
