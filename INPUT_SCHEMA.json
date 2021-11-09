@@ -191,21 +191,14 @@
             "example": "en",
             "prefill": "en"
         },
-        "maxReviews": {
-            "title": "Max reviews (slow)",
-            "type": "integer",
-            "description": "Max number of reviews per place to scrape. If you fill in 0 or nothing, no reviews will be scraped. For all reviews, just put 99999",
-            "prefill": 0,
-            "unit": "reviews per place",
+        "exportPlaceUrls": {
+            "title": "Export place URLs only (skips place details)",
+            "type": "boolean",
+            "description": "Scraper will return only place URLs without crawling their details.",
+            "default": false,
             "sectionCaption": "Output configuration",
             "sectionDescription": "You can set what extra information you would like extracted. For maximum efficiency, the default setup doesn't include reviews or images. If you need these, just increase the maximum count for them."
-        },
-        "maxImages": {
-            "title": "Max Images (Slow for more than 1)",
-            "type": "integer",
-            "description": "Max number of images per place to scrape. If you fill in 0 or nothing, no images will be scraped. For all images, just put 99999",
-            "prefill": 0,
-            "unit": "images per place"
+  
         },
         "includeHistogram": {
             "title": "Include popular times",
@@ -230,6 +223,20 @@
             "type": "boolean",
             "description": "Extract additional information about each place, e.g. Service Options, Highlights, Offerings, etc. You can speed up crawling if you disable this.",
             "default": false
+        },
+        "maxImages": {
+            "title": "Number of images (Slow for more than 1)",
+            "type": "integer",
+            "description": "Max number of images per place to scrape. If you fill in 0 or nothing, no images will be scraped. For all images, just put 99999",
+            "prefill": 0,
+            "unit": "images per place"
+        },
+        "maxReviews": {
+            "title": "Number of reviews (slow)",
+            "type": "integer",
+            "description": "Max number of reviews per place to scrape. If you fill in 0 or nothing, no reviews will be scraped. For all reviews, just put 99999",
+            "prefill": 0,
+            "unit": "reviews per place"
         },
         "reviewsSort": {
             "title": "Sort reviews by",
@@ -267,12 +274,44 @@
                 "Only translated"
             ]
         },
-        "exportPlaceUrls": {
-            "title": "Export place URLs only (skips place details)",
-            "type": "boolean",
-            "description": "Scraper will return only place URLs without crawling their details.",
-            "default": false
-        },
+        "scrapeReviewerName": {
+          "title": "Reviewer name",
+          "type": "boolean",
+          "description": "Extract Reviewer name",
+          "default": true,
+          "sectionCaption": "Personal data (reviews only)",
+          "sectionDescription": "All of these fields contain personal data. Personal data is protected by the GDPR in the European Union and by other regulations around the world. You should not scrape personal data unless you have a legitimate reason to do so. If you're unsure whether your reason is legitimate, consult your lawyers."
+      },
+      "scrapeReviewerId": {
+          "title": "Reviewer ID",
+          "type": "boolean",
+          "description": "Extract Reviewer ID",
+          "default": true
+      },
+      "scrapeReviewerUrl": {
+          "title": "Reviewer URL",
+          "type": "boolean",
+          "description": "Extract Reviewer URL",
+          "default": true
+      },
+      "scrapeReviewId": {
+          "title": "Review ID",
+          "type": "boolean",
+          "description": "Extract Review ID",
+          "default": true
+      },
+      "scrapeReviewUrl": {
+          "title": "Review URL",
+          "type": "boolean",
+          "description": "Extract Review URL",
+          "default": true
+      },
+      "scrapeResponseFromOwnerText": {
+          "title": "Response from owner",
+          "type": "boolean",
+          "description": "Extract Response from owner",
+          "default": true
+      },
         "country": {
             "title": "Country",
             "type": "string",
@@ -380,65 +419,7 @@
             "minimum": 0,
             "maximum": 100,
             "default": 1
-        },
-        "useChrome": {
-            "title": "Use Chrome",
-            "type": "boolean",
-            "description": "Uses full Chrome browser instead of Chromium. Be careful, it is not stable on some versions! Don't turn this on unless you know what you are doing.",
-            "default": false
-        },
-        "debug": {
-            "title": "Debug log",
-            "type": "boolean",
-            "description": "Debug messages will be included in the log.",
-            "default": false,
-            "sectionCaption": "Miscellaneous",
-            "sectionDescription": "Few additional settings that might be useful."
-        },
-        "useStealth": {
-            "title": "Use stealth",
-            "type": "boolean",
-            "description": "Enable stealth if you're not using Chrome. Use only if you know what you are doing.",
-            "default": false
-        },
-        "scrapeReviewerName": {
-            "title": "Reviewer name",
-            "type": "boolean",
-            "description": "Extract Reviewer name",
-            "default": true,
-            "sectionCaption": "Personal data (reviews only)",
-            "sectionDescription": "All of these fields contain personal data. Personal data is protected by the GDPR in the European Union and by other regulations around the world. You should not scrape personal data unless you have a legitimate reason to do so. If you're unsure whether your reason is legitimate, consult your lawyers."
-        },
-        "scrapeReviewerId": {
-            "title": "Reviewer ID",
-            "type": "boolean",
-            "description": "Extract Reviewer ID",
-            "default": true
-        },
-        "scrapeReviewerUrl": {
-            "title": "Reviewer URL",
-            "type": "boolean",
-            "description": "Extract Reviewer URL",
-            "default": true
-        },
-        "scrapeReviewId": {
-            "title": "Review ID",
-            "type": "boolean",
-            "description": "Extract Review ID",
-            "default": true
-        },
-        "scrapeReviewUrl": {
-            "title": "Review URL",
-            "type": "boolean",
-            "description": "Extract Review URL",
-            "default": true
-        },
-        "scrapeResponseFromOwnerText": {
-            "title": "Response from owner",
-            "type": "boolean",
-            "description": "Extract Response from owner",
-            "default": true
         }
     },
     "required": ["proxyConfig"]
-}
+  }
