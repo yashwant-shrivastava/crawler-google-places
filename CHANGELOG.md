@@ -1,3 +1,7 @@
+## 2021-11-09
+*Fixes*
+- `website` field now displays the full URL. This fixes issue of blank `facebook.com` links.
+
 ## 2021-11-05
 *Fixes*
 - Fixed new layout of `additionalInfo`
