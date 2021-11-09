@@ -40,6 +40,7 @@ const parseJsonResult = (placeData, isAdvertisement) => {
         coords,
         addressParsed,
         isAdvertisement,
+        website: placeData[7]?.[0] || null,
     };
 }
 
@@ -103,7 +104,7 @@ const parseJsonResult = (placeData, isAdvertisement) => {
  */
 module.exports.extractPageData = async ({ page, jsonData }) => {
     const jsonResult = parseJsonResult(jsonData, false);
-    return page.evaluate((placeTitleSel, addressParsed) => {
+    return page.evaluate((placeTitleSel, jsonResult) => {
         const address = $('[data-section-id="ad"] .section-info-line').text().trim();
         const addressAlt = $("button[data-tooltip*='address']").text().trim();
         const addressAlt2 = $("button[data-item-id*='address']").text().trim();
@@ -126,19 +127,16 @@ module.exports.extractPageData = async ({ page, jsonData }) => {
             categoryName: $('[jsaction="pane.rating.category"]').text().trim(),
             address: address || addressAlt || addressAlt2 || null,
             locatedIn: secondaryAddressLine || secondaryAddressLineAlt || secondaryAddressLineAlt2 || null,
-            ...addressParsed,
+            ...jsonResult.addressParsed || {},
             plusCode: $('[data-section-id="ol"] .widget-pane-link').text().trim()
                 || $("button[data-tooltip*='plus code']").text().trim()
                 || $("button[data-item-id*='oloc']").text().trim() || null,
-            website: $('[data-section-id="ap"]').length
-                ? $('[data-section-id="ap"]').eq(0).text().trim()
-                : $("button[data-tooltip*='website']").text().trim()
-                || $("button[data-item-id*='authority']").text().trim() || null,
+            website: jsonResult.website,
             phone: phone || phoneAlt || null,
             // Wasn't able to find this in the JSON
             temporarilyClosed: $('#pane').text().includes('Temporarily closed'),
         };
-    }, PLACE_TITLE_SEL, jsonResult?.addressParsed || {});
+    }, PLACE_TITLE_SEL, jsonResult || {});
 };
 
 /**
