@@ -301,14 +301,15 @@ module.exports.extractAdditionalInfo = async ({ page, placeUrl }) => {
             await navigateBack(page, 'additional info', placeUrl);
         }
     } else {
-        const hotel_avail_amenities = await page.$$eval('div:not([aria-disabled=true]) > span.hotel-amenity-name',
+        // DIV for "Hotel details" has the CSS class "fPmgbe-eTC1nf-vg2oCf-haAclf"
+        const hotel_avail_amenities = await page.$$eval('div[class="fPmgbe-eTC1nf-vg2oCf-haAclf"] div:not([aria-disabled=true]) > span',
             (elements) => {
                 return elements.map((element) => {
                     return element.textContent ? element.textContent.trim() : ''
                 });
             }
         );
-        const hotel_disabled_amenities = await page.$$eval('div[aria-disabled=true] > span.hotel-amenity-name',
+        const hotel_disabled_amenities = await page.$$eval('div[class="fPmgbe-eTC1nf-vg2oCf-haAclf"] div[aria-disabled=true] > span',
             (elements) => {
                 return elements.map((element) => {
                     return element.textContent ? element.textContent.trim() : ''
