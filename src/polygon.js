@@ -31,10 +31,15 @@ function coordinatesFromBoundingBox(boundingbox) {
 }
 
 /**
- * @param { GeoJson } geo
- * @param {typedefs.Coordinates} coordinates
+ * Checks if provided coordinates are inside a geolocation
+ * If no coordinates or geo is provided, this returns true (ease of use for non geolocated searches)
+ * @param { GeoJson | null | undefined } geo
+ * @param {typedefs.Coordinates | null | undefined} coordinates
  */
 module.exports.checkInPolygon = (geo, coordinates) => {
+    if (!geo || ! coordinates) {
+        return true;
+    }
     const point = turf.point([coordinates.lng, coordinates.lat]);
     let included = false;
     const polygons = getPolygons(geo.geojson);
