@@ -1,3 +1,8 @@
+## 2021-11-11
+*Fixes*
+- Fixed `additionalInfo` for hotels
+- Fixed `exportPlaceUrls` not checking for correct geolocation
+
 ## 2021-11-09
 *Fixes*
 - `website` field now displays the full URL. This fixes issue of blank `facebook.com` links.
