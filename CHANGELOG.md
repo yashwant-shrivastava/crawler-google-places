@@ -1,6 +1,7 @@
 ## 2021-11-15
 *Fixes*
 - `exportPlaceUrls` now properly dedupes the URLs
+- added `categories` fields listing all categories the place is listed in 
 
 ## 2021-11-11
 *Fixes*
