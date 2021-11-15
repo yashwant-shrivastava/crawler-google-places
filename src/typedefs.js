@@ -4,6 +4,7 @@ const Stats = require('./stats'); // eslint-disable-line no-unused-vars
 const ErrorSnapshotter = require('./error-snapshotter'); // eslint-disable-line no-unused-vars
 const PlacesCache = require('./places_cache'); // eslint-disable-line no-unused-vars
 const MaxCrawledPlacesTracker = require('./max-crawled-places'); // eslint-disable-line no-unused-vars
+const ExportUrlsDeduper = require('./export-urls-deduper'); // eslint-disable-line no-unused-vars
 
 /**
  * Options for the scraping process
@@ -12,6 +13,7 @@ const MaxCrawledPlacesTracker = require('./max-crawled-places'); // eslint-disab
  * @property {ErrorSnapshotter} errorSnapshotter
  * @property {MaxCrawledPlacesTracker} maxCrawledPlacesTracker
  * @property {PlacesCache} placesCache
+ * @property {ExportUrlsDeduper | undefined} exportUrlsDeduper
  */
 
 /**

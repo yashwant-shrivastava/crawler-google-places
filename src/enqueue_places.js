@@ -7,6 +7,7 @@ const typedefs = require('./typedefs'); // eslint-disable-line no-unused-vars
 const Stats = require('./stats'); // eslint-disable-line no-unused-vars
 const PlacesCache = require('./places_cache'); // eslint-disable-line no-unused-vars
 const MaxCrawledPlacesTracker = require('./max-crawled-places'); // eslint-disable-line no-unused-vars
+const ExportUrlsDeduper = require('./export-urls-deduper'); // eslint-disable-line no-unused-vars
 
 const { sleep, log } = Apify.utils;
 const { PLACE_TITLE_SEL, NEXT_BUTTON_SELECTOR, NO_RESULT_XPATH } = require('./consts');
@@ -29,13 +30,14 @@ const CHECK_LOAD_OUTCOMES_EVERY_MS = 500;
  *   placesCache: PlacesCache,
  *   stats: Stats,
  *   maxCrawledPlacesTracker: MaxCrawledPlacesTracker,
+ *   exportUrlsDeduper: ExportUrlsDeduper | undefined,
  *   crawler: Apify.PuppeteerCrawler,
  * }} options
  * @return {(response: Puppeteer.Response) => Promise<any>}
  */
 const enqueuePlacesFromResponse = (options) => {
     const { page, requestQueue, searchString, request, exportPlaceUrls, geo,
-        placesCache, stats, maxCrawledPlacesTracker, crawler } = options;
+        placesCache, stats, maxCrawledPlacesTracker, exportUrlsDeduper, crawler } = options;
     return async (response) => {
         const url = response.url();
         const isSearchPage = url.match(/google\.[a-z.]+\/search/);
@@ -76,9 +78,12 @@ const enqueuePlacesFromResponse = (options) => {
                     return;
                 }
                 const shouldScrapeMore = maxCrawledPlacesTracker.setScraped();
-                await Apify.pushData({
-                    url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${placePaginationData.placeId}`,
-                });
+                const wasAlreadyPushed = exportUrlsDeduper?.testDuplicateAndAdd(placePaginationData.placeId);
+                if (!wasAlreadyPushed) {
+                    await Apify.pushData({
+                        url: `https://www.google.com/maps/search/?api=1&query=${searchString}&query_place_id=${placePaginationData.placeId}`,
+                    });
+                }
                 if (!shouldScrapeMore) {
                     log.warning(`[SEARCH]: Finishing scraping because we reached maxCrawledPlaces `
                         // + `currently: ${maxCrawledPlacesTracker.enqueuedPerSearch[searchKey]}(for this search)/${maxCrawledPlacesTracker.enqueuedTotal}(total) `
@@ -189,7 +194,7 @@ module.exports.enqueueAllPlaceDetails = async ({
                                           helperClasses,
                                       }) => {
     const { geo, maxAutomaticZoomOut, exportPlaceUrls } = scrapingOptions;
-    const { stats, placesCache, maxCrawledPlacesTracker } = helperClasses;
+    const { stats, placesCache, maxCrawledPlacesTracker, exportUrlsDeduper } = helperClasses;
 
     let numberOfEmptyDataPages = 0;
 
@@ -203,6 +208,7 @@ module.exports.enqueueAllPlaceDetails = async ({
         placesCache,
         stats,
         maxCrawledPlacesTracker,
+        exportUrlsDeduper,
         crawler,
     });
 
