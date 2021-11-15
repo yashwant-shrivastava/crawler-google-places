@@ -18,6 +18,9 @@ const parseJsonResult = (placeData, isAdvertisement) => {
     if (!placeData) {
         return;
     }
+
+    const categories = placeData[13];
+
     // Some places don't have any address
     const addressDetail = placeData[183]?.[1];
     const addressParsed = {
@@ -41,6 +44,7 @@ const parseJsonResult = (placeData, isAdvertisement) => {
         addressParsed,
         isAdvertisement,
         website: placeData[7]?.[0] || null,
+        categories
     };
 }
 
@@ -116,6 +120,7 @@ module.exports.extractPageData = async ({ page, jsonData }) => {
             ? $('[data-section-id="pn0"].section-info-speak-numeral').attr('data-href').replace('tel:', '')
             : $("button[data-tooltip*='phone']").text().trim();
         const phoneAlt = $('button[data-item-id*=phone]').text().trim();
+        const categoryName = (jsonResult.categories.length > 0) ? jsonResult.categories[0] : '';
 
         return {
             title: $(placeTitleSel).text().trim(),
@@ -124,7 +129,7 @@ module.exports.extractPageData = async ({ page, jsonData }) => {
             menu: $("button[aria-label='Menu']").text().replaceAll('Menu','').trim() || null,
             // Getting from JSON now
             // totalScore: $('span.section-star-display').eq(0).text().trim(),
-            categoryName: $('[jsaction="pane.rating.category"]').text().trim(),
+            categoryName: $('[jsaction="pane.rating.category"]').text().trim() || categoryName,
             address: address || addressAlt || addressAlt2 || null,
             locatedIn: secondaryAddressLine || secondaryAddressLineAlt || secondaryAddressLineAlt2 || null,
             ...jsonResult.addressParsed || {},
