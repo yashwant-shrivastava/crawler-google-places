@@ -8,6 +8,7 @@ const Stats = require('./stats');
 const ErrorSnapshotter = require('./error-snapshotter');
 const PlacesCache = require('./places_cache');
 const MaxCrawledPlacesTracker = require('./max-crawled-places');
+const ExportUrlsDeduper = require('./export-urls-deduper');
 const { prepareSearchUrls } = require('./search');
 const { createStartRequestsWithWalker } = require('./walker');
 const { makeInputBackwardsCompatible, validateInput } = require('./input-validation');
@@ -71,6 +72,13 @@ Apify.main(async () => {
     const maxCrawledPlacesTracker = new MaxCrawledPlacesTracker(maxCrawledPlaces, maxCrawledPlacesPerSearch);
     await maxCrawledPlacesTracker.initialize(Apify.events);
 
+    /** @type {ExportUrlsDeduper | undefined} */
+    let exportUrlsDeduper;
+    if (exportPlaceUrls) {
+        exportUrlsDeduper = new ExportUrlsDeduper();
+        await exportUrlsDeduper.initialize(Apify.events);
+    }
+    
     // Requests that are used in the queue, we persist them to skip this step after migration
     const startRequests = /** @type {Apify.RequestOptions[]} */ (await Apify.getValue('START-REQUESTS')) || [];
 
@@ -289,7 +297,7 @@ Apify.main(async () => {
 
     /** @type {typedefs.HelperClasses} */
     const helperClasses = {
-        stats, errorSnapshotter, maxCrawledPlacesTracker, placesCache,
+        stats, errorSnapshotter, maxCrawledPlacesTracker, placesCache, exportUrlsDeduper,
     };
 
     // Create and run crawler
