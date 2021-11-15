@@ -1,3 +1,7 @@
+## 2021-11-15
+*Fixes*
+- `exportPlaceUrls` now properly dedupes the URLs
+
 ## 2021-11-11
 *Fixes*
 - Fixed `additionalInfo` for hotels
