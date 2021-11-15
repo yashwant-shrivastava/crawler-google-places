@@ -106,6 +106,10 @@ The result for a single Google Place looks like this:
   "permanentlyClosed": false,
   "totalScore": 4.1,
   "placeId": "ChIJXRQlXoyUC0cRq5R4OBRKKxU",
+  "categories": [
+    "Restaurant",
+    "Bar"
+  ],
   "cid": "1525394349502272683",
   "url": "https://www.google.com/maps/place/The+PUB+Praha+2/@50.0761791,14.4261789,17z/data=!3m1!4b1!4m5!3m4!1s0x470b948c5e25145d:0x152b4a14387894ab!8m2!3d50.0761842!4d14.4283668?hl=en",
   "searchString": "place_id:ChIJXRQlXoyUC0cRq5R4OBRKKxU",

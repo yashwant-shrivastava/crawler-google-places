@@ -152,6 +152,9 @@ module.exports.handlePlaceDetail = async (options) => {
     // How many we should scrape (otherwise we retry)
     const targetReviewsCount = Math.min(reviewsCount, maxReviews);
 
+    // extract categories
+    const categories = jsonData?.[13]
+
     const detail = {
         ...pageData,
         permanentlyClosed,
@@ -159,6 +162,7 @@ module.exports.handlePlaceDetail = async (options) => {
         isAdvertisement,
         rank,
         placeId: jsonData?.[78] || request.uniqueKey,
+        categories: request.userData.categories || categories,
         cid,
         url,
         searchPageUrl,

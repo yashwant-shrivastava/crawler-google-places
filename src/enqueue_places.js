@@ -110,6 +110,7 @@ const enqueuePlacesFromResponse = (options) => {
                             coords: placePaginationData.coords,
                             addressParsed: placePaginationData.addressParsed,
                             isAdvertisement: placePaginationData.isAdvertisement,
+                            categories: placePaginationData.categories
                         },
                     },
                     { forefront: true });
