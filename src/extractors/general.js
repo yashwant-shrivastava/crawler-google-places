@@ -120,7 +120,7 @@ module.exports.extractPageData = async ({ page, jsonData }) => {
             ? $('[data-section-id="pn0"].section-info-speak-numeral').attr('data-href').replace('tel:', '')
             : $("button[data-tooltip*='phone']").text().trim();
         const phoneAlt = $('button[data-item-id*=phone]').text().trim();
-        const categoryName = ((jsonResult.categories) && (jsonResult.categories.length > 0)) ? jsonResult.categories[0] : '';
+        const categoryName = ((jsonResult.categories) && (jsonResult.categories.length > 0)) ? jsonResult.categories[0] : null;
 
         return {
             title: $(placeTitleSel).text().trim(),
