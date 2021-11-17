@@ -230,8 +230,8 @@ module.exports.extractServiceOption = async ({ page }) => {
     let result = undefined;
     const serviceOption = '[class=uxOu9-sTGRBb-p83tee]';
     if (serviceOption) {
-        const result = await page.evaluate((serviceOption) => {
-            return serviceOption.getAttribute('aria-label');
+        const result = await page.evaluate((serviceOptionElem) => {
+            return serviceOptionElem.getAttribute('aria-label');
         }, serviceOption);
     }
     return result;
