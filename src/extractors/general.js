@@ -22,7 +22,7 @@ const parseJsonResult = (placeData, isAdvertisement) => {
     const categories = placeData[13];
 
     // Some places don't have any address
-    const addressDetail = placeData[183]?.[1];
+    const addressDetail = [183]?.[1];
     const addressParsed = {
         neighborhood: addressDetail?.[1],
         street: addressDetail?.[2],
@@ -166,10 +166,10 @@ module.exports.extractPopularTimes = ({ jsonData }) => {
         popularTimesHistogram: {},
     };
 
-    // Format of histogram we want for output is 
+    // Format of histogram we want for output is
     // { day: [{ hour, occupancyPercent}, ...], ...}
 
-    // Format Google has is 
+    // Format Google has is
     // [day][1][hour] => [0] for hour, [1] for occupancy
 
     const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -181,7 +181,7 @@ module.exports.extractPopularTimes = ({ jsonData }) => {
         if (Array.isArray(hoursData)) {
             for (const hourData of hoursData) {
                 const hourOutput = { hour: hourData[0], occupancyPercent: hourData[1] };
-                output.popularTimesHistogram[DAYS[i]].push(hourOutput) 
+                output.popularTimesHistogram[DAYS[i]].push(hourOutput)
             }
         }
     });
@@ -222,6 +222,17 @@ module.exports.extractOpeningHours = async ({ page }) => {
                 log.debug(`[PLACE]: Not able to parse opening hours: ${line}`);
             });
         }
+    }
+    return result;
+};
+
+module.exports.extractServiceOption = async ({ page }) => {
+    let result = undefined;
+    const serviceOption = '[class=uxOu9-sTGRBb-p83tee]';
+    if (serviceOption) {
+        const result = await page.evaluate((serviceOption) => {
+            return serviceOption.getAttribute('aria-label');
+        }, serviceOption);
     }
     return result;
 };

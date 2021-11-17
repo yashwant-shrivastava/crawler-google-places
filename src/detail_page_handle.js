@@ -7,7 +7,7 @@ const ErrorSnapshotter = require('./error-snapshotter'); // eslint-disable-line 
 const Stats = require('./stats'); // eslint-disable-line no-unused-vars
 
 const { extractPageData, extractPopularTimes, extractOpeningHours, extractPeopleAlsoSearch,
-    extractAdditionalInfo } = require('./extractors/general');
+    extractAdditionalInfo, extractServiceOption } = require('./extractors/general');
 const { extractImages } = require('./extractors/images');
 const { extractReviews } = require('./extractors/reviews');
 const { DEFAULT_TIMEOUT, PLACE_TITLE_SEL } = require('./consts');
@@ -87,7 +87,7 @@ module.exports.handlePlaceDetail = async (options) => {
     await Apify.setValue('APP-OPTIONS', await page.evaluate(() => APP_OPTIONS ))
     await Apify.setValue('APP_INIT_STATE', await page.evaluate(() => APP_INITIALIZATION_STATE ));
     await Apify.setValue('JSON-DATA', jsonData);
-    */    
+    */
 
     const pageData = await extractPageData({ page, jsonData });
 
@@ -147,7 +147,7 @@ module.exports.handlePlaceDetail = async (options) => {
     if (cidHexSplit && cidHexSplit[1]) {
         // Hexadecimal to decimal. We have to use BigInt because JS Number does not have enough precision
         cid = BigInt(cidHexSplit[1]).toString();
-    }    
+    }
 
     // How many we should scrape (otherwise we retry)
     const targetReviewsCount = Math.min(reviewsCount, maxReviews);
@@ -173,11 +173,12 @@ module.exports.handlePlaceDetail = async (options) => {
         openingHours: includeOpeningHours ? await extractOpeningHours({ page }) : undefined,
         peopleAlsoSearch: includePeopleAlsoSearch ? await extractPeopleAlsoSearch({ page }) : undefined,
         additionalInfo: additionalInfo ? await extractAdditionalInfo({ page, placeUrl: url }) : undefined,
+        serviceOption: await extractServiceOption({ page }),
         reviewsCount,
         reviewsDistribution,
         // IMPORTANT: The order of actions image -> reviews is important
         // If you need to change it, you need to check the implementations
-        // and where the back buttons need to be 
+        // and where the back buttons need to be
 
         // NOTE: Image URLs are quite rare for users to require
         // In case the back button fails, we reload the page before reviews
@@ -206,7 +207,7 @@ module.exports.handlePlaceDetail = async (options) => {
         orderBy,
     };
 
-    
+
     await Apify.pushData(detail);
     stats.places();
     log.info(`[PLACE]: Place scraped successfully --- ${url}`);
